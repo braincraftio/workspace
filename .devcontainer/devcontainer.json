@@ -1,0 +1,97 @@
+{
+  "name": "BrainCraft.io DevContainer",
+  "dockerFile": "../containers/devcontainer/Dockerfile",
+  "context": "..",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+
+  // Features to add to the dev container
+  "features": {},
+
+  // Use 'forwardPorts' to make a list of ports inside the container available locally
+  "forwardPorts": [],
+
+  // Use 'postCreateCommand' to run commands after the container is created
+  "postCreateCommand": "mise trust --yes && mise install || echo 'Some tools failed to install, probably due to rate limiting. Run mise install with GITHUB_TOKEN.'",
+
+  // Configure tool-specific properties
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // AI Assistants
+        "github.copilot",
+        "github.copilot-chat",
+        "continue.continue",
+
+        // Language Support
+        "golang.go",
+        "rust-lang.rust-analyzer",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+
+        // DevOps Tools
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "ms-azuretools.vscode-docker",
+        "hashicorp.terraform",
+
+        // Development Tools
+        "github.vscode-github-actions",
+        "tamasfe.even-better-toml",
+        "redhat.vscode-yaml",
+        "ms-vscode.makefile-tools",
+        "timonwong.shellcheck",
+
+        // Editor Enhancements
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "editorconfig.editorconfig",
+        "streetsidesoftware.code-spell-checker",
+        "usernamehw.errorlens",
+        "shardulm94.trailing-spaces"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "/bin/bash",
+            "args": ["-l"]
+          }
+        },
+        "editor.formatOnSave": true,
+        "editor.formatOnPaste": true,
+        "editor.rulers": [80, 120],
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "go.toolsManagement.checkForUpdates": "off",
+        "go.useLanguageServer": true,
+        "python.defaultInterpreterPath": "/home/ubuntu/.local/share/mise/shims/python",
+        "rust-analyzer.check.command": "clippy"
+      }
+    }
+  },
+
+  // Environment variables
+  "remoteEnv": {
+    "MISE_YES": "1",
+    "DOCKER_BUILDKIT": "1",
+    "COMPOSE_DOCKER_CLI_BUILD": "1"
+  },
+
+  // Run as non-root user
+  "remoteUser": "ubuntu",
+
+  // Mount Docker socket for Docker-outside-of-Docker
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+
+  // Keep container running
+  "overrideCommand": true,
+
+  // Container capabilities
+  "runArgs": [
+    "--cap-add=SYS_PTRACE",
+    "--security-opt=seccomp:unconfined",
+    "--network=host"
+  ]
+}

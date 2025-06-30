@@ -1,0 +1,591 @@
+{
+  "folders": [
+    {
+      "name": "📋 Workspace",
+      "path": "."
+    },
+    {
+      "name": "🛠️Dot.Github",
+      "path": "dot-github"
+    },
+    {
+      "name": "🐳 Containers",
+      "path": "containers"
+    },
+    {
+      "name": "📚 Documentation",
+      "path": "docs"
+    },
+    {
+      "name": "🎨 Style System",
+      "path": "style-system"
+    }
+  ],
+
+  "settings": {
+    "extensions.unwantedRecommendations": ["task.vscode-task"],
+    "$schema": ".vscode/settings.base.json",
+    "extends": ".vscode/settings.base.json",
+
+    "// Workspace Title": "",
+    "window.title": "${activeEditorShort}${separator}${rootName}${separator}BrainCraft.io",
+
+    "// Monorepo TypeScript Optimization": "",
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "typescript.tsserver.maxTsServerMemory": 8192,
+    "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+    "typescript.tsserver.watchOptions": {
+      "watchFile": "useFsEventsOnParentDirectory",
+      "watchDirectory": "dynamicPriorityPolling",
+      "fallbackPolling": "dynamicPriorityPolling",
+      "synchronousWatchDirectory": false,
+      "excludeDirectories": ["**/node_modules", "**/.git", "**/dist", "**/target"]
+    },
+    "typescript.preferences.includePackageJsonAutoImports": "auto",
+    "typescript.workspaceSymbols.scope": "allOpenProjects",
+    "typescript.tsserver.useSyntaxServer": "auto",
+    "typescript.suggest.completeFunctionCalls": true,
+    "typescript.preferences.importModuleSpecifier": "relative",
+
+    "// ESLint Monorepo Configuration": "",
+    "eslint.workingDirectories": [{ "pattern": "./sdk" }, { "pattern": "./frontend" }],
+    "eslint.lintTask.enable": true,
+    "eslint.lintTask.options": "--cache --cache-location .eslintcache",
+
+    "// Multi-Language Support": "",
+    "[go]": {
+      "editor.defaultFormatter": "golang.go"
+    },
+    "[rust]": {
+      "editor.defaultFormatter": "rust-lang.rust-analyzer"
+    },
+    "[typescript][typescriptreact][javascript][javascriptreact]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+      }
+    },
+    "[markdown]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.wordWrap": "bounded",
+      "editor.wordWrapColumn": 120
+    },
+    "[yaml]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.insertSpaces": true,
+      "editor.tabSize": 2
+    },
+
+    "// JSON Schema Configuration": "",
+    "json.schemas": [
+      {
+        "fileMatch": [".vscode/settings.json", ".vscode/settings.*.json"],
+        "url": "./.vscode/schemas/settings.schema.json"
+      },
+      {
+        "fileMatch": [".vscode/tasks.json"],
+        "url": "./.vscode/schemas/tasks.schema.json"
+      },
+      {
+        "fileMatch": [".vscode/launch.json"],
+        "url": "./.vscode/schemas/launch.schema.json"
+      },
+      {
+        "fileMatch": [".vscode/extensions.json", ".vscode/extensions.*.json"],
+        "url": "./.vscode/schemas/extensions.schema.json"
+      }
+    ],
+
+    "// Git Configuration": "",
+    "git.autoRepositoryDetection": "subFolders",
+    "git.enableSmartCommit": true,
+    "git.confirmSync": false,
+    "git.autofetch": true,
+    "git.fetchOnPull": true,
+    "git.pruneOnFetch": true,
+    "git.enableCommitSigning": false,
+    "git.untrackedChanges": "separate",
+    "git.showProgress": true,
+
+    "// Package Management": "",
+    "npm.packageManager": "pnpm",
+    "npm.autoDetect": "on",
+
+    "// Terminal Configuration": "",
+    "terminal.integrated.scrollback": 10000,
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.profiles.linux": {
+      "bash": {
+        "path": "bash",
+        "args": ["-l"],
+        "icon": "terminal-bash"
+      },
+      "GitHub Actions Runner": {
+        "path": "bash",
+        "args": ["/home/vscode/.github-actions-runner/terminal.sh"],
+        "icon": "github-action"
+      }
+    },
+
+    "// Search Optimization": "",
+    "search.useIgnoreFiles": true,
+    "search.followSymlinks": false,
+    "search.smartCase": true,
+    "search.useGlobalIgnoreFiles": true,
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/bower_components": true,
+      "**/*.code-search": true,
+      "**/target": true,
+      "**/dist": true,
+      "**/build": true,
+      "**/.git": true,
+      "**/.turbo": true,
+      "**/.next": true,
+      "**/coverage": true
+    },
+
+    "// File Associations": "",
+    "files.associations": {
+      "*.code-workspace": "jsonc",
+      "Taskfile.yaml": "yaml",
+      "Taskfile.yml": "yaml",
+      ".env*": "properties",
+      "*.toml": "toml",
+      "Dockerfile*": "dockerfile",
+      "docker-compose*": "yaml",
+      ".mise.toml": "toml"
+    },
+
+    "// Editor Configuration": "",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "editor.rulers": [80, 120],
+    "editor.wordWrap": "off",
+    "editor.minimap.maxColumn": 120,
+    "editor.linkedEditing": true,
+
+    "// File Management": "",
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+    "files.trimFinalNewlines": true,
+    "files.eol": "\n",
+    "files.exclude": {
+      "**/.git": true,
+      "**/.svn": true,
+      "**/.hg": true,
+      "**/CVS": true,
+      "**/.DS_Store": true,
+      "**/Thumbs.db": true,
+      "**/.task": true,
+      "**/.turbo": true
+    },
+    "files.watcherExclude": {
+      "**/.git/objects/**": true,
+      "**/.git/subtree-cache/**": true,
+      "**/node_modules/**": true,
+      "**/target/**": true,
+      "**/dist/**": true,
+      "**/build/**": true,
+      "**/.next/**": true,
+      "**/coverage/**": true,
+      "**/.turbo/**": true,
+      "**/.pnpm/**": true,
+      "**/tmp/**": true
+    },
+
+    "// Todo Tree Configuration": "",
+    "todo-tree.general.tags": [
+      "TODO",
+      "FIXME",
+      "HACK",
+      "WARNING",
+      "NOTE",
+      "BUG",
+      "TASK",
+      "TASKS",
+      "CHORE",
+      "REVIEW",
+      "DEPRECATED",
+      "OPTIMIZE",
+      "REFACTOR"
+    ],
+    "todo-tree.highlights.defaultHighlight": {
+      "icon": "alert",
+      "type": "text-and-comment"
+    },
+
+    "// Remote Development": "",
+    "remote.autoForwardPorts": true,
+    "remote.autoForwardPortsSource": "process",
+    "remote.portsAttributes": {
+      "3000": { "label": "App", "onAutoForward": "notify" },
+      "5173": { "label": "V-UI Dev", "onAutoForward": "openBrowser" },
+      "8080": { "label": "V-Core API", "onAutoForward": "openBrowser" },
+      "9229": { "label": "Node Debug", "onAutoForward": "ignore" }
+    },
+
+    "// Windsurf Specific": "",
+    "workbench.colorTheme": "Dracula Theme",
+    "windsurf.terminalSuggestions": true,
+    "windsurf.terminalAutoRun": true,
+    "windsurf.autoComplete.enableTabAutocomplete": true,
+    "windsurf.autoComplete.enableClipboardContext": true,
+
+    "// Performance Optimizations": "",
+    "extensions.experimental.maxExtensionHostProcessMemory": 3072,
+    "extensions.experimental.maxRestartCount": 3,
+    "extensions.experimental.affinity": {
+      "vscodevim.vim": 1,
+      "dbaeumer.vscode-eslint": 2,
+      "rust-lang.rust-analyzer": 2
+    },
+    "files.participants.timeout": 10000,
+    "npm.fetchOnlinePackageInfo": false,
+    "typescript.surveys.enabled": false,
+    "editor.bracketPairColorization.enabled": true,
+    "editor.bracketPairColorization.independentColorPoolPerBracketType": true,
+    "editor.stickyScroll.enabled": true,
+    "editor.stickyScroll.maxLineCount": 5,
+    "editor.experimental.asyncTokenization": true,
+    "editor.semanticHighlighting.enabled": true,
+    "editor.suggest.preview": true,
+    "terminal.integrated.gpuAcceleration": "on",
+    "terminal.integrated.shellIntegration.enabled": true,
+    "terminal.integrated.persistentSessionReviveProcess": "never",
+    "terminal.integrated.enablePersistentSessions": false,
+
+    "// Tool paths managed by mise": "",
+    "go.goroot": "/home/ubuntu/.local/share/mise/installs/go/latest",
+    "debug.javascript.defaultRuntimeExecutable": {
+      "pwa-node": "/home/ubuntu/.local/share/mise/shims/node"
+    },
+    "python.defaultInterpreterPath": "/home/ubuntu/.local/share/mise/shims/python",
+    "go.alternateTools": {
+      "go": "/home/ubuntu/.local/share/mise/shims/go"
+    },
+    "shellcheck.executablePath": "/home/ubuntu/.local/share/mise/shims/shellcheck",
+    "git.ignoreLimitWarning": true,
+    "cSpell.words": [
+      "braincraftio"
+    ]
+  },
+
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "🚀 V-Core API (Debug)",
+        "type": "go",
+        "request": "launch",
+        "mode": "debug",
+        "program": "${workspaceFolder:🚀 V-Core API}",
+        "buildFlags": "-tags=debug,sqlite_foreign_keys",
+        "env": {
+          "CGO_ENABLED": "1",
+          "GO_ENV": "development",
+          "PORT": "8080",
+          "LOG_LEVEL": "debug",
+          "GOPRIVATE": "github.com/projv-sandbox/*"
+        },
+        "envFile": "${workspaceFolder:🚀 V-Core API}/.env.development",
+        "args": ["run", "--config", "configs/dev.yaml"],
+        "showLog": true,
+        "trace": "verbose",
+        "dlvLoadConfig": {
+          "followPointers": true,
+          "maxVariableRecurse": 3,
+          "maxStringLen": 1024,
+          "maxArrayValues": 128,
+          "maxStructFields": -1
+        },
+        "preLaunchTask": "docker:compose:up:deps",
+        "console": "integratedTerminal",
+        "presentation": {
+          "hidden": false,
+          "group": "go",
+          "order": 1
+        }
+      },
+      {
+        "name": "🎨 V-UI Frontend (Chrome Debug)",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:5173",
+        "webRoot": "${workspaceFolder:🎨 V-UI Frontend}/src",
+        "sourceMaps": true,
+        "sourceMapPathOverrides": {
+          "/@fs/*": "${workspaceFolder:🎨 V-UI Frontend}/*",
+          "/src/*": "${webRoot}/*",
+          "webpack:///./src/*": "${webRoot}/*"
+        },
+        "runtimeArgs": ["--auto-open-devtools-for-tabs", "--disable-background-timer-throttling"],
+        "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+        "pauseForSourceMap": false,
+        "resolveSourceMapLocations": ["${workspaceFolder:🎨 V-UI Frontend}/**", "!**/node_modules/**"],
+        "preLaunchTask": "v-ui:dev",
+        "postDebugTask": "v-ui:stop",
+        "presentation": {
+          "hidden": false,
+          "group": "web",
+          "order": 1
+        }
+      },
+      {
+        "name": "🦀 Dalek CLI (Debug)",
+        "type": "lldb",
+        "request": "launch",
+        "cargo": {
+          "args": ["build", "--bin=dalek-cli", "--package=dalek-cli"],
+          "filter": {
+            "name": "dalek-cli",
+            "kind": "bin"
+          }
+        },
+        "args": ["analyze", "--config", "${workspaceFolder:🦀 Dalek CLI}/configs/default.json", "--verbose"],
+        "cwd": "${workspaceFolder:🦀 Dalek CLI}",
+        "sourceMap": {
+          "/rustc/*": "${env:HOME}/.rustup/toolchains/*/lib/rustlib/src/rust"
+        },
+        "sourceLanguages": ["rust"],
+        "console": "integratedTerminal",
+        "env": {
+          "RUST_BACKTRACE": "full",
+          "RUST_LOG": "debug,dalek=trace"
+        },
+        "presentation": {
+          "hidden": false,
+          "group": "rust",
+          "order": 1
+        }
+      }
+    ],
+    "compounds": [
+      {
+        "name": "🚀 Full Stack Debug",
+        "configurations": ["🚀 V-Core API (Debug)", "🎨 V-UI Frontend (Chrome Debug)"],
+        "stopAll": true,
+        "preLaunchTask": "setup:dev:environment",
+        "presentation": {
+          "hidden": false,
+          "group": "compound",
+          "order": 1
+        }
+      }
+    ]
+  },
+
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "🔄 Sync All Repos",
+        "type": "shell",
+        "command": "mise",
+        "args": ["run", "pull"],
+        "group": "none",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "dedicated",
+          "showReuseMessage": false,
+          "clear": true
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "📦 Install All Dependencies",
+        "type": "shell",
+        "command": "mise",
+        "args": ["run", "install:all"],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "dedicated",
+          "showReuseMessage": false,
+          "clear": true
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "🔨 Build All Projects",
+        "type": "shell",
+        "command": "mise",
+        "args": ["run", "build:all"],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "dedicated",
+          "showReuseMessage": false,
+          "clear": true
+        },
+        "problemMatcher": ["$tsc", "$go", "$rustc"]
+      },
+      {
+        "label": "🧪 Test All Projects",
+        "type": "shell",
+        "command": "mise",
+        "args": ["run", "test:all"],
+        "group": {
+          "kind": "test",
+          "isDefault": true
+        },
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "dedicated",
+          "showReuseMessage": false,
+          "clear": true
+        },
+        "problemMatcher": ["$tsc", "$go", "$rustc"]
+      },
+      {
+        "label": "🔍 Lint All Projects",
+        "type": "shell",
+        "command": "mise",
+        "args": ["run", "lint:all"],
+        "group": "none",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "dedicated",
+          "showReuseMessage": false,
+          "clear": true
+        },
+        "problemMatcher": ["$eslint-stylish", "$go", "$rustc"]
+      },
+      {
+        "label": "🏃 Runner Terminal",
+        "type": "shell",
+        "command": "/home/vscode/.github-actions-runner/terminal.sh",
+        "group": "none",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": true,
+          "panel": "dedicated",
+          "showReuseMessage": false,
+          "clear": true
+        },
+        "problemMatcher": [],
+        "icon": {
+          "id": "github-action",
+          "color": "terminal.ansiGreen"
+        }
+      },
+      {
+        "label": "📊 Show Project Status",
+        "type": "shell",
+        "command": "mise",
+        "args": ["run", "status"],
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "dedicated",
+          "clear": true
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "setup:dev:environment",
+        "type": "shell",
+        "command": "mise",
+        "args": ["run", "docker:compose:up"],
+        "problemMatcher": [],
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        }
+      },
+      {
+        "label": "docker:compose:up:deps",
+        "type": "shell",
+        "command": "mise",
+        "args": ["run", "docker:compose:up:deps"],
+        "problemMatcher": [],
+        "isBackground": true
+      },
+      {
+        "label": "v-ui:dev",
+        "type": "shell",
+        "command": "mise",
+        "args": ["run", "dev:v-ui"],
+        "options": {
+          "cwd": "${workspaceFolder:📋 Workspace}"
+        },
+        "isBackground": true,
+        "problemMatcher": {
+          "pattern": {
+            "regexp": "^([^\\s].*)\\((\\d+|\\d+,\\d+|\\d+,\\d+,\\d+,\\d+)\\):\\s+(error|warning|info)\\s+(TS\\d+)\\s*:\\s*(.*)$",
+            "file": 1,
+            "location": 2,
+            "severity": 3,
+            "code": 4,
+            "message": 5
+          },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "^.*VITE.*dev server running at.*$",
+            "endsPattern": "^.*ready in.*ms.*$"
+          }
+        }
+      },
+      {
+        "label": "v-ui:stop",
+        "type": "shell",
+        "command": "pkill -f 'vite'",
+        "problemMatcher": []
+      }
+    ]
+  },
+
+  "extensions": {
+    "recommendations": [
+      "editorconfig.editorconfig",
+      "streetsidesoftware.code-spell-checker",
+      "wayou.vscode-todo-highlight",
+      "gruntfuggly.todo-tree",
+      "alefragnani.bookmarks",
+      "christian-kohler.path-intellisense",
+      "eamodio.gitlens",
+      "mhutchie.git-graph",
+      "donjayamanne.githistory",
+      "GitHub.vscode-pull-request-github",
+      "ms-vscode-remote.remote-containers",
+      "ms-azuretools.vscode-docker",
+      "golang.go",
+      "rust-lang.rust-analyzer",
+      "vadimcn.vscode-lldb",
+      "filllabs.dependi",
+      "tamasfe.even-better-toml",
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "ms-vscode.vscode-typescript-next",
+      "dsznajder.es7-react-js-snippets",
+      "yzhang.markdown-all-in-one",
+      "davidanson.vscode-markdownlint",
+      "bierner.markdown-mermaid",
+      "redhat.vscode-yaml",
+      "ms-vsliveshare.vsliveshare",
+      "humao.rest-client"
+    ],
+
+    "unwantedRecommendations": ["hookyqr.beautify", "eg2.tslint", "task.vscode-task"]
+  }
+}
