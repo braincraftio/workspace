@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__perplexity__perplexity_ask"
+    ],
+    "deny": []
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "memory",
+    "sequential-thinking",
+    "github",
+    "fetch",
+    "git",
+    "playwright",
+    "perplexity",
+    "deepwiki"
+  ]
+}
