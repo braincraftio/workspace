@@ -1,0 +1,696 @@
+# mise configuration for Project V workspace
+# https://mise.jdx.dev/
+
+# Common tool versions for all projects
+[tools]
+go = "1.24.4"
+node = "24"
+python = "3.13"
+uv = "latest"
+"pipx:mcp-server-fetch" = "latest"
+"pipx:mcp-server-git" = "latest"
+rust = "latest"
+# Package managers and other tools
+pnpm = "latest"
+poetry = "latest"
+ruff = "latest"
+direnv = "latest"
+# Validation tools
+shellcheck = "latest"
+yamllint = "latest"
+markdownlint-cli2 = "latest"
+pre-commit = "latest"
+# Formatting tools
+shfmt = "latest"
+# Go linting tool
+golangci-lint = "2.2.0"
+# GitHub Actions workflow linter
+actionlint = "latest"
+# AI CLI tools (npm packages)
+"npm:@anthropic-ai/claude-code" = "latest" # tested with 1.0.35
+"npm:@google/gemini-cli" = "latest"        # tested with 0.1.7
+"npm:@openai/codex" = "latest"             # tested with 0.1.2505172129
+# MCP server tools
+"npm:@modelcontextprotocol/server-memory" = "latest"
+"npm:@modelcontextprotocol/server-sequential-thinking" = "latest"
+"npm:@modelcontextprotocol/server-github" = "latest"
+"npm:@playwright/test" = "latest"
+"npm:@playwright/mcp" = "latest"
+"npm:server-perplexity-ask" = "latest"
+
+# Workspace-wide environment variables
+[env]
+# Load .env file if it exists (will not fail if missing)
+_.file = ".env"
+# Add custom scripts to PATH
+_.path = ["{{config_root}}/.github/bin"]
+WORKSPACE_ROOT = "{{config_root}}"
+GOPRIVATE = "github.com/projv-sandbox/*"
+DOCKER_BUILDKIT = "1"
+# Go configuration
+GO111MODULE = "on"
+CGO_ENABLED = "1"
+GOPROXY = "https://proxy.golang.org,direct"
+# Build configuration
+SQLITE_TAGS = "sqlite_foreign_keys"
+DEFAULT_PORT = "8080"
+# Docker configuration
+DOCKER_IMAGE = "v-core:latest"
+GITHUB_REPOSITORY_OWNER = "projv-sandbox"
+# Development environment
+EDITOR = "code"
+COLORTERM = "truecolor"
+
+# mise-specific settings
+[settings]
+always_keep_download = true
+legacy_version_file = true
+unix_default_inline_shell_args = "bash -c"
+task_output = "quiet"                      # Only show task output, not mise's prefixes
+
+# ========================================
+# Orchestration Tasks (Tier 1)
+# ========================================
+
+# Install all project dependencies
+[tasks.install]
+description = "Install all project dependencies"
+depends = [
+  "install:v-core",
+  "install:v-ui",
+  "install:v-core-sdk-ts",
+  "install:dalek-cli",
+  "install:containers",
+  "install:Home",
+  "install:style-system",
+]
+
+# Individual install tasks
+[tasks."install:v-core"]
+hide = true
+run = "mise -C v-core run install"
+[tasks."install:v-ui"]
+hide = true
+run = "mise -C v-ui run install"
+[tasks."install:v-core-sdk-ts"]
+hide = true
+run = "mise -C v-core-sdk-ts run install"
+[tasks."install:dalek-cli"]
+hide = true
+run = "mise -C dalek-cli run install"
+[tasks."install:containers"]
+hide = true
+run = "mise -C containers run install"
+[tasks."install:Home"]
+hide = true
+run = "mise -C Home run install"
+[tasks."install:style-system"]
+hide = true
+run = "mise -C style-system run install || echo 'No install task defined for style-system yet'"
+
+# Build all projects
+[tasks.build]
+description = "Build all projects"
+depends = [
+  "install",
+  "build:v-core",
+  "build:v-ui",
+  "build:v-core-sdk-ts",
+  "build:dalek-cli",
+  "build:style-system",
+  "build:devcontainer",
+]
+
+# Individual build tasks (in addition to existing ones)
+[tasks."build:v-core-sdk-ts"]
+hide = true
+run = "mise -C v-core-sdk-ts run build"
+[tasks."build:dalek-cli"]
+hide = true
+run = "mise -C dalek-cli run build"
+[tasks."build:style-system"]
+hide = true
+run = "mise -C style-system run build || echo 'No build task defined for style-system yet'"
+[tasks."build:devcontainer"]
+hide = true
+run = "mise -C containers run build"
+
+# Run all tests
+[tasks.test]
+description = "Run all tests"
+depends = [
+  "test:v-core",
+  "test:v-ui",
+  "test:v-core-sdk-ts",
+  "test:dalek-cli",
+  "test:style-system",
+]
+
+# Individual test tasks
+[tasks."test:v-core"]
+hide = true
+run = "mise -C v-core run test"
+[tasks."test:v-ui"]
+hide = true
+run = "mise -C v-ui run test"
+[tasks."test:v-core-sdk-ts"]
+hide = true
+run = "mise -C v-core-sdk-ts run test"
+[tasks."test:dalek-cli"]
+hide = true
+run = "mise -C dalek-cli run test"
+[tasks."test:style-system"]
+hide = true
+run = "mise -C style-system run test || echo 'No test task defined for style-system yet'"
+
+
+# Run all linters and format checks
+[tasks.lint]
+description = "Run all linters and format checks"
+depends = [
+  "lint:prettier",
+  "lint:black",
+  "lint:isort",
+  "lint:shellcheck",
+  "lint:yamllint",
+  "lint:markdownlint",
+  "lint:actionlint",
+  "lint:golangci",
+  "lint:eslint",
+  "lint:v-core",
+  "lint:v-ui",
+  "lint:v-core-sdk-ts",
+  "lint:dalek-cli",
+  "lint:style-system",
+]
+
+# Individual workspace lint tasks for parallel execution
+[tasks."lint:prettier"]
+hide = true
+run = "pre-commit run prettier --all-files"
+env = { SKIP = "no-commit-to-branch" }
+
+[tasks."lint:black"]
+hide = true
+run = "pre-commit run black --all-files || true"
+env = { SKIP = "no-commit-to-branch" }
+
+[tasks."lint:isort"]
+hide = true
+run = "pre-commit run isort --all-files || true"
+env = { SKIP = "no-commit-to-branch" }
+
+[tasks."lint:shellcheck"]
+hide = true
+run = "pre-commit run shellcheck --all-files"
+env = { SKIP = "no-commit-to-branch" }
+
+[tasks."lint:yamllint"]
+hide = true
+run = "pre-commit run yamllint --all-files"
+env = { SKIP = "no-commit-to-branch" }
+
+[tasks."lint:markdownlint"]
+hide = true
+run = "pre-commit run markdownlint-cli2 --all-files"
+env = { SKIP = "no-commit-to-branch" }
+
+[tasks."lint:actionlint"]
+hide = true
+run = "pre-commit run actionlint --all-files"
+env = { SKIP = "no-commit-to-branch" }
+
+[tasks."lint:golangci"]
+hide = true
+run = "pre-commit run golangci-lint --all-files || true"
+env = { SKIP = "no-commit-to-branch" }
+
+[tasks."lint:eslint"]
+hide = true
+run = "pre-commit run eslint --all-files || true"
+env = { SKIP = "no-commit-to-branch" }
+
+# Individual lint tasks
+[tasks."lint:v-core"]
+hide = true
+run = "mise -C v-core run lint"
+[tasks."lint:v-ui"]
+hide = true
+run = "mise -C v-ui run lint"
+[tasks."lint:v-core-sdk-ts"]
+hide = true
+run = "mise -C v-core-sdk-ts run lint"
+[tasks."lint:dalek-cli"]
+hide = true
+run = "mise -C dalek-cli run lint"
+[tasks."lint:style-system"]
+hide = true
+run = "mise -C style-system run lint || echo 'No lint task defined for style-system yet'"
+
+# Clean build artifacts
+[tasks.clean]
+description = "Clean build artifacts"
+depends = [
+  "clean:v-core",
+  "clean:v-ui",
+  "clean:v-core-sdk-ts",
+  "clean:dalek-cli",
+  "clean:style-system",
+]
+
+# Individual clean tasks
+[tasks."clean:v-core"]
+hide = true
+run = "mise -C v-core run clean"
+[tasks."clean:v-ui"]
+hide = true
+run = "mise -C v-ui run clean"
+[tasks."clean:v-core-sdk-ts"]
+hide = true
+run = "mise -C v-core-sdk-ts run clean"
+[tasks."clean:dalek-cli"]
+hide = true
+run = "mise -C dalek-cli run clean"
+[tasks."clean:style-system"]
+hide = true
+run = "mise -C style-system run clean || echo 'No clean task defined for style-system yet'"
+
+# ========================================
+# Workspace-Level Tasks
+# ========================================
+
+# Format all code
+[tasks.format]
+description = "Format all code"
+depends = ["format:prettier", "format:go", "format:rust", "format:python"]
+
+# Format with Prettier
+[tasks."format:prettier"]
+description = "Format with Prettier"
+sources = ["**/*.{js,ts,jsx,tsx,json,yaml,yml,md}"]
+outputs = { auto = true }
+run = "npx prettier --write ."
+
+# Format Go code
+[tasks."format:go"]
+description = "Format Go code"
+run = '''
+    # Format Go files in workspace
+    find . -name "*.go" -type f \
+        ! -path "*/vendor/*" ! -path "*/node_modules/*" \
+        -exec gofmt -w {} +
+    # Format in v-core if it exists
+    [[ -d "v-core" ]] && (cd v-core && go fmt ./...)
+'''
+
+# Format Rust code
+[tasks."format:rust"]
+description = "Format Rust code"
+run = '''
+    # Format in dalek-cli if it exists
+    [[ -d "dalek-cli" ]] && (cd dalek-cli && cargo fmt)
+'''
+
+# Format Python code
+[tasks."format:python"]
+description = "Format Python code"
+run = '''
+    poetry run black scripts/
+    poetry run isort scripts/
+'''
+
+# Run all pre-commit hooks
+[tasks."pre-commit"]
+description = "Run all pre-commit hooks"
+run = "pre-commit run --all-files"
+env = { SKIP = "no-commit-to-branch" }
+
+# ========================================
+# Git Operations
+# ========================================
+
+# Configure git for all repositories
+[tasks."git:setup"]
+description = "Configure git for all repositories"
+run = '''
+    git config --global --add safe.directory '*'
+    echo "✓ Git safe directory configured"
+'''
+
+# Clone all repositories
+[tasks."git:clone"]
+description = "Clone all repositories"
+depends = [
+  "git:clone:v-core",
+  "git:clone:v-ui",
+  "git:clone:v-core-sdk-ts",
+  "git:clone:dalek-cli",
+  "git:clone:containers",
+  "git:clone:Home",
+  "git:clone:style-system",
+]
+
+# Individual clone tasks
+[tasks."git:clone:v-core"]
+hide = true
+run = '''
+    if [[ ! -d "v-core" ]]; then
+        git clone https://github.com/projv-sandbox/v-core.git
+        echo "✓ Cloned v-core"
+    else
+        echo "✓ v-core already exists"
+    fi
+'''
+
+[tasks."git:clone:v-ui"]
+hide = true
+run = '''
+    if [[ ! -d "v-ui" ]]; then
+        git clone https://github.com/projv-sandbox/v-ui.git
+        echo "✓ Cloned v-ui"
+    else
+        echo "✓ v-ui already exists"
+    fi
+'''
+
+[tasks."git:clone:v-core-sdk-ts"]
+hide = true
+run = '''
+    if [[ ! -d "v-core-sdk-ts" ]]; then
+        git clone https://github.com/projv-sandbox/v-core-sdk-ts.git
+        echo "✓ Cloned v-core-sdk-ts"
+    else
+        echo "✓ v-core-sdk-ts already exists"
+    fi
+'''
+
+[tasks."git:clone:dalek-cli"]
+hide = true
+run = '''
+    if [[ ! -d "dalek-cli" ]]; then
+        git clone https://github.com/projv-sandbox/dalek-cli.git
+        echo "✓ Cloned dalek-cli"
+    else
+        echo "✓ dalek-cli already exists"
+    fi
+'''
+
+[tasks."git:clone:containers"]
+hide = true
+run = '''
+    if [[ ! -d "containers" ]]; then
+        git clone https://github.com/projv-sandbox/containers.git
+        echo "✓ Cloned containers"
+    else
+        echo "✓ containers already exists"
+    fi
+'''
+
+[tasks."git:clone:Home"]
+hide = true
+run = '''
+    if [[ ! -d "Home" ]]; then
+        git clone https://github.com/projv-sandbox/Home.git
+        echo "✓ Cloned Home"
+    else
+        echo "✓ Home already exists"
+    fi
+'''
+
+[tasks."git:clone:style-system"]
+hide = true
+run = '''
+    if [[ ! -d "style-system" ]]; then
+        git clone https://github.com/braincraftio/style-system.git
+        echo "✓ Cloned style-system"
+    else
+        echo "✓ style-system already exists"
+    fi
+'''
+
+# Pull latest changes for all repositories
+[tasks."git:pull"]
+description = "Pull latest changes for all repositories"
+depends = [
+  "git:pull:v-core",
+  "git:pull:v-ui",
+  "git:pull:v-core-sdk-ts",
+  "git:pull:dalek-cli",
+  "git:pull:containers",
+  "git:pull:Home",
+  "git:pull:style-system",
+]
+
+# Individual pull tasks
+[tasks."git:pull:v-core"]
+hide = true
+run = '''
+    if [[ -d "v-core" ]]; then
+        cd v-core && git pull
+        echo "✓ Updated v-core"
+    else
+        echo "⚠ v-core not found"
+    fi
+'''
+
+[tasks."git:pull:v-ui"]
+hide = true
+run = '''
+    if [[ -d "v-ui" ]]; then
+        cd v-ui && git pull
+        echo "✓ Updated v-ui"
+    else
+        echo "⚠ v-ui not found"
+    fi
+'''
+
+[tasks."git:pull:v-core-sdk-ts"]
+hide = true
+run = '''
+    if [[ -d "v-core-sdk-ts" ]]; then
+        cd v-core-sdk-ts && git pull
+        echo "✓ Updated v-core-sdk-ts"
+    else
+        echo "⚠ v-core-sdk-ts not found"
+    fi
+'''
+
+[tasks."git:pull:dalek-cli"]
+hide = true
+run = '''
+    if [[ -d "dalek-cli" ]]; then
+        cd dalek-cli && git pull
+        echo "✓ Updated dalek-cli"
+    else
+        echo "⚠ dalek-cli not found"
+    fi
+'''
+
+[tasks."git:pull:containers"]
+hide = true
+run = '''
+    if [[ -d "containers" ]]; then
+        cd containers && git pull
+        echo "✓ Updated containers"
+    else
+        echo "⚠ containers not found"
+    fi
+'''
+
+[tasks."git:pull:Home"]
+hide = true
+run = '''
+    if [[ -d "Home" ]]; then
+        cd Home && git pull
+        echo "✓ Updated Home"
+    else
+        echo "⚠ Home not found"
+    fi
+'''
+
+[tasks."git:pull:style-system"]
+hide = true
+run = '''
+    if [[ -d "style-system" ]]; then
+        cd style-system && git pull
+        echo "✓ Updated style-system"
+    else
+        echo "⚠ style-system not found"
+    fi
+'''
+
+# Show git status for all repositories
+[tasks."git:status"]
+description = "Show git status for all repositories"
+depends = [
+  "git:status:v-core",
+  "git:status:v-ui",
+  "git:status:v-core-sdk-ts",
+  "git:status:dalek-cli",
+  "git:status:containers",
+  "git:status:Home",
+  "git:status:style-system",
+]
+
+# Individual status tasks
+[tasks."git:status:v-core"]
+hide = true
+run = '''
+    if [[ -d "v-core" ]]; then
+        echo "📂 [v-core]"
+        cd v-core && git status -sb
+        echo
+    else
+        echo "⚠ v-core not found"
+    fi
+'''
+
+[tasks."git:status:v-ui"]
+hide = true
+run = '''
+    if [[ -d "v-ui" ]]; then
+        echo "📂 [v-ui]"
+        cd v-ui && git status -sb
+        echo
+    else
+        echo "⚠ v-ui not found"
+    fi
+'''
+
+[tasks."git:status:v-core-sdk-ts"]
+hide = true
+run = '''
+    if [[ -d "v-core-sdk-ts" ]]; then
+        echo "📂 [v-core-sdk-ts]"
+        cd v-core-sdk-ts && git status -sb
+        echo
+    else
+        echo "⚠ v-core-sdk-ts not found"
+    fi
+'''
+
+[tasks."git:status:dalek-cli"]
+hide = true
+run = '''
+    if [[ -d "dalek-cli" ]]; then
+        echo "📂 [dalek-cli]"
+        cd dalek-cli && git status -sb
+        echo
+    else
+        echo "⚠ dalek-cli not found"
+    fi
+'''
+
+[tasks."git:status:containers"]
+hide = true
+run = '''
+    if [[ -d "containers" ]]; then
+        echo "📂 [containers]"
+        cd containers && git status -sb
+        echo
+    else
+        echo "⚠ containers not found"
+    fi
+'''
+
+[tasks."git:status:Home"]
+hide = true
+run = '''
+    if [[ -d "Home" ]]; then
+        echo "📂 [Home]"
+        cd Home && git status -sb
+        echo
+    else
+        echo "⚠ Home not found"
+    fi
+'''
+
+[tasks."git:status:style-system"]
+hide = true
+run = '''
+    if [[ -d "style-system" ]]; then
+        echo "📂 [style-system]"
+        cd style-system && git status -sb
+        echo
+    else
+        echo "⚠ style-system not found"
+    fi
+'''
+
+# ========================================
+# Setup and Initialization Tasks
+# ========================================
+
+# NPM authentication setup (informational)
+[tasks."setup:npm-auth"]
+description = "Configure npm authentication for private packages"
+run = '''
+    echo "=> NPM Private Registry Setup"
+    echo ""
+    echo "This project requires access to @cisco-magnetic packages."
+    echo ""
+    echo "To configure authentication:"
+    echo "  1. Obtain an npm token for private packages"
+    echo "  2. Create ~/.npmrc with the following content:"
+    echo ""
+    echo "     @cisco-magnetic:registry=https://your-registry.com/"
+    echo "     //your-registry.com/:_authToken=YOUR_TOKEN"
+    echo ""
+    echo "  3. Replace 'your-registry.com' with the actual registry URL"
+    echo "  4. Replace 'YOUR_TOKEN' with your authentication token"
+    echo ""
+    echo "Once configured, run 'mise run install' to install dependencies."
+'''
+
+# Complete development environment setup
+[tasks.setup]
+description = "Complete development environment setup"
+depends = ["git:setup", "git:clone", "symlink"]
+
+# ========================================
+# Project-Specific Tasks
+# ========================================
+
+# Build v-core only
+[tasks."build:v-core"]
+hide = true
+run = "mise -C v-core run build"
+
+# Build frontend with SDK dependency
+[tasks."build:frontend"]
+description = "Build frontend with SDK dependency"
+depends = ["build:v-core-sdk-ts", "build:v-ui"]
+
+# Demo Tasks
+[tasks."demo:style-system"]
+description = "Serve the Aurora Design System demo on port 8080"
+run = '''
+    cd style-system
+
+    # Kill any existing Python http.server process on port 8080
+    ps aux | grep -E "python.*http.server.*8080" | grep -v grep | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
+
+    echo "🎨 Starting Aurora Design System demo server..."
+    echo "📍 Open http://localhost:8080/demo.html in your browser"
+    echo "📝 Press Ctrl+C to stop the server"
+    python3 -m http.server 8080
+'''
+
+# ========================================
+# Docker Tasks
+# ========================================
+
+# Build devcontainer
+[tasks."docker:devcontainer:build"]
+description = "Build the BrainCraft.io devcontainer image"
+run = "mise -C containers run docker:build"
+
+# Run devcontainer
+[tasks."docker:devcontainer:run"]
+description = "Run the BrainCraft.io devcontainer"
+run = "mise -C containers run docker:run"
+
+# Test devcontainer
+[tasks."docker:devcontainer:test"]
+description = "Test the BrainCraft.io devcontainer"
+run = "mise -C containers run docker:test"

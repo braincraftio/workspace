@@ -1,0 +1,55 @@
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.backup
+.mcp.json.bak
+
+# NPM global directory (workspace-specific)
+.npm-global/
+
+# Temporary directory
+tmp/
+
+# AI tool local configurations (ignore all by default)
+.claude/
+.gemini/
+
+# But explicitly allow safe configuration files
+!.claude/settings.json
+!.gemini/settings.json
+
+# Child repositories - PREVENT SUBMODULE CREATION
+/actions/
+/containers/
+/devcontainer/
+/dot-github/
+/style-system/
+
+# Cache and build directories
+.cache/
+.turbo/
+__pycache__/
+*.pyc
+node_modules/
+dist/
+build/
+
+# Logs
+*.log
+logs/
+
+# IDE local settings that might contain personal preferences
+.vscode/settings.local.json
+.idea/
+
+# Mise local overrides
+.mise.local.toml
+.tool-versions.local
