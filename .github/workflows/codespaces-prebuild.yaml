@@ -1,0 +1,99 @@
+# GitHub Codespaces Prebuild Configuration
+# ========================================
+#
+# This workflow creates prebuilt development containers for GitHub Codespaces,
+# significantly reducing the time it takes for developers to start coding.
+#
+# ABOUT PREBUILDS:
+# - Prebuilds are pre-configured development containers that are built in advance
+# - They include your source code, extensions, dependencies, and any setup commands
+# - When a developer creates a codespace from a prebuild, startup time is reduced
+#   from minutes to seconds
+#
+# COSTS AND BILLING (as of June 2025):
+# - Compute: $0.18 USD per hour per core
+# - Storage: $0.07 USD per GB per month
+# - Prebuild storage formula: price * size (GB) * regions * versions
+# - Example: 10GB prebuild * 1 region * 2 versions = 20GB * $0.07 = $1.40/month
+#
+# FREE TIER:
+# - GitHub Free: 120 core hours and 15 GB storage per month
+# - GitHub Pro: 180 core hours and 20 GB storage per month
+# - Usage includes both codespaces and prebuilds
+#
+# AVAILABLE REGIONS:
+# GitHub Codespaces uses Azure infrastructure. Common regions include:
+# - WestUs2: West US 2 (Oregon)
+# - EastUs: East US (Virginia)  
+# - WestEurope: West Europe (Netherlands) - Note: May route to UK South
+# - SoutheastAsia: Southeast Asia (Singapore) - Note: May route to Central India
+# - AustraliaEast: Australia East (New South Wales)
+#
+# To find your codespace's actual region:
+# gh api /user/codespaces/$CODESPACE_NAME --jq .location
+#
+# PREBUILD RETENTION:
+# - Default: 2 versions retained
+# - Range: 1-5 versions
+# - Older versions are automatically deleted
+#
+# OPTIMIZATION TIPS:
+# 1. Start with a single region during experimentation
+# 2. Only enable regions where developers are located
+# 3. Monitor prebuild size and adjust retention
+# 4. Use schedule to rebuild only when needed
+# 5. Consider using a smaller base image if prebuild exceeds 10GB
+
+name: Codespaces Prebuilds
+
+on:
+  # Trigger on pushes to main branch
+  push:
+    branches: [main]
+  
+  # Weekly rebuilds ensure security updates are included
+  # Runs at 2 AM UTC on Mondays (adjust for your team's timezone)
+  schedule:
+    - cron: "0 2 * * 1"
+  
+  # Manual trigger for testing or forced rebuilds
+  workflow_dispatch:
+
+permissions:
+  contents: read    # Read repository content
+  packages: read    # Read container images from ghcr.io
+
+jobs:
+  prebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create Codespaces prebuild
+        uses: github/codespaces-prebuild-action@v1
+        with:
+          # REGIONS CONFIGURATION:
+          # - Single region for initial testing to minimize costs
+          # - WestUs2 chosen as primary US West Coast presence
+          # - Add more regions as needed: "WestUs2,EastUs,WestEurope,SoutheastAsia"
+          regions: "WestUs2"
+          
+          # SKU CONFIGURATION:
+          # Machine types available for prebuilds:
+          # - basicLinux32gb: 2 cores, 8 GB RAM, 32 GB storage
+          # - standardLinux32gb: 4 cores, 16 GB RAM, 32 GB storage (recommended)
+          # - premiumLinux64gb: 8 cores, 32 GB RAM, 64 GB storage
+          # - largePremiumLinux64gb: 16 cores, 64 GB RAM, 64 GB storage
+          #
+          # Note: Larger SKUs create prebuilds faster but cost more
+          # The SKU only affects prebuild creation, not the codespace runtime
+          sku_name: "standardLinux32gb"
+
+# ENTERPRISE CONSIDERATIONS:
+# 1. Use GITHUB_TOKEN with packages:read for private container registries
+# 2. Consider using self-hosted runners for prebuild creation in regulated environments
+#
+# NEXT STEPS FOR PRODUCTION:
+# 1. Implement prebuild triggers for devcontainer changes only
+# 2. Create prebuild for release branches if needed

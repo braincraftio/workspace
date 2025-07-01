@@ -1,23 +1,28 @@
 {
   "name": "BrainCraft.io DevContainer",
+  //"image": "ghcr.io/braincraftio/containers:devcontainer-latest",
   "dockerFile": "../containers/devcontainer/Dockerfile",
-  "context": "..",
   "workspaceFolder": "/workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
 
-  // Features to add to the dev container
-  "features": {},
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally
   "forwardPorts": [],
 
-  // Use 'postCreateCommand' to run commands after the container is created
-  "postCreateCommand": "mise trust --yes && mise install || echo 'Some tools failed to install, probably due to rate limiting. Run mise install with GITHUB_TOKEN.'",
+  "onCreateCommand": "mise run codespaces:on-create || echo '⚠️  Initial setup incomplete - tool installation hit GitHub rate limits. To fix: export GITHUB_TOKEN=your_token && mise install'",
+  "postCreateCommand": "mise trust --yes && mise install || echo '⚠️  Some tools failed to install due to rate limits. Your environment is functional but incomplete. Fix: export GITHUB_TOKEN=your_token && mise install'",
+  "postStartCommand": "mise run codespaces:post-start || echo '⚠️  Post-start verification failed. MCP servers (for Claude web/git features) may be unavailable. To retry: mise run codespaces:post-start'",
 
   // Configure tool-specific properties
   "customizations": {
     "vscode": {
       "extensions": [
+        // Task automation
+        "hverlin.mise-vscode",
+        
         // AI Assistants
         "github.copilot",
         "github.copilot-chat",
@@ -66,6 +71,14 @@
         "go.useLanguageServer": true,
         "python.defaultInterpreterPath": "/home/ubuntu/.local/share/mise/shims/python",
         "rust-analyzer.check.command": "clippy"
+      }
+    },
+    "codespaces": {
+      "openFiles": ["README.md", "CONTRIBUTING.md"],
+      "repositories": {
+        "braincraftio/*": {
+          "permissions": "write"
+        }
       }
     }
   },

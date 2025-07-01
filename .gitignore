@@ -1,3 +1,10 @@
+# Child repositories - PREVENT SUBMODULE CREATION
+#/actions/
+#/containers/
+#/devcontainer/
+#/dot-github/
+#/style-system/
+
 # OS Files
 .DS_Store
 Thumbs.db
@@ -25,13 +32,6 @@ tmp/
 # But explicitly allow safe configuration files
 !.claude/settings.json
 !.gemini/settings.json
-
-# Child repositories - PREVENT SUBMODULE CREATION
-/actions/
-/containers/
-/devcontainer/
-/dot-github/
-/style-system/
 
 # Cache and build directories
 .cache/

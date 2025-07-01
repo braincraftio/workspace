@@ -19,7 +19,21 @@ found_repos=0
 # Track if any errors occurred
 had_errors=0
 
-# Find all directories containing .git (indicating they are git repos)
+# First, run in the current directory (workspace root)
+if [[ -d ".git" ]]; then
+    found_repos=1
+    echo "📂 [workspace]"
+    
+    if git "${git_cmd[@]}"; then
+        echo  # Add blank line for readability
+    else
+        echo "❌ Error executing 'git ${git_cmd[*]}' in workspace"
+        had_errors=1
+        echo  # Add blank line for readability
+    fi
+fi
+
+# Find all child directories containing .git (indicating they are git repos)
 for repo_dir in */; do
     # Remove trailing slash
     repo_dir="${repo_dir%/}"

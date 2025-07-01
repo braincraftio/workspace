@@ -1,4 +1,4 @@
-# mise configuration for Project V workspace
+# mise configuration for BrainCraft.io workspace
 # https://mise.jdx.dev/
 
 # Common tool versions for all projects
@@ -23,20 +23,16 @@ pre-commit = "latest"
 # Formatting tools
 shfmt = "latest"
 # Go linting tool
-golangci-lint = "2.2.0"
+golangci-lint = "2.2.1"
 # GitHub Actions workflow linter
 actionlint = "latest"
 # AI CLI tools (npm packages)
-"npm:@anthropic-ai/claude-code" = "latest" # tested with 1.0.35
+"npm:@anthropic-ai/claude-code" = "latest" # tested with 1.0.38
 "npm:@google/gemini-cli" = "latest"        # tested with 0.1.7
-"npm:@openai/codex" = "latest"             # tested with 0.1.2505172129
-# MCP server tools
-"npm:@modelcontextprotocol/server-memory" = "latest"
-"npm:@modelcontextprotocol/server-sequential-thinking" = "latest"
-"npm:@modelcontextprotocol/server-github" = "latest"
+"npm:@openai/codex" = "latest"             # OpenAI's experimental CLI for coding
+# Playwright for testing
 "npm:@playwright/test" = "latest"
-"npm:@playwright/mcp" = "latest"
-"npm:server-perplexity-ask" = "latest"
+# Note: MCP servers are invoked via npx in .mcp.json and don't need global installation
 
 # Workspace-wide environment variables
 [env]
@@ -45,7 +41,7 @@ _.file = ".env"
 # Add custom scripts to PATH
 _.path = ["{{config_root}}/.github/bin"]
 WORKSPACE_ROOT = "{{config_root}}"
-GOPRIVATE = "github.com/projv-sandbox/*"
+GOPRIVATE = "github.com/braincraftio/*"
 DOCKER_BUILDKIT = "1"
 # Go configuration
 GO111MODULE = "on"
@@ -54,12 +50,16 @@ GOPROXY = "https://proxy.golang.org,direct"
 # Build configuration
 SQLITE_TAGS = "sqlite_foreign_keys"
 DEFAULT_PORT = "8080"
+# GitHub Package Registry
+NPM_CONFIG_REGISTRY = "https://registry.npmjs.org/"
 # Docker configuration
-DOCKER_IMAGE = "v-core:latest"
-GITHUB_REPOSITORY_OWNER = "projv-sandbox"
+DOCKER_IMAGE = "braincraftio:latest"
+GITHUB_REPOSITORY_OWNER = "braincraftio"
 # Development environment
 EDITOR = "code"
 COLORTERM = "truecolor"
+# AI Assistant configuration
+CLAUDE_WORKSPACE = "true"
 
 # mise-specific settings
 [settings]
@@ -76,34 +76,22 @@ task_output = "quiet"                      # Only show task output, not mise's p
 [tasks.install]
 description = "Install all project dependencies"
 depends = [
-  "install:v-core",
-  "install:v-ui",
-  "install:v-core-sdk-ts",
-  "install:dalek-cli",
+  "install:actions",
   "install:containers",
-  "install:Home",
+  "install:dot-github",
   "install:style-system",
 ]
 
 # Individual install tasks
-[tasks."install:v-core"]
+[tasks."install:actions"]
 hide = true
-run = "mise -C v-core run install"
-[tasks."install:v-ui"]
-hide = true
-run = "mise -C v-ui run install"
-[tasks."install:v-core-sdk-ts"]
-hide = true
-run = "mise -C v-core-sdk-ts run install"
-[tasks."install:dalek-cli"]
-hide = true
-run = "mise -C dalek-cli run install"
+run = "mise -C actions run install || echo 'No install task defined for actions yet'"
 [tasks."install:containers"]
 hide = true
-run = "mise -C containers run install"
-[tasks."install:Home"]
+run = "mise -C containers run install || echo 'No install task defined for containers yet'"
+[tasks."install:dot-github"]
 hide = true
-run = "mise -C Home run install"
+run = "mise -C dot-github run install || echo 'No install task defined for dot-github yet'"
 [tasks."install:style-system"]
 hide = true
 run = "mise -C style-system run install || echo 'No install task defined for style-system yet'"
@@ -113,21 +101,23 @@ run = "mise -C style-system run install || echo 'No install task defined for sty
 description = "Build all projects"
 depends = [
   "install",
-  "build:v-core",
-  "build:v-ui",
-  "build:v-core-sdk-ts",
-  "build:dalek-cli",
+  "build:actions",
+  "build:containers",
+  "build:dot-github",
   "build:style-system",
   "build:devcontainer",
 ]
 
-# Individual build tasks (in addition to existing ones)
-[tasks."build:v-core-sdk-ts"]
+# Individual build tasks
+[tasks."build:actions"]
 hide = true
-run = "mise -C v-core-sdk-ts run build"
-[tasks."build:dalek-cli"]
+run = "mise -C actions run build || echo 'No build task defined for actions yet'"
+[tasks."build:containers"]
 hide = true
-run = "mise -C dalek-cli run build"
+run = "mise -C containers run build || echo 'No build task defined for containers yet'"
+[tasks."build:dot-github"]
+hide = true
+run = "mise -C dot-github run build || echo 'No build task defined for dot-github yet'"
 [tasks."build:style-system"]
 hide = true
 run = "mise -C style-system run build || echo 'No build task defined for style-system yet'"
@@ -139,26 +129,22 @@ run = "mise -C containers run build"
 [tasks.test]
 description = "Run all tests"
 depends = [
-  "test:v-core",
-  "test:v-ui",
-  "test:v-core-sdk-ts",
-  "test:dalek-cli",
+  "test:actions",
+  "test:containers",
+  "test:dot-github",
   "test:style-system",
 ]
 
 # Individual test tasks
-[tasks."test:v-core"]
+[tasks."test:actions"]
 hide = true
-run = "mise -C v-core run test"
-[tasks."test:v-ui"]
+run = "mise -C actions run test || echo 'No test task defined for actions yet'"
+[tasks."test:containers"]
 hide = true
-run = "mise -C v-ui run test"
-[tasks."test:v-core-sdk-ts"]
+run = "mise -C containers run test || echo 'No test task defined for containers yet'"
+[tasks."test:dot-github"]
 hide = true
-run = "mise -C v-core-sdk-ts run test"
-[tasks."test:dalek-cli"]
-hide = true
-run = "mise -C dalek-cli run test"
+run = "mise -C dot-github run test || echo 'No test task defined for dot-github yet'"
 [tasks."test:style-system"]
 hide = true
 run = "mise -C style-system run test || echo 'No test task defined for style-system yet'"
@@ -177,11 +163,11 @@ depends = [
   "lint:actionlint",
   "lint:golangci",
   "lint:eslint",
-  "lint:v-core",
-  "lint:v-ui",
-  "lint:v-core-sdk-ts",
-  "lint:dalek-cli",
+  "lint:actions",
+  "lint:containers",
+  "lint:dot-github",
   "lint:style-system",
+  "lint:workflows",
 ]
 
 # Individual workspace lint tasks for parallel execution
@@ -230,47 +216,58 @@ hide = true
 run = "pre-commit run eslint --all-files || true"
 env = { SKIP = "no-commit-to-branch" }
 
-# Individual lint tasks
-[tasks."lint:v-core"]
+# Individual lint tasks for child repositories
+[tasks."lint:actions"]
 hide = true
-run = "mise -C v-core run lint"
-[tasks."lint:v-ui"]
+run = "mise -C actions run lint || echo 'No lint task defined for actions yet'"
+[tasks."lint:containers"]
 hide = true
-run = "mise -C v-ui run lint"
-[tasks."lint:v-core-sdk-ts"]
+run = "mise -C containers run lint || echo 'No lint task defined for containers yet'"
+[tasks."lint:dot-github"]
 hide = true
-run = "mise -C v-core-sdk-ts run lint"
-[tasks."lint:dalek-cli"]
-hide = true
-run = "mise -C dalek-cli run lint"
+run = "mise -C dot-github run lint || echo 'No lint task defined for dot-github yet'"
 [tasks."lint:style-system"]
 hide = true
 run = "mise -C style-system run lint || echo 'No lint task defined for style-system yet'"
+
+# Lint all GitHub Actions workflows with centralized config
+[tasks."lint:workflows"]
+description = "Lint all GitHub Actions workflows"
+run = '''
+    echo "🔍 Linting GitHub Actions workflows..."
+
+    # Find all workflow files across the workspace
+    workflow_files=$(find . -path "*/node_modules" -prune -o -path "*/.github/workflows/*.yml" -type f -print -o -path "*/.github/workflows/*.yaml" -type f -print | grep -v node_modules)
+
+    if [ -n "$workflow_files" ]; then
+        # Use centralized actionlint config
+        actionlint -config-file .github/actionlint.yaml $workflow_files
+        echo "✅ Workflow linting complete"
+    else
+        echo "⚠️  No workflow files found"
+    fi
+'''
 
 # Clean build artifacts
 [tasks.clean]
 description = "Clean build artifacts"
 depends = [
-  "clean:v-core",
-  "clean:v-ui",
-  "clean:v-core-sdk-ts",
-  "clean:dalek-cli",
+  "clean:actions",
+  "clean:containers",
+  "clean:dot-github",
   "clean:style-system",
 ]
 
 # Individual clean tasks
-[tasks."clean:v-core"]
+[tasks."clean:actions"]
 hide = true
-run = "mise -C v-core run clean"
-[tasks."clean:v-ui"]
+run = "mise -C actions run clean || echo 'No clean task defined for actions yet'"
+[tasks."clean:containers"]
 hide = true
-run = "mise -C v-ui run clean"
-[tasks."clean:v-core-sdk-ts"]
+run = "mise -C containers run clean || echo 'No clean task defined for containers yet'"
+[tasks."clean:dot-github"]
 hide = true
-run = "mise -C v-core-sdk-ts run clean"
-[tasks."clean:dalek-cli"]
-hide = true
-run = "mise -C dalek-cli run clean"
+run = "mise -C dot-github run clean || echo 'No clean task defined for dot-github yet'"
 [tasks."clean:style-system"]
 hide = true
 run = "mise -C style-system run clean || echo 'No clean task defined for style-system yet'"
@@ -299,16 +296,16 @@ run = '''
     find . -name "*.go" -type f \
         ! -path "*/vendor/*" ! -path "*/node_modules/*" \
         -exec gofmt -w {} +
-    # Format in v-core if it exists
-    [[ -d "v-core" ]] && (cd v-core && go fmt ./...)
 '''
 
 # Format Rust code
 [tasks."format:rust"]
 description = "Format Rust code"
 run = '''
-    # Format in dalek-cli if it exists
-    [[ -d "dalek-cli" ]] && (cd dalek-cli && cargo fmt)
+    # Format Rust files in workspace
+    find . -name "*.rs" -type f \
+        ! -path "*/target/*" ! -path "*/node_modules/*" \
+        -exec rustfmt {} +
 '''
 
 # Format Python code
@@ -342,57 +339,21 @@ run = '''
 [tasks."git:clone"]
 description = "Clone all repositories"
 depends = [
-  "git:clone:v-core",
-  "git:clone:v-ui",
-  "git:clone:v-core-sdk-ts",
-  "git:clone:dalek-cli",
+  "git:clone:actions",
   "git:clone:containers",
-  "git:clone:Home",
+  "git:clone:dot-github",
   "git:clone:style-system",
 ]
 
 # Individual clone tasks
-[tasks."git:clone:v-core"]
+[tasks."git:clone:actions"]
 hide = true
 run = '''
-    if [[ ! -d "v-core" ]]; then
-        git clone https://github.com/projv-sandbox/v-core.git
-        echo "✓ Cloned v-core"
+    if [[ ! -d "actions" ]]; then
+        git clone https://github.com/braincraftio/actions.git
+        echo "✓ Cloned actions"
     else
-        echo "✓ v-core already exists"
-    fi
-'''
-
-[tasks."git:clone:v-ui"]
-hide = true
-run = '''
-    if [[ ! -d "v-ui" ]]; then
-        git clone https://github.com/projv-sandbox/v-ui.git
-        echo "✓ Cloned v-ui"
-    else
-        echo "✓ v-ui already exists"
-    fi
-'''
-
-[tasks."git:clone:v-core-sdk-ts"]
-hide = true
-run = '''
-    if [[ ! -d "v-core-sdk-ts" ]]; then
-        git clone https://github.com/projv-sandbox/v-core-sdk-ts.git
-        echo "✓ Cloned v-core-sdk-ts"
-    else
-        echo "✓ v-core-sdk-ts already exists"
-    fi
-'''
-
-[tasks."git:clone:dalek-cli"]
-hide = true
-run = '''
-    if [[ ! -d "dalek-cli" ]]; then
-        git clone https://github.com/projv-sandbox/dalek-cli.git
-        echo "✓ Cloned dalek-cli"
-    else
-        echo "✓ dalek-cli already exists"
+        echo "✓ actions already exists"
     fi
 '''
 
@@ -400,21 +361,21 @@ run = '''
 hide = true
 run = '''
     if [[ ! -d "containers" ]]; then
-        git clone https://github.com/projv-sandbox/containers.git
+        git clone https://github.com/braincraftio/containers.git
         echo "✓ Cloned containers"
     else
         echo "✓ containers already exists"
     fi
 '''
 
-[tasks."git:clone:Home"]
+[tasks."git:clone:dot-github"]
 hide = true
 run = '''
-    if [[ ! -d "Home" ]]; then
-        git clone https://github.com/projv-sandbox/Home.git
-        echo "✓ Cloned Home"
+    if [[ ! -d "dot-github" ]]; then
+        git clone https://github.com/braincraftio/.github.git dot-github
+        echo "✓ Cloned dot-github"
     else
-        echo "✓ Home already exists"
+        echo "✓ dot-github already exists"
     fi
 '''
 
@@ -433,57 +394,21 @@ run = '''
 [tasks."git:pull"]
 description = "Pull latest changes for all repositories"
 depends = [
-  "git:pull:v-core",
-  "git:pull:v-ui",
-  "git:pull:v-core-sdk-ts",
-  "git:pull:dalek-cli",
+  "git:pull:actions",
   "git:pull:containers",
-  "git:pull:Home",
+  "git:pull:dot-github",
   "git:pull:style-system",
 ]
 
 # Individual pull tasks
-[tasks."git:pull:v-core"]
+[tasks."git:pull:actions"]
 hide = true
 run = '''
-    if [[ -d "v-core" ]]; then
-        cd v-core && git pull
-        echo "✓ Updated v-core"
+    if [[ -d "actions" ]]; then
+        cd actions && git pull
+        echo "✓ Updated actions"
     else
-        echo "⚠ v-core not found"
-    fi
-'''
-
-[tasks."git:pull:v-ui"]
-hide = true
-run = '''
-    if [[ -d "v-ui" ]]; then
-        cd v-ui && git pull
-        echo "✓ Updated v-ui"
-    else
-        echo "⚠ v-ui not found"
-    fi
-'''
-
-[tasks."git:pull:v-core-sdk-ts"]
-hide = true
-run = '''
-    if [[ -d "v-core-sdk-ts" ]]; then
-        cd v-core-sdk-ts && git pull
-        echo "✓ Updated v-core-sdk-ts"
-    else
-        echo "⚠ v-core-sdk-ts not found"
-    fi
-'''
-
-[tasks."git:pull:dalek-cli"]
-hide = true
-run = '''
-    if [[ -d "dalek-cli" ]]; then
-        cd dalek-cli && git pull
-        echo "✓ Updated dalek-cli"
-    else
-        echo "⚠ dalek-cli not found"
+        echo "⚠ actions not found"
     fi
 '''
 
@@ -498,14 +423,14 @@ run = '''
     fi
 '''
 
-[tasks."git:pull:Home"]
+[tasks."git:pull:dot-github"]
 hide = true
 run = '''
-    if [[ -d "Home" ]]; then
-        cd Home && git pull
-        echo "✓ Updated Home"
+    if [[ -d "dot-github" ]]; then
+        cd dot-github && git pull
+        echo "✓ Updated dot-github"
     else
-        echo "⚠ Home not found"
+        echo "⚠ dot-github not found"
     fi
 '''
 
@@ -524,61 +449,22 @@ run = '''
 [tasks."git:status"]
 description = "Show git status for all repositories"
 depends = [
-  "git:status:v-core",
-  "git:status:v-ui",
-  "git:status:v-core-sdk-ts",
-  "git:status:dalek-cli",
+  "git:status:actions",
   "git:status:containers",
-  "git:status:Home",
+  "git:status:dot-github",
   "git:status:style-system",
 ]
 
 # Individual status tasks
-[tasks."git:status:v-core"]
+[tasks."git:status:actions"]
 hide = true
 run = '''
-    if [[ -d "v-core" ]]; then
-        echo "📂 [v-core]"
-        cd v-core && git status -sb
+    if [[ -d "actions" ]]; then
+        echo "📂 [actions]"
+        cd actions && git status -sb
         echo
     else
-        echo "⚠ v-core not found"
-    fi
-'''
-
-[tasks."git:status:v-ui"]
-hide = true
-run = '''
-    if [[ -d "v-ui" ]]; then
-        echo "📂 [v-ui]"
-        cd v-ui && git status -sb
-        echo
-    else
-        echo "⚠ v-ui not found"
-    fi
-'''
-
-[tasks."git:status:v-core-sdk-ts"]
-hide = true
-run = '''
-    if [[ -d "v-core-sdk-ts" ]]; then
-        echo "📂 [v-core-sdk-ts]"
-        cd v-core-sdk-ts && git status -sb
-        echo
-    else
-        echo "⚠ v-core-sdk-ts not found"
-    fi
-'''
-
-[tasks."git:status:dalek-cli"]
-hide = true
-run = '''
-    if [[ -d "dalek-cli" ]]; then
-        echo "📂 [dalek-cli]"
-        cd dalek-cli && git status -sb
-        echo
-    else
-        echo "⚠ dalek-cli not found"
+        echo "⚠ actions not found"
     fi
 '''
 
@@ -594,15 +480,15 @@ run = '''
     fi
 '''
 
-[tasks."git:status:Home"]
+[tasks."git:status:dot-github"]
 hide = true
 run = '''
-    if [[ -d "Home" ]]; then
-        echo "📂 [Home]"
-        cd Home && git status -sb
+    if [[ -d "dot-github" ]]; then
+        echo "📂 [dot-github]"
+        cd dot-github && git status -sb
         echo
     else
-        echo "⚠ Home not found"
+        echo "⚠ dot-github not found"
     fi
 '''
 
@@ -628,14 +514,14 @@ description = "Configure npm authentication for private packages"
 run = '''
     echo "=> NPM Private Registry Setup"
     echo ""
-    echo "This project requires access to @cisco-magnetic packages."
+    echo "This project may require access to private packages."
     echo ""
     echo "To configure authentication:"
     echo "  1. Obtain an npm token for private packages"
     echo "  2. Create ~/.npmrc with the following content:"
     echo ""
-    echo "     @cisco-magnetic:registry=https://your-registry.com/"
-    echo "     //your-registry.com/:_authToken=YOUR_TOKEN"
+    echo "     @braincraftio:registry=https://npm.pkg.github.com/"
+    echo "     //npm.pkg.github.com/:_authToken=YOUR_TOKEN"
     echo ""
     echo "  3. Replace 'your-registry.com' with the actual registry URL"
     echo "  4. Replace 'YOUR_TOKEN' with your authentication token"
@@ -652,15 +538,10 @@ depends = ["git:setup", "git:clone", "symlink"]
 # Project-Specific Tasks
 # ========================================
 
-# Build v-core only
-[tasks."build:v-core"]
-hide = true
-run = "mise -C v-core run build"
-
-# Build frontend with SDK dependency
-[tasks."build:frontend"]
-description = "Build frontend with SDK dependency"
-depends = ["build:v-core-sdk-ts", "build:v-ui"]
+# Build specific projects
+[tasks."build:workspace"]
+description = "Build the workspace documentation"
+run = "echo 'Building workspace documentation...'"
 
 # Demo Tasks
 [tasks."demo:style-system"]
@@ -695,3 +576,121 @@ run = "mise -C containers run docker:run"
 [tasks."docker:devcontainer:test"]
 description = "Test the BrainCraft.io devcontainer"
 run = "mise -C containers run docker:test"
+
+# ========================================
+# Codespaces Tasks
+# ========================================
+
+# Task run by onCreateCommand
+[tasks."codespaces:on-create"]
+description = "Setup workspace when Codespaces container is created"
+depends = [
+  "git:setup",
+  "codespaces:clone-if-needed",
+  "codespaces:configure-git-user",
+  "codespaces:warm-tools",
+  "mcp:install"
+]
+
+# Clone repositories if not present (for Codespaces)
+[tasks."codespaces:clone-if-needed"]
+hide = true
+run = '''
+    echo "🚀 Setting up BrainCraft.io workspace..."
+
+    # Clone only the repositories needed for Codespaces
+    repos=(
+      "actions"
+      "containers"
+      ".github:dot-github"
+      "style-system"
+    )
+
+    for repo_spec in "${repos[@]}"; do
+      IFS=':' read -r repo_name clone_dir <<< "$repo_spec"
+      clone_dir="${clone_dir:-$repo_name}"
+
+      if [[ ! -d "$clone_dir" ]]; then
+        echo "📦 Cloning $repo_name..."
+        git clone "https://github.com/braincraftio/$repo_name.git" "$clone_dir"
+      fi
+    done
+'''
+
+# Configure git user from Codespaces environment
+[tasks."codespaces:configure-git-user"]
+hide = true
+run = '''
+    if [[ -n "${GITHUB_USER:-}" ]]; then
+      git config --global user.name "$GITHUB_USER"
+      git config --global user.email "$GITHUB_USER@users.noreply.github.com"
+      echo "✓ Configured git user as $GITHUB_USER"
+    fi
+'''
+
+# Pre-warm mise tool downloads
+[tasks."codespaces:warm-tools"]
+hide = true
+run = '''
+    echo "🔧 Pre-warming mise tools..."
+    mise trust --yes
+    mise install --jobs 4
+    echo "✅ Tools installed successfully!"
+'''
+
+# Task run by postStartCommand
+[tasks."codespaces:post-start"]
+description = "Initialize workspace after Codespaces container starts"
+depends = ["codespaces:verify-mcp", "git:status"]
+run = '''
+    echo "🎉 Development environment ready!"
+    echo "💡 Run 'mise tasks' to see available commands"
+'''
+
+# Verify MCP servers are accessible
+[tasks."codespaces:verify-mcp"]
+hide = true
+run = '''
+    echo "🔍 Verifying MCP servers..."
+    # Check for MCP servers
+    which mcp-server-fetch && echo "✓ mcp-server-fetch available" || echo "⚠️  mcp-server-fetch not found"
+    which mcp-server-git && echo "✓ mcp-server-git available" || echo "⚠️  mcp-server-git not found"
+'''
+
+# ========================================
+# MCP Server Management
+# ========================================
+
+# Pre-install MCP server packages to eliminate warnings and ensure availability
+[tasks."mcp:install"]
+description = "Pre-install MCP server packages for faster startup"
+run = '''
+    echo "📦 Installing MCP server packages..."
+    
+    # Install packages globally to ensure they're available
+    # These are used by .mcp.json via npx, but pre-installing eliminates warnings
+    npm install -g @modelcontextprotocol/server-memory@latest || echo "⚠️  Failed to install server-memory"
+    npm install -g @modelcontextprotocol/server-sequential-thinking@latest || echo "⚠️  Failed to install server-sequential-thinking"
+    npm install -g @modelcontextprotocol/server-github@latest || echo "⚠️  Failed to install server-github"
+    npm install -g @playwright/mcp@latest || echo "⚠️  Failed to install playwright-mcp"
+    npm install -g server-perplexity-ask@latest || echo "⚠️  Failed to install server-perplexity-ask"
+    
+    echo "✅ MCP server packages installed"
+'''
+
+# Cache MCP server packages using npx (alternative approach)
+[tasks."mcp:cache"]
+description = "Pre-cache MCP server packages using npx"
+hide = true
+run = '''
+    echo "🔄 Pre-caching MCP server packages..."
+    
+    # Pre-download packages using npx to populate cache
+    npx -y @modelcontextprotocol/server-memory --version 2>/dev/null || true
+    npx -y @modelcontextprotocol/server-sequential-thinking --version 2>/dev/null || true
+    npx -y @modelcontextprotocol/server-github --version 2>/dev/null || true
+    npx -y @playwright/mcp --version 2>/dev/null || true
+    npx -y server-perplexity-ask --version 2>/dev/null || true
+    
+    echo "✅ MCP server packages cached"
+'''
