@@ -1,0 +1,122 @@
+# BrainCraft.io Pre-commit Configuration
+# https://pre-commit.com
+#
+# This centralized configuration runs linting and formatting checks across
+# all repositories in the workspace. Child repositories are excluded from
+# workspace-level checks as they have their own pre-commit configs.
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-json
+        exclude: '^(actions|containers|dot-github|style-system)/|node_modules/'
+      - id: check-yaml
+        exclude: '^(actions|containers|dot-github|style-system)/|node_modules/'
+      - id: end-of-file-fixer
+        exclude: '^(actions|containers|dot-github|style-system)/|node_modules/'
+      - id: trailing-whitespace
+        exclude: '^(actions|containers|dot-github|style-system)/|node_modules/'
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  # Python formatting
+  - repo: https://github.com/psf/black
+    rev: 24.3.0
+    hooks:
+      - id: black
+        language_version: python3
+        exclude: '^(actions|containers|dot-github|style-system)/|node_modules/'
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile=black"]
+        exclude: '^(actions|containers|dot-github|style-system)/|node_modules/'
+
+  # JavaScript/TypeScript/Markdown/YAML formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        types_or: [javascript, jsx, ts, tsx, markdown, yaml, json, css, scss, html]
+        exclude: '^(actions|containers|dot-github|style-system)/|node_modules/'
+        additional_dependencies:
+          - prettier@3.2.5
+
+  # Shell script linting
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        exclude: '^(actions|containers|dot-github|style-system)/|node_modules/'
+
+  # YAML linting
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        exclude: '^(actions|containers|dot-github|style-system)/|node_modules/'
+        args: ['-d', '{extends: relaxed, rules: {line-length: {max: 120}}}']
+
+  # Markdown linting
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.12.1
+    hooks:
+      - id: markdownlint-cli2
+        exclude: '^(actions|containers|dot-github|style-system)/|node_modules/'
+
+  # GitHub Actions workflow linting with centralized config
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.1
+    hooks:
+      - id: actionlint
+        args: ["-config-file", ".github/actionlint.yaml"]
+
+  # Go linting (workspace-level Go files only)
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v1.57.2
+    hooks:
+      - id: golangci-lint
+        exclude: '^(actions|containers|dot-github|style-system)/|node_modules/'
+
+  # JavaScript/TypeScript linting (workspace-level only)
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.1.1
+    hooks:
+      - id: eslint
+        files: '\.(js|jsx|ts|tsx)$'
+        exclude: '^(actions|containers|dot-github|style-system)/|node_modules/'
+        additional_dependencies:
+          - eslint@9.1.1
+
+  # Security scanning
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        exclude: '.*\.(lock|sum)$|^node_modules/|^\.pnpm-store/'
+
+# Configuration for specific file types
+default_language_version:
+  python: python3
+  node: "20.11.0"
+
+# Files to always exclude
+exclude: |
+  (?x)^(
+    .*\.min\.(js|css)|
+    .*\.map|
+    vendor/|
+    node_modules/|
+    \.git/|
+    \.next/|
+    \.nuxt/|
+    dist/|
+    build/|
+    coverage/
+  )

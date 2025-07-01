@@ -161,9 +161,6 @@ flowchart TD
 │   ├── production/                # Production images
 │   └── ci/                        # CI-specific containers
 │
-├── docs/                          # Documentation site (cloned)
-├── obelisk/                       # RAG MCP project (cloned)
-├── dalek-cli/                     # Filesystem enforcer (cloned)
 │
 ├── .mise.toml                     # Global tool/task configuration
 ├── .envrc                         # direnv configuration
@@ -700,9 +697,6 @@ repos=(
     ".github"
     "actions"
     "containers"
-    "docs"
-    "obelisk"
-    "dalek-cli"
     "style-system"
 )
 
@@ -826,20 +820,12 @@ echo -e "\n✅ Health check complete!"
 # Development tasks
 [tasks."dev:all"]
 description = "Start all development servers"
-depends = ["dev:actions", "dev:docs", "dev:obelisk"]
+depends = ["dev:style-system"]
 
-[tasks."dev:actions"]
-description = "Develop GitHub Actions"
-dir = "actions"
-run = """
-echo "🔄 Watching GitHub Actions for changes..."
-# Implementation depends on project structure
-"""
-
-[tasks."dev:docs"]
-description = "Start documentation server"
-dir = "docs"
-run = "hugo server -D --bind 0.0.0.0"
+[tasks."dev:style-system"]
+description = "Start style system demo server"
+dir = "style-system"
+run = "python3 -m http.server 8080"
 
 # Linting tasks
 [tasks."lint:all"]
@@ -1062,18 +1048,13 @@ graph LR
     end
     
     subgraph "Application Layer"
-        OB[obelisk]
-        D[dalek-cli]
-        DO[docs]
+        SS[style-system]
     end
     
     subgraph "Dependencies"
         O --> A
         O --> C
-        A --> OB
-        A --> D
-        C --> OB
-        C --> D
+        C --> SS
     end
 ```
 
@@ -1096,9 +1077,7 @@ release_order=(
     "containers"
     "actions"
     ".github"
-    "obelisk"
-    "dalek-cli"
-    "docs"
+    "style-system"
     "workspace"
 )
 
