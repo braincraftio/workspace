@@ -1,5 +1,8 @@
 # mise configuration for BrainCraft.io workspace
 # https://mise.jdx.dev/
+#
+# TODO: Add helm to tools list - currently commented out in Dockerfile due to rate limiting
+# TODO: Migrate kubectl, docker-cli, gh, task, and act from Dockerfile to mise for better reliability
 
 # Common tool versions for all projects
 [tools]
