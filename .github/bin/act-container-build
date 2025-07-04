@@ -1,0 +1,64 @@
+#!/bin/bash
+# Direct act command for container build workflow
+# This provides the full act command with all flags explicitly set
+
+# Set up GitHub token with fallback
+# Priority: GITHUB_TOKEN -> GITHUB_PERSONAL_ACCESS_TOKEN -> empty
+GITHUB_TOKEN="${GITHUB_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN:-}}"
+
+# Check if we should use local repositories (useful for workspace architecture)
+USE_LOCAL_REPOS="${USE_LOCAL_REPOS:-true}"
+
+# Build the base command
+ACT_CMD="act workflow_dispatch \
+    --verbose \
+    --env-file .env.act \
+    --eventpath .act-event.json \
+    --workflows .github/workflows/local-container-build.yml \
+    --job build \
+    --platform ubuntu-latest=catthehacker/ubuntu:act-latest \
+    --platform ubuntu-24.04=catthehacker/ubuntu:act-24.04 \
+    --platform ubuntu-22.04=catthehacker/ubuntu:act-22.04 \
+    --platform ubuntu-20.04=catthehacker/ubuntu:act-20.04 \
+    --container-daemon-socket unix:///var/run/docker.sock \
+    --container-architecture linux/amd64 \
+    --pull \
+    --privileged \
+    --network host \
+    --artifact-server-path /tmp/act-artifacts \
+    --artifact-server-addr localhost \
+    --artifact-server-port 34567 \
+    --cache-server-path /tmp/act-cache \
+    --cache-server-addr localhost \
+    --cache-server-port 0 \
+    --action-cache-path /tmp/act-action-cache \
+    --use-new-action-cache \
+    --bind \
+    --no-recurse \
+    --use-gitignore \
+    --input push=false \
+    --env DOCKER_BUILDKIT=1 \
+    --env BUILDKIT_PROGRESS=plain \
+    --env ACT=true \
+    --env GITHUB_WORKSPACE=$PWD \
+    --actor braincraftio-bot \
+    --defaultbranch main"
+
+# Add local repository mappings if requested
+if [ "$USE_LOCAL_REPOS" = "true" ]; then
+    echo "🔗 Using local repository mappings..."
+    ACT_CMD="$ACT_CMD \
+        --local-repository braincraftio/containers@main=$PWD/containers \
+        --local-repository braincraftio/actions@main=$PWD/actions \
+        --local-repository braincraftio/.github@main=$PWD/dot-github \
+        --local-repository braincraftio/style-system@main=$PWD/style-system"
+fi
+
+# Add GitHub token as secret if available
+if [ -n "$GITHUB_TOKEN" ]; then
+    ACT_CMD="$ACT_CMD --secret GITHUB_TOKEN=\"$GITHUB_TOKEN\""
+fi
+
+# Execute the command
+echo "🚀 Running act with workspace-aware configuration..."
+eval $ACT_CMD

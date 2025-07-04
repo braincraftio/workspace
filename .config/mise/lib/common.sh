@@ -28,6 +28,12 @@ should_use_color() {
     # Disable colors in CI environments
     [[ "${CI:-}" == "true" ]] && return 1
     
+    # If running under mise with COLORTERM set, force colors
+    # mise sets up the environment but may pipe output for task_output = "prefix"
+    if [[ -n "${MISE_TASK_FORMAT_DEFAULT:-}" ]] && [[ "${COLORTERM:-}" == "truecolor" ]]; then
+        return 0
+    fi
+    
     # Disable colors if not running in a terminal
     [[ ! -t 1 ]] && return 1
     

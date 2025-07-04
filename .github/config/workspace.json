@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "organization": "braincraftio",
+  "defaults": {
+    "branch": "main",
+    "container": {
+      "registry": "ghcr.io"
+    }
+  },
+  "repositories": [
+    {
+      "name": "actions",
+      "path": "actions",
+      "clone": true,
+      "tasks": ["build", "test", "lint"]
+    },
+    {
+      "name": "containers",
+      "path": "containers",
+      "clone": true,
+      "tasks": ["build", "test", "lint", "docker"]
+    },
+    {
+      "name": "style-system",
+      "path": "style-system",
+      "clone": true,
+      "tasks": ["build", "test", "lint"]
+    },
+    {
+      "name": "dot-github",
+      "path": "dot-github",
+      "clone": true,
+      "tasks": ["build", "test", "lint"]
+    }
+  ]
+}
