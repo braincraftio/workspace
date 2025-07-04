@@ -1,51 +1,42 @@
 {
   "name": "BrainCraft.io DevContainer",
-  //"image": "ghcr.io/braincraftio/containers:devcontainer-latest",
-  "dockerFile": "../containers/devcontainer/Dockerfile",
+  "image": "ghcr.io/braincraftio/containers:devcontainer-latest",
+  //"dockerFile": "../containers/devcontainer/Dockerfile",
   "workspaceFolder": "/workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
-
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
   },
-
   // Use 'forwardPorts' to make a list of ports inside the container available locally
   "forwardPorts": [],
-
-  "onCreateCommand": "mise run codespaces:on-create || echo '⚠️  Initial setup incomplete - tool installation hit GitHub rate limits. To fix: export GITHUB_TOKEN=your_token && mise install'",
+  "onCreateCommand": "",
   "postCreateCommand": "mise trust --yes && mise install || echo '⚠️  Some tools failed to install due to rate limits. Your environment is functional but incomplete. Fix: export GITHUB_TOKEN=your_token && mise install'",
   "postStartCommand": "mise run codespaces:post-start || echo '⚠️  Post-start verification failed. MCP servers (for Claude web/git features) may be unavailable. To retry: mise run codespaces:post-start'",
-
   // Configure tool-specific properties
   "customizations": {
     "vscode": {
       "extensions": [
         // Task automation
         "hverlin.mise-vscode",
-        
         // AI Assistants
         "github.copilot",
         "github.copilot-chat",
         "continue.continue",
-
         // Language Support
         "golang.go",
         "rust-lang.rust-analyzer",
         "ms-python.python",
         "ms-python.vscode-pylance",
-
         // DevOps Tools
         "ms-kubernetes-tools.vscode-kubernetes-tools",
         "ms-azuretools.vscode-docker",
         "hashicorp.terraform",
-
         // Development Tools
         "github.vscode-github-actions",
         "tamasfe.even-better-toml",
         "redhat.vscode-yaml",
         "ms-vscode.makefile-tools",
         "timonwong.shellcheck",
-
         // Editor Enhancements
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
@@ -59,12 +50,17 @@
         "terminal.integrated.profiles.linux": {
           "bash": {
             "path": "/bin/bash",
-            "args": ["-l"]
+            "args": [
+              "-l"
+            ]
           }
         },
         "editor.formatOnSave": true,
         "editor.formatOnPaste": true,
-        "editor.rulers": [80, 120],
+        "editor.rulers": [
+          80,
+          120
+        ],
         "files.trimTrailingWhitespace": true,
         "files.insertFinalNewline": true,
         "go.toolsManagement.checkForUpdates": "off",
@@ -74,7 +70,10 @@
       }
     },
     "codespaces": {
-      "openFiles": ["README.md", "CONTRIBUTING.md"],
+      "openFiles": [
+        "README.md",
+        "CONTRIBUTING.md"
+      ],
       "repositories": {
         "braincraftio/*": {
           "permissions": "write"
@@ -82,25 +81,20 @@
       }
     }
   },
-
   // Environment variables
   "remoteEnv": {
     "MISE_YES": "1",
     "DOCKER_BUILDKIT": "1",
     "COMPOSE_DOCKER_CLI_BUILD": "1"
   },
-
   // Run as non-root user
   "remoteUser": "ubuntu",
-
   // Mount Docker socket for Docker-outside-of-Docker
   "mounts": [
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
-
   // Keep container running
   "overrideCommand": true,
-
   // Container capabilities
   "runArgs": [
     "--cap-add=SYS_PTRACE",

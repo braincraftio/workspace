@@ -85,12 +85,12 @@ run_health_check() {
     local status_text
     
     if [[ ${exit_code} -eq 0 ]]; then
-        status_symbol="✓"
+        status_symbol="${CHECK}"
         status_text="OK"
         HEALTH_CHECK_RESULTS["${check_name}"]="success"
         ((MISE_HEALTH_CHECK_STATE[passed]++))
     else
-        status_symbol="✗"
+        status_symbol="${CROSS}"
         if [[ "${category}" == "optional" ]]; then
             status_text="SKIPPED"
         else
@@ -103,8 +103,10 @@ run_health_check() {
     fi
     
     # Print with consistent alignment
-    # Use printf to ensure consistent column widths
-    printf "%-50s %s %-8s\n" "${check_display}" "${status_symbol}" "${status_text}"
+    # Format the output with proper spacing
+    local padded_check
+    padded_check=$(printf "%-50s" "${check_display}")
+    echo -e "${padded_check} ${status_symbol} ${status_text}"
     
     # Show error details if verbose or critical failure
     if [[ ${exit_code} -ne 0 ]] && {

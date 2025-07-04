@@ -146,8 +146,8 @@ print_section_header() {
     local title="$1"
     local separator="$2"
     echo ""
-    echo "${title}"
-    echo "${separator}"
+    echo -e "${CYAN}${title}${NC}"
+    echo -e "${GRAY}${separator}${NC}"
 }
 
 # Exit with error message and code
@@ -167,8 +167,8 @@ die() {
 start_timer "total"
 
 # First run mise's built-in doctor command
-echo "🏥 Running mise doctor (built-in checks)..."
-echo "========================================="
+echo -e "${BLUE}🏥 Running mise doctor (built-in checks)...${NC}"
+echo -e "${GRAY}=========================================${NC}"
 
 if [[ "${CONFIG[verbose]}" == "true" ]]; then
     # Show full output in verbose mode
@@ -196,15 +196,15 @@ echo ""
 # Get workspace organization from centralized config
 workspace_org=$(jq -r '.organization // "unknown"' "${workspace_json_path}" 2>/dev/null || echo "unknown")
 workspace_name=$(echo "${workspace_org}" | sed 's/braincraftio/BrainCraft.io/g; s/\b\w/\u&/g')
-echo "🏥 ${workspace_name} Workspace Health Check"
-echo "======================================="
+echo -e "${BLUE}🏥 ${workspace_name} Workspace Health Check${NC}"
+echo -e "${GRAY}=======================================${NC}"
 echo ""
 
 # Display system information in verbose mode
 show_system_info() {
     if [[ "${CONFIG[verbose]}" == "true" ]]; then
-        echo "📊 System Information"
-        echo "--------------------"
+        echo -e "${CYAN}📊 System Information${NC}"
+        echo -e "${GRAY}--------------------${NC}"
         get_system_diagnostics | while IFS='=' read -r key value; do
             printf "%-20s: %s\n" "${key}" "${value}"
         done
@@ -341,8 +341,8 @@ run_health_check "Network connectivity" "check_network_connectivity" "critical"
 run_detailed_network_tests() {
     if [[ "${CONFIG[quick]}" != "true" ]] && [[ "${CONFIG[verbose]}" == "true" ]]; then
         echo ""
-        echo "Detailed Network Tests:"
-        echo "----------------------"
+        echo -e "${CYAN}Detailed Network Tests:${NC}"
+        echo -e "${GRAY}----------------------${NC}"
         test_network_endpoints
     fi
 }
@@ -360,9 +360,9 @@ start_timer "repos"
 # Check workspace repository
 if [[ -d "${MISE_PROJECT_ROOT}/.git" ]]; then
     if check_repo_clean_status "${MISE_PROJECT_ROOT}"; then
-        printf "  %-48s %s %-8s\n" "workspace:" "✓" "clean"
+        echo -e "  $(printf "%-48s" "workspace:") ${CHECK} clean"
     else
-        printf "  %-48s %s %-8s\n" "workspace:" "⚠" "uncommitted changes"
+        echo -e "  $(printf "%-48s" "workspace:") ${WARN} uncommitted changes"
     fi
 fi
 
@@ -370,9 +370,9 @@ fi
 if [[ -f "${workspace_json_path}" ]]; then
     while IFS=: read -r name path; do
         if [[ ! -d "${path}" ]]; then
-            printf "  %-48s %s %-8s\n" "${name}:" "ℹ" "not cloned"
+            echo -e "  $(printf "%-48s" "${name}:") ℹ not cloned"
         elif [[ ! -d "${path}/.git" ]]; then
-            printf "  %-48s %s %-8s\n" "${name}:" "⚠" "not a git repo"
+            echo -e "  $(printf "%-48s" "${name}:") ${WARN} not a git repo"
         else
             # Quick checks
             repo_status="OK"
@@ -390,9 +390,9 @@ if [[ -f "${workspace_json_path}" ]]; then
             fi
             
             if [[ ${#repo_details[@]} -gt 0 ]]; then
-                printf "  %-48s %s %-8s\n" "${name}:" "⚠" "${repo_details[*]}"
+                echo -e "  $(printf "%-48s" "${name}:") ${WARN} ${repo_details[*]}"
             else
-                printf "  %-48s %s %-8s\n" "${name}:" "✓" "${repo_status}"
+                echo -e "  $(printf "%-48s" "${name}:") ${CHECK} ${repo_status}"
             fi
         fi
     done < <(list_repositories)

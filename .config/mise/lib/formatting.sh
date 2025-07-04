@@ -81,7 +81,7 @@ format_repo_header() {
     
     case "${format}" in
         minimal)
-            printf "${BLUE}[%s]${NC} ${GRAY}%s${NC}\n" "${repo_name}" "${abs_path}"
+            echo -e "${BLUE}[${repo_name}]${NC} ${GRAY}${abs_path}${NC}"
             echo "─────────────────────────────────────────────────"
             ;;
             
@@ -95,18 +95,13 @@ format_repo_header() {
                 repo_info=$(get_repo_info "${repo_path}")
                 IFS=: read -r branch remote_url <<< "${repo_info}"
                 
-                printf "${BLUE}[%s]${NC} ${GREEN}(%s)${NC} → ${YELLOW}%s${NC}\n" \
-                    "${repo_name}" \
-                    "${branch}" \
-                    "${abs_path}"
+                echo -e "${BLUE}[${repo_name}]${NC} ${GREEN}(${branch})${NC} → ${YELLOW}${abs_path}${NC}"
                 if [[ "${remote_url}" != "<no-remote>" ]]; then
-                    printf "  ${GRAY}↳ %s${NC}\n" "${remote_url}"
+                    echo -e "  ${GRAY}↳ ${remote_url}${NC}"
                 fi
             else
                 # Non-git or git info not requested
-                printf "${BLUE}[%s]${NC} → ${YELLOW}%s${NC}\n" \
-                    "${repo_name}" \
-                    "${abs_path}"
+                echo -e "${BLUE}[${repo_name}]${NC} → ${YELLOW}${abs_path}${NC}"
             fi
             ;;
     esac
