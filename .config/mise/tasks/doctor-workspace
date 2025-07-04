@@ -1,0 +1,547 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash
+#
+# doctor-workspace - Enterprise-grade workspace health check
+#
+# Purpose:
+#   Comprehensive health check with DevOps, security, and performance validation
+#   Provides actionable remediation and self-healing suggestions
+#
+# Usage:
+#   mise run doctor:workspace [OPTIONS]
+#
+# Options:
+#   --verbose    Show detailed error messages
+#   --quick      Skip optional checks
+#   --fix        Attempt automatic fixes where possible
+#   --bundle     Create diagnostic bundle for support
+#
+# Exit Codes:
+#   0 - All critical checks passed
+#   1 - Critical failures detected
+#   2 - Important failures detected (no critical)
+#
+#MISE description="Enterprise-grade workspace health check with actionable fixes"
+#MISE alias=["dr", "doctor", "health"]
+#MISE hide=true
+
+set -uo pipefail
+
+# Set task name for error context
+export MISE_TASK_NAME="doctor-workspace"
+
+# shellcheck disable=SC1091
+# SC1091: MISE_PROJECT_ROOT is set at runtime by mise
+# Pass all arguments to common.sh so it can check for --no-color
+source "${MISE_PROJECT_ROOT}/.config/mise/lib/common.sh" "$@"
+
+# Initialize standardized error handling after sourcing
+init_task_error_handling 2>/dev/null || true
+
+# shellcheck disable=SC1091
+# SC1091: MISE_PROJECT_ROOT is set at runtime by mise
+source "${MISE_PROJECT_ROOT}/.config/mise/lib/health-checks.sh"
+
+# shellcheck disable=SC1091
+# SC1091: MISE_PROJECT_ROOT is set at runtime by mise
+source "${MISE_PROJECT_ROOT}/.config/mise/lib/diagnostics.sh"
+
+# shellcheck disable=SC1091
+# SC1091: MISE_PROJECT_ROOT is set at runtime by mise
+source "${MISE_PROJECT_ROOT}/.config/mise/lib/workspace.sh"
+
+# Workspace configuration path (needed early for centralized config)
+declare -r workspace_json_path="${MISE_PROJECT_ROOT}/.github/config/workspace.json"
+
+# Configuration
+declare -A CONFIG=(
+    ["verbose"]="${WORKSPACE_DOCTOR_VERBOSE:-false}"
+    ["quick"]="${WORKSPACE_DOCTOR_QUICK:-false}"
+    ["fix"]="${WORKSPACE_DOCTOR_FIX:-false}"
+    ["bundle"]="${WORKSPACE_DOCTOR_BUNDLE:-false}"
+)
+
+# Show help information
+show_help() {
+    cat << 'EOF'
+doctor-workspace - Enterprise-grade workspace health check
+
+USAGE:
+    mise run doctor:workspace [OPTIONS]
+
+OPTIONS:
+    --help       Show this help message
+    --verbose    Show detailed error messages and full mise doctor output
+    --quick      Skip optional checks for faster execution
+    --fix        Attempt automatic fixes where possible
+    --bundle     Create diagnostic bundle for support
+    --no-color   Disable colored output (auto-detected in CI)
+
+EXAMPLES:
+    mise run doctor:workspace                    # Run all health checks
+    mise run doctor:workspace --quick            # Fast check (skip optional)
+    mise run doctor:workspace --verbose          # Detailed output
+    mise run doctor:workspace --fix              # Auto-fix issues
+    mise run doctor:workspace --no-color         # Plain text output (for CI)
+    mise run doctor:workspace --verbose --fix    # Detailed output + auto-fix
+
+EXIT CODES:
+    0 - All critical checks passed
+    1 - Critical failures detected
+    2 - Important failures detected (no critical)
+
+ALIASES:
+    mise run dr          # Short alias
+    mise run doctor      # Alternative
+    mise run health      # Alternative
+EOF
+}
+
+# Parse command line arguments
+parse_arguments() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --help|-h)
+                show_help
+                exit 0
+                ;;
+            --verbose)
+                CONFIG["verbose"]="true"
+                export MISE_VERBOSE=1
+                ;;
+            --quick)
+                CONFIG["quick"]="true"
+                ;;
+            --fix)
+                CONFIG["fix"]="true"
+                ;;
+            --bundle)
+                CONFIG["bundle"]="true"
+                ;;
+            --no-color)
+                # This is handled by common.sh but we accept it here
+                ;;
+            *)
+                echo "❌ Unknown option: $1"
+                echo ""
+                echo "Run 'mise run doctor:workspace --help' for usage information."
+                exit 1
+                ;;
+        esac
+        shift
+    done
+}
+
+parse_arguments "$@"
+
+#######################################
+# Helper Functions
+#######################################
+
+# Print a standardized section header
+# Arguments:
+#   $1 - section title
+#   $2 - separator line
+print_section_header() {
+    local title="$1"
+    local separator="$2"
+    echo ""
+    echo "${title}"
+    echo "${separator}"
+}
+
+# Exit with error message and code
+# Arguments:
+#   $1 - error message
+#   $2 - exit code (default: 1)
+# shellcheck disable=SC2317
+# SC2317: Function may not be called in this script but provides utility for future use
+die() {
+    local message="$1"
+    local exit_code="${2:-1}"
+    echo "❌ Error: ${message}" >&2
+    exit "${exit_code}"
+}
+
+# Start performance tracking
+start_timer "total"
+
+# First run mise's built-in doctor command
+echo "🏥 Running mise doctor (built-in checks)..."
+echo "========================================="
+
+if [[ "${CONFIG[verbose]}" == "true" ]]; then
+    # Show full output in verbose mode
+    mise doctor || true
+else
+    # Show condensed summary
+    mise_output=$(mise doctor 2>&1)
+    mise_exit_code=$?
+    
+    if [[ ${mise_exit_code} -eq 0 ]]; then
+        echo "✓ All mise checks passed"
+    else
+        # Extract key information from mise doctor output
+        echo "⚠️  mise doctor found issues:"
+        
+        # Show errors and warnings only
+        echo "${mise_output}" | grep -E "(ERROR|WARNING|FAILED|✗)" | head -10 || true
+        
+        echo ""
+        echo "Run with --verbose to see full mise doctor output"
+    fi
+fi
+echo ""
+
+# Get workspace organization from centralized config
+workspace_org=$(jq -r '.organization // "unknown"' "${workspace_json_path}" 2>/dev/null || echo "unknown")
+workspace_name=$(echo "${workspace_org}" | sed 's/braincraftio/BrainCraft.io/g; s/\b\w/\u&/g')
+echo "🏥 ${workspace_name} Workspace Health Check"
+echo "======================================="
+echo ""
+
+# Display system information in verbose mode
+show_system_info() {
+    if [[ "${CONFIG[verbose]}" == "true" ]]; then
+        echo "📊 System Information"
+        echo "--------------------"
+        get_system_diagnostics | while IFS='=' read -r key value; do
+            printf "%-20s: %s\n" "${key}" "${value}"
+        done
+        echo ""
+    fi
+}
+
+show_system_info
+
+# Track check results
+declare -a failed_critical=()
+declare -a failed_important=()
+declare -a failed_optional=()
+
+# Variables used throughout the script
+declare mise_output
+declare mise_exit_code
+declare gh_details
+declare repo_status
+declare -a repo_details
+declare check_category
+declare -a all_failures
+declare total_duration
+
+# Global counters (these are set in health-checks.sh but referenced here)
+# Check counters are now managed by MISE_HEALTH_CHECK_STATE in health-checks.sh
+
+#######################################
+# Core Dependencies
+#######################################
+print_section_header "📦 Core Dependencies" "-------------------"
+start_timer "core_deps"
+
+run_health_check "mise installation" "command -v mise" "critical"
+run_health_check "mise version >= ${MIN_MISE_VERSION}" "check_tool_version mise ${MIN_MISE_VERSION}" "important"
+run_health_check "jq (JSON processor)" "command -v jq" "critical"
+run_health_check "git >= ${MIN_GIT_VERSION}" "check_tool_version git ${MIN_GIT_VERSION}" "important"
+run_health_check "bash >= 4.0" "bash --version | grep -E 'version [4-9]\\.'" "critical"
+run_health_check "shellcheck" "command -v shellcheck" "important"
+
+stop_timer "core_deps" >/dev/null
+
+#######################################
+# DevOps Infrastructure
+#######################################
+print_section_header "🐳 DevOps Infrastructure" "-----------------------"
+start_timer "devops"
+
+run_health_check "Docker daemon" "check_docker_daemon" "critical" "true"
+run_health_check "Docker compose v2" "check_docker_compose" "critical"
+run_health_check "Docker memory >= 2GB" "check_docker_memory" "important"
+run_health_check "Docker disk space" "check_docker_resources" "important"
+
+if [[ "${CONFIG[quick]}" != "true" ]]; then
+    run_health_check "Container cleanup needed" "! docker ps -a | tail -n +2 | grep -E 'Exited|Created' >/dev/null" "optional"
+    run_health_check "Image cleanup needed" "! docker images | grep '<none>' >/dev/null" "optional"
+fi
+
+stop_timer "devops" >/dev/null
+
+#######################################
+# Authentication & Security
+#######################################
+print_section_header "🔐 Authentication & Security" "---------------------------"
+start_timer "auth"
+
+run_health_check "GitHub CLI auth" "check_github_cli_auth" "critical" "true"
+# Show GitHub account details if verbose or if there are issues
+if [[ "${CONFIG[verbose]}" == "true" ]] || ! check_github_cli_auth 2>/dev/null; then
+    gh_details=$(get_github_auth_details 2>/dev/null || true)
+    if [[ -n "${gh_details}" ]]; then
+        echo "  └─ Accounts: ${gh_details}"
+    fi
+fi
+run_health_check "GitHub token scopes" "check_github_token_scopes" "important"
+run_health_check "Git user config" "check_git_config" "critical"
+run_health_check "Git credential helper" "check_git_credential_helper" "important"
+run_health_check "SSH agent running" "check_ssh_agent" "optional"
+run_health_check "SSH key permissions" "check_ssh_key_permissions" "optional"
+run_health_check ".env file permissions" "check_env_file_permissions" "critical"
+
+stop_timer "auth" >/dev/null
+
+#######################################
+# Workspace Configuration
+#######################################
+print_section_header "📋 Workspace Configuration" "-------------------------"
+start_timer "workspace"
+
+run_health_check "workspace.json exists" "[[ -f '${workspace_json_path}' ]]" "critical"
+run_health_check "workspace.json valid" "jq empty '${workspace_json_path}' 2>/dev/null" "critical"
+run_health_check ".mise.toml exists" "[[ -f '${MISE_PROJECT_ROOT}/.mise.toml' ]]" "critical"
+run_health_check "mise configuration trusted" "check_mise_trust" "critical"
+run_health_check "mise tools installed" "check_mise_tools_installed" "important"
+
+# Check workspace mount (context-aware)
+run_health_check "Workspace accessible" "check_workspace_mount" "critical"
+
+# Check devcontainer environment if applicable
+check_container_environment() {
+    if [[ -n "${REMOTE_CONTAINERS:-}" ]] || [[ -n "${CODESPACES:-}" ]]; then
+        run_health_check "DevContainer environment" "check_devcontainer_env" "important"
+    fi
+}
+
+# Validate configuration consistency
+check_config_consistency() {
+    # Check that hardcoded values in 00-env.toml match workspace.json
+    local config_org
+    config_org=$(jq -r '.organization // "unknown"' "${workspace_json_path}" 2>/dev/null || echo "unknown")
+    
+    if [[ "${ORGANIZATION:-}" != "${config_org}" ]] && [[ "${config_org}" != "unknown" ]]; then
+        echo "  ⚠️  Warning: ORGANIZATION env var (${ORGANIZATION:-unset}) doesn't match workspace.json (${config_org})"
+    fi
+}
+
+check_container_environment
+
+# Validate configuration consistency between hardcoded values and workspace.json
+check_config_consistency
+
+stop_timer "workspace" >/dev/null
+
+#######################################
+# System Resources
+#######################################
+print_section_header "💻 System Resources" "------------------"
+start_timer "resources"
+
+run_health_check "Disk space >= ${MIN_DISK_SPACE_GB}GB" "check_disk_space ${MIN_DISK_SPACE_GB}" "important"
+run_health_check "Network connectivity" "check_network_connectivity" "critical"
+
+# Run detailed network tests in verbose mode
+run_detailed_network_tests() {
+    if [[ "${CONFIG[quick]}" != "true" ]] && [[ "${CONFIG[verbose]}" == "true" ]]; then
+        echo ""
+        echo "Detailed Network Tests:"
+        echo "----------------------"
+        test_network_endpoints
+    fi
+}
+
+run_detailed_network_tests
+
+stop_timer "resources" >/dev/null
+
+#######################################
+# Repository Health
+#######################################
+print_section_header "📂 Repository Health" "-------------------"
+start_timer "repos"
+
+# Check workspace repository
+if [[ -d "${MISE_PROJECT_ROOT}/.git" ]]; then
+    if check_repo_clean_status "${MISE_PROJECT_ROOT}"; then
+        printf "  %-48s %s %-8s\n" "workspace:" "✓" "clean"
+    else
+        printf "  %-48s %s %-8s\n" "workspace:" "⚠" "uncommitted changes"
+    fi
+fi
+
+# Check child repositories
+if [[ -f "${workspace_json_path}" ]]; then
+    while IFS=: read -r name path; do
+        if [[ ! -d "${path}" ]]; then
+            printf "  %-48s %s %-8s\n" "${name}:" "ℹ" "not cloned"
+        elif [[ ! -d "${path}/.git" ]]; then
+            printf "  %-48s %s %-8s\n" "${name}:" "⚠" "not a git repo"
+        else
+            # Quick checks
+            repo_status="OK"
+            repo_details=()
+            
+            if ! check_repo_clean_status "${path}"; then
+                repo_details+=("dirty")
+            fi
+            
+            if [[ "${CONFIG[quick]}" != "true" ]]; then
+                if ! check_repo_remote_connectivity "${path}" "${name}"; then
+                    repo_details+=("no remote")
+                    repo_status="WARNING"
+                fi
+            fi
+            
+            if [[ ${#repo_details[@]} -gt 0 ]]; then
+                printf "  %-48s %s %-8s\n" "${name}:" "⚠" "${repo_details[*]}"
+            else
+                printf "  %-48s %s %-8s\n" "${name}:" "✓" "${repo_status}"
+            fi
+        fi
+    done < <(list_repositories)
+fi
+
+stop_timer "repos" >/dev/null
+
+#######################################
+# Task System Validation
+#######################################
+print_section_header "📋 Task System" "--------------"
+start_timer "tasks"
+
+run_health_check "mise tasks listing" "mise tasks >/dev/null 2>&1" "critical"
+run_health_check "doctor:workspace task" "mise tasks | grep -q 'doctor:workspace'" "important"
+run_health_check "git task" "mise tasks | grep -q '^git\\s'" "important"
+run_health_check "exec task" "mise tasks | grep -q '^exec\\s'" "important"
+
+stop_timer "tasks" >/dev/null
+
+#######################################
+# Performance Analysis
+#######################################
+stop_timer "total" >/dev/null
+
+if [[ "${CONFIG[verbose]}" == "true" ]]; then
+    echo ""
+    generate_performance_report
+fi
+
+#######################################
+# Results Summary
+#######################################
+print_section_header "📊 Health Check Summary" "======================"
+
+# Collect failed checks by category
+for check_name in "${!HEALTH_CHECK_RESULTS[@]}"; do
+    if [[ "${HEALTH_CHECK_RESULTS[${check_name}]}" == "failed" ]]; then
+        # Get category from CHECK_CATEGORIES array
+        check_category="${CHECK_CATEGORIES[${check_name}]:-optional}"
+        
+        case "${check_category}" in
+            critical)
+                failed_critical+=("${check_name}")
+                ;;
+            important)
+                failed_important+=("${check_name}")
+                ;;
+            *)
+                failed_optional+=("${check_name}")
+                ;;
+        esac
+    fi
+done
+
+# Display summary
+echo "Total checks: ${MISE_HEALTH_CHECK_STATE[total]}"
+echo "Passed: ${MISE_HEALTH_CHECK_STATE[passed]}"
+echo "Failed: $((MISE_HEALTH_CHECK_STATE[total] - MISE_HEALTH_CHECK_STATE[passed]))"
+echo ""
+
+if [[ ${#failed_critical[@]} -gt 0 ]]; then
+    echo "❌ Critical failures: ${#failed_critical[@]}"
+    for check in "${failed_critical[@]}"; do
+        echo "   - ${check}"
+    done
+    echo ""
+fi
+
+if [[ ${#failed_important[@]} -gt 0 ]]; then
+    echo "⚠️  Important failures: ${#failed_important[@]}"
+    for check in "${failed_important[@]}"; do
+        echo "   - ${check}"
+    done
+    echo ""
+fi
+
+if [[ ${#failed_optional[@]} -gt 0 ]] && [[ "${CONFIG[verbose]}" == "true" ]]; then
+    echo "ℹ️  Optional improvements: ${#failed_optional[@]}"
+    for check in "${failed_optional[@]}"; do
+        echo "   - ${check}"
+    done
+fi
+
+#######################################
+# Actionable Fixes
+#######################################
+if [[ ${#failed_critical[@]} -gt 0 ]] || [[ ${#failed_important[@]} -gt 0 ]]; then
+    print_section_header "🔧 Actionable Fixes" "==================="
+    
+    # Generate fix commands for all failures
+    all_failures=("${failed_critical[@]}" "${failed_important[@]}")
+    generate_fix_commands "${all_failures[@]}"
+    
+    # Attempt automatic fixes if requested
+    if [[ "${CONFIG[fix]}" == "true" ]]; then
+        echo ""
+        echo "🔧 Attempting automatic fixes..."
+        echo "==============================="
+        
+        # Example: Auto-trust mise
+        if [[ " ${all_failures[*]} " =~ "mise configuration trusted" ]]; then
+            echo "Trusting mise configuration..."
+            if mise trust --yes; then
+                print_status success "mise configuration trusted"
+            else
+                print_status error "Failed to trust mise configuration"
+            fi
+        fi
+        
+        # Add more automatic fixes here
+    fi
+fi
+
+#######################################
+# Performance Suggestions
+#######################################
+if [[ "${CONFIG[verbose]}" == "true" ]]; then
+    print_section_header "🚀 Performance Suggestions" "==========================="
+    suggest_performance_optimizations || true
+fi
+
+#######################################
+# Diagnostic Bundle
+#######################################
+if [[ "${CONFIG[bundle]}" == "true" ]]; then
+    print_section_header "📦 Diagnostic Bundle" "=================="
+    create_diagnostic_bundle
+fi
+
+#######################################
+# Exit Status
+#######################################
+echo ""
+total_duration=$(stop_timer "total" 2>/dev/null || echo "0")
+if [[ -n "${total_duration}" ]] && [[ "${total_duration}" != "0" ]]; then
+    printf "Execution time: %.2f seconds\n" "${total_duration}"
+fi
+
+if [[ ${#failed_critical[@]} -gt 0 ]]; then
+    echo ""
+    echo "❌ Critical issues detected! Fix these before proceeding."
+    exit 1
+else
+    echo ""
+    if [[ ${#failed_important[@]} -gt 0 ]]; then
+        echo "⚠️  Important issues detected. Consider fixing these soon."
+    else
+        echo "✅ All checks passed! 🎉"
+    fi
+    exit 0
+fi

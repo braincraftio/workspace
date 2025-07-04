@@ -1,0 +1,36 @@
+# Shellcheck configuration for BrainCraft.io workspace
+# https://www.shellcheck.net/wiki/
+
+# Minimum severity for pre-commit hooks (fail on any issue)
+severity=error
+
+# Shell dialect (all our scripts use bash)
+shell=bash
+
+# Source paths for mise scripts
+# SCRIPTDIR allows relative sourcing within same directory
+# Explicit paths for our library structure
+source-path=SCRIPTDIR
+source-path=.config/mise/lib
+source-path=.config/mise/tasks
+source-path=.github/bin
+source-path=containers/devcontainer/bin
+
+# Allow shellcheck to follow external sources
+external-sources=true
+
+# Enable optional checks
+# require-variable-braces: Require ${} for all variables (consistency)
+# add-default-case: Require default case in case statements
+# require-double-brackets: Use [[ ]] instead of [ ] for consistency
+enable=require-variable-braces,add-default-case,require-double-brackets
+
+# NOTE: We do NOT globally disable any checks.
+# All suppressions must be inline with explanations.
+#
+# Common patterns in this codebase requiring inline suppression:
+# - SC1091: When sourcing with ${MISE_PROJECT_ROOT} (runtime variable)
+# - SC2034: For exported variables used by downstream scripts
+# - SC2317: For utility functions that may appear unreachable
+#
+# Files checked: All *.sh files and executables without extensions

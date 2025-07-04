@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash
+#
+# lint-bash-dead-code - Find unused functions (dead code) in bash scripts
+#
+# Purpose:
+#   Analyzes bash scripts to find functions that are defined but never called.
+#   This helps identify dead code that can be safely removed.
+#
+# Usage:
+#   mise run lint:bash:dead-code [directory]
+#
+# Examples:
+#   mise run lint:bash:dead-code                    # Check all .config/mise files
+#   mise run lint:bash:dead-code lib                # Check only lib directory
+#   mise run lint:bash:dead-code lib/task-runner.sh # Check specific file
+#
+# Exit Codes:
+#   0 - No dead code found
+#   1 - Dead code detected
+#
+#MISE description="Find unused functions (dead code) in bash scripts"
+#MISE alias=["dead", "unused"]
+#MISE hide=true
+
+set -uo pipefail
+
+# Colors for output
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[1;34m'
+readonly NC='\033[0m'
+
+# Handle arguments - can be files or directories
+if [[ $# -eq 0 ]]; then
+    # Default to checking all mise config files
+    TARGET="."
+    mapfile -t FILES < <(find "${TARGET}" -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2>/dev/null | grep -v "\.git")
+elif [[ $# -eq 1 ]] && [[ -d "$1" ]]; then
+    # Single directory specified
+    TARGET="$1"
+    mapfile -t FILES < <(find "${TARGET}" -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2>/dev/null | grep -v "\.git")
+else
+    # One or more files specified
+    FILES=("$@")
+fi
+
+if [[ ${#FILES[@]} -eq 0 ]]; then
+    echo -e "${YELLOW}No bash scripts found in ${TARGET}${NC}"
+    exit 0
+fi
+
+echo -e "${BLUE}=== Dead Code Analysis ===${NC}"
+echo -e "Checking ${#FILES[@]} files for unused functions...\n"
+
+# When checking specific files, we need to search across ALL potential files that might use them
+if [[ ${#FILES[@]} -lt 5 ]]; then
+    # For small file sets, search across all mise files for references
+    mapfile -t SEARCH_FILES < <(find .config/mise -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2>/dev/null | grep -v "\.git" || true)
+else
+    # For large file sets, only search within the provided files
+    SEARCH_FILES=("${FILES[@]}")
+fi
+
+# Track overall results
+TOTAL_FUNCTIONS=0
+DEAD_FUNCTIONS=0
+DEAD_CODE_FOUND=false
+
+# Analyze each file
+for file in "${FILES[@]}"; do
+    if [[ ! -f "${file}" ]]; then
+        continue
+    fi
+    
+    # Extract function names (excluding sourcing guards and variable assignments)
+    mapfile -t FUNCTIONS < <(grep -E "^[a-zA-Z_][a-zA-Z0-9_]*\(\)" "${file}" 2>/dev/null | \
+                            grep -v "^declare\|^source" | \
+                            sed 's/().*//' | \
+                            sort -u)
+    
+    if [[ ${#FUNCTIONS[@]} -eq 0 ]]; then
+        continue
+    fi
+    
+    echo -e "${BLUE}Checking ${file}:${NC}"
+    FILE_HAS_DEAD_CODE=false
+    
+    for func in "${FUNCTIONS[@]}"; do
+        TOTAL_FUNCTIONS=$((TOTAL_FUNCTIONS + 1))
+        
+        # Count occurrences across all files
+        # Exclude comments and the function definition line itself
+        count=$(grep -w "${func}" "${SEARCH_FILES[@]}" 2>/dev/null | \
+                grep -v "^[[:space:]]*#" | \
+                grep -v "${func}()" | \
+                wc -l)
+        
+        if [[ ${count} -eq 0 ]]; then
+            echo -e "  ${RED}✗ DEAD CODE:${NC} ${func}() - defined but never called"
+            DEAD_FUNCTIONS=$((DEAD_FUNCTIONS + 1))
+            FILE_HAS_DEAD_CODE=true
+            DEAD_CODE_FOUND=true
+        elif [[ "${MISE_DEBUG:-}" == "1" ]]; then
+            # In debug mode, show all functions
+            echo -e "  ${GREEN}✓ USED:${NC} ${func}() - ${count} references"
+        fi
+    done
+    
+    if [[ "${FILE_HAS_DEAD_CODE}" == "false" ]] && [[ ${#FUNCTIONS[@]} -gt 0 ]]; then
+        echo -e "  ${GREEN}✓ All ${#FUNCTIONS[@]} functions are used${NC}"
+    fi
+    echo
+done
+
+# Summary
+echo -e "${BLUE}=== Summary ===${NC}"
+echo "Total functions analyzed: ${TOTAL_FUNCTIONS}"
+echo "Dead functions found: ${DEAD_FUNCTIONS}"
+
+if [[ "${DEAD_CODE_FOUND}" == "true" ]]; then
+    echo -e "\n${YELLOW}Consider removing the dead code to improve maintainability.${NC}"
+    echo -e "${YELLOW}Note: Some functions might be used indirectly (callbacks, eval, etc.)${NC}"
+    echo -e "${YELLOW}Always verify before removing!${NC}"
+    exit 1
+else
+    echo -e "\n${GREEN}✓ No dead code detected!${NC}"
+    exit 0
+fi

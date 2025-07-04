@@ -53,3 +53,9 @@ logs/
 # Mise local overrides
 .mise.local.toml
 .tool-versions.local
+
+# act configuration
+.env.act
+.secrets.act
+.act-event.json
+/tmp/act-*

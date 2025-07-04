@@ -1,0 +1,6 @@
+# Core workspace configuration
+# This file is for environment variables, tools, and vars specific to core functionality
+# Tasks are defined in the main .mise.toml file
+
+# Note: Tasks should not be defined in conf.d files to avoid "unknown field" warnings
+# during mise's auto-discovery. Use the main .mise.toml or separate task files instead.

@@ -1,0 +1,20 @@
+# Internal task variables (not exported to shell)
+[vars]
+# Test configuration
+e2e_args = '--headless --no-sandbox'
+test_timeout = '300s'
+
+# Build configuration
+build_flags = '-ldflags="-s -w"'
+docker_build_args = '--progress=plain'
+
+# Linting configuration
+lint_skip = 'no-commit-to-branch'
+lint_parallel = '4'
+
+# Format configuration
+format_check = false
+format_extensions = 'js,ts,jsx,tsx,json,yaml,yml,md'
+
+# Note: Health check thresholds moved to 00-env.toml so they're available in shell scripts
+# This section is for task template parameters only

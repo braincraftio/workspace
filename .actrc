@@ -1,0 +1,49 @@
+# Act configuration for BrainCraft.io workspace
+# This file configures act to run GitHub Actions locally
+
+# Use the official GitHub Actions runner images
+--platform ubuntu-latest=catthehacker/ubuntu:act-latest
+--platform ubuntu-24.04=catthehacker/ubuntu:act-24.04
+--platform ubuntu-22.04=catthehacker/ubuntu:act-22.04
+--platform ubuntu-20.04=catthehacker/ubuntu:act-20.04
+
+# Enable verbose output for debugging
+--verbose
+
+# Use host Docker daemon for buildx support
+--container-daemon-socket unix:///var/run/docker.sock
+
+# Set container architecture to match host for performance
+--container-architecture linux/amd64
+
+# Pull images to ensure we have the latest
+--pull
+
+# Don't remove containers on failure for debugging
+--rm=false
+
+# Use local .env file for environment variables
+--env-file .env.act
+
+# Set the GitHub instance
+--github-instance github.com
+
+# Enable privileged mode for Docker-in-Docker operations
+--privileged
+
+# Use host network for better compatibility
+--network host
+
+# Set artifact server path for local testing
+--artifact-server-path /tmp/act-artifacts
+
+# Enable new action cache
+--use-new-action-cache
+
+# Set action cache path
+--action-cache-path /tmp/act-cache
+
+# Bind mount the workspace
+# WARNING: With --bind, actions/checkout can delete your local directories!
+# Always use 'clean: false' in checkout actions when using act
+--bind

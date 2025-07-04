@@ -1,0 +1,30 @@
+# Tool versions for all projects
+[tools]
+go = "1.24.4"
+node = "24"
+python = "3.13.5"
+uv = "latest"
+rust = "latest"
+pnpm = "latest"
+poetry = "latest"
+ruff = "latest"
+direnv = "latest"
+shellcheck = "latest"
+yamllint = "latest"
+markdownlint-cli2 = "latest"
+pre-commit = "latest"
+shfmt = "latest"
+golangci-lint = "2.2.1"
+actionlint = "latest"
+jq = "latest"
+gh = "latest"
+
+# MCP servers via pipx
+"pipx:mcp-server-fetch" = "latest"
+"pipx:mcp-server-git" = "latest"
+
+# NPM global packages
+"npm:@anthropic-ai/claude-code" = "latest"
+"npm:@google/gemini-cli" = "latest"
+"npm:@openai/codex" = "latest"
+"npm:@playwright/test" = "latest"

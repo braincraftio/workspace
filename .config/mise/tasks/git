@@ -1,0 +1,180 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash
+#
+# git - Execute git commands across all workspace repositories
+#
+# Purpose:
+#   Dynamically execute git commands across all repositories defined in workspace.json
+#   Provides consistent output format suitable for both human and machine consumption
+#
+# Usage:
+#   mise run git [COMMAND] [ARGS...]
+#
+# Environment Variables:
+#   GIT_TASK_QUIET="${GIT_TASK_QUIET:-false}"    - Suppress decorative output
+#   GIT_TASK_FORMAT="${GIT_TASK_FORMAT:-pretty}" - Output format (pretty|simple|json)
+#
+# Exit Codes:
+#   0 - All repositories processed successfully
+#   1 - One or more repositories failed
+#
+#MISE description="Execute git commands across all repositories dynamically"
+#MISE alias=["g"]
+
+set -uo pipefail
+
+# Set task name for error context
+export MISE_TASK_NAME="git"
+
+# shellcheck disable=SC1091
+# SC1091: MISE_PROJECT_ROOT is set at runtime by mise, path cannot be resolved statically
+source "${MISE_PROJECT_ROOT}/.config/mise/lib/common.sh" "$@"
+
+# Initialize standardized error handling after sourcing
+init_task_error_handling 2>/dev/null || true
+
+# shellcheck disable=SC1091
+# SC1091: MISE_PROJECT_ROOT is set at runtime by mise, path cannot be resolved statically
+source "${MISE_PROJECT_ROOT}/.config/mise/lib/task-runner.sh"
+
+#######################################
+# Execute git command in repository
+# Arguments:
+#   $1 - repo_name: Repository name
+#   $2 - repo_path: Repository path
+#   $@ - git command and args
+# Returns:
+#   Git command exit code
+#######################################
+# shellcheck disable=SC2317
+# SC2317: Function is called indirectly via run_task_across_repos
+execute_git_in_repo() {
+    local repo_name="$1"
+    local repo_path="$2"
+    shift 2
+    local git_cmd=("$@")
+    
+    # Special handling for pull command
+    if [[ "${git_cmd[0]}" == "pull" ]]; then
+        # Check if current branch has upstream tracking
+        if ! (cd "${repo_path}" && git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1); then
+            # Get current branch name
+            local branch
+            branch=$(cd "${repo_path}" && git rev-parse --abbrev-ref HEAD)
+            
+            # CONFIG might not be set if called directly, check if it exists
+            local quiet="${CONFIG[quiet]:-false}"
+            local format="${CONFIG[format]:-pretty}"
+            
+            if [[ "${quiet}" != "true" ]]; then
+                echo ""
+                format_repo_header "${repo_name}" "${repo_path}" "${format}" "true"
+                print_status warning "Branch '${branch}' has no upstream tracking"
+                print_status info "Skipping pull for safety. To set upstream: git push -u origin ${branch}"
+            fi
+            return 0
+        fi
+    fi
+    
+    # Use the generic executor with git-specific validation
+    execute_in_repo_generic "${repo_name}" "${repo_path}" "validate_git_repo" git "${git_cmd[@]}"
+}
+
+# Show usage if no arguments
+show_usage() {
+    local examples="  mise run git clone            # Clone all repositories
+  mise run git status           # Show status for all repos
+  mise run git pull             # Pull latest changes for all repos  
+  mise run git fetch            # Fetch updates for all repos
+  mise run git branch           # List branches for all repos
+  mise run git log --oneline -5 # Show recent commits for all repos"
+    
+    local env_vars="  GIT_TASK_QUIET=true     # Suppress headers and summary
+  GIT_TASK_FORMAT=simple  # Use simple output format"
+    
+    show_task_usage "git" "Execute git commands across all workspace repositories." "${examples}" "${env_vars}"
+}
+
+# Main execution
+main() {
+    if [[ $# -eq 0 ]]; then
+        show_usage
+        return 0
+    fi
+    
+    # Special handling for clone command
+    if [[ "$1" == "clone" ]]; then
+        # Setup configuration for clone command
+        declare -gA CONFIG=()
+        CONFIG["format"]="${GIT_TASK_FORMAT:-${MISE_TASK_FORMAT_DEFAULT:-pretty}}"
+        CONFIG["quiet"]="${GIT_TASK_QUIET:-${MISE_TASK_QUIET_DEFAULT:-false}}"
+        
+        # Source workspace functions
+        # shellcheck disable=SC1091
+        source "${MISE_PROJECT_ROOT}/.config/mise/lib/workspace.sh"
+        # shellcheck disable=SC1091
+        source "${MISE_PROJECT_ROOT}/.config/mise/lib/formatting.sh"
+        
+        if [[ "${CONFIG[quiet]}" != "true" ]]; then
+            format_operation_header "Cloning all workspace repositories..."
+        fi
+        
+        local total=0
+        local success=0
+        local -a failed_repos=()
+        
+        # Read repositories from workspace.json
+        local workspace_json="${MISE_PROJECT_ROOT}/.github/config/workspace.json"
+        
+        if [[ ! -f "${workspace_json}" ]]; then
+            handle_error 1 "Workspace configuration not found: ${workspace_json}"
+            return 1
+        fi
+        
+        # Parse repositories from workspace.json
+        while IFS='|' read -r name url path; do
+            total=$((total + 1))
+            
+            echo ""
+            format_repo_header "${name}" "${path}" "${CONFIG[format]:-pretty}" "false"
+            
+            # Check if directory already exists
+            if [[ -d "${path}" ]]; then
+                if [[ -d "${path}/.git" ]]; then
+                    print_status warning "Repository already exists"
+                    success=$((success + 1))
+                    continue
+                else
+                    print_status error "Directory exists but is not a git repository"
+                    failed_repos+=("${name}")
+                    continue
+                fi
+            fi
+            
+            # Clone the repository
+            if git clone "${url}" "${path}"; then
+                print_status success "Successfully cloned"
+                success=$((success + 1))
+            else
+                print_status error "Failed to clone"
+                failed_repos+=("${name}")
+            fi
+        done < <(jq -r '.repositories[] | "\(.name)|\(.url)|\(.path)"' "${workspace_json}")
+        
+        # Show summary
+        if [[ "${CONFIG[quiet]}" != "true" ]]; then
+            format_summary "${total}" "${success}" "${failed_repos[*]}"
+        fi
+        
+        [[ ${success} -eq ${total} ]] || return 1
+        return 0
+    fi
+    
+    # For all other git commands, run across existing repos
+    run_task_across_repos "git" execute_git_in_repo "validate_git_command_input" "auto" "$@"
+    return $?
+}
+
+# Call main with all arguments
+main "$@"
+exit $?

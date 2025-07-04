@@ -1,699 +1,138 @@
-# mise configuration for BrainCraft.io workspace
-# https://mise.jdx.dev/
+# BrainCraft.io Workspace Configuration
+# Minimal root that loads modular components
+
+# Mise automatically discovers and loads configuration from these locations:
 #
-# TODO: Add helm to tools list - currently commented out in Dockerfile due to rate limiting
-# TODO: Migrate kubectl, docker-cli, gh, task, and act from Dockerfile to mise for better reliability
+# Configuration Files (.config/mise/conf.d/):
+# - 00-env.toml       Environment variables and paths
+# - 00-tools.toml     Tool versions (go, node, python, etc.)
+# - 00-vars.toml      Task variables (build flags, test settings)
+#
+# Executable Tasks (.config/mise/tasks/):
+# - doctor-workspace      Health check for workspace (`mr dr`)
+# - git                  Repository operations wrapper
+# - exec                 Execute commands across repos
+# - lint-bash-shellcheck Shellcheck wrapper
+# - lint-bash-dead-code  Dead code finder
+#
+# Shared Libraries (.config/mise/lib/):
+# - common.sh        Reusable bash functions
+# - workspace.sh     Repository operations from workspace.json
 
-# Common tool versions for all projects
-[tools]
-go = "1.24.4"
-node = "24"
-python = "3.13"
-uv = "latest"
-"pipx:mcp-server-fetch" = "latest"
-"pipx:mcp-server-git" = "latest"
-rust = "latest"
-# Package managers and other tools
-pnpm = "latest"
-poetry = "latest"
-ruff = "latest"
-direnv = "latest"
-# Validation tools
-shellcheck = "latest"
-yamllint = "latest"
-markdownlint-cli2 = "latest"
-pre-commit = "latest"
-# Formatting tools
-shfmt = "latest"
-# Go linting tool
-golangci-lint = "2.2.1"
-# GitHub Actions workflow linter
-actionlint = "latest"
-# AI CLI tools (npm packages)
-"npm:@anthropic-ai/claude-code" = "latest" # tested with 1.0.38
-"npm:@google/gemini-cli" = "latest"        # tested with 0.1.7
-"npm:@openai/codex" = "latest"             # OpenAI's experimental CLI for coding
-# Playwright for testing
-"npm:@playwright/test" = "latest"
-# Note: MCP servers are invoked via npx in .mcp.json and don't need global installation
 
-# Workspace-wide environment variables
-[env]
-# Load .env file if it exists (will not fail if missing)
-_.file = ".env"
-# Add custom scripts to PATH
-_.path = ["{{config_root}}/.github/bin"]
-WORKSPACE_ROOT = "{{config_root}}"
-GOPRIVATE = "github.com/braincraftio/*"
-DOCKER_BUILDKIT = "1"
-# Go configuration
-GO111MODULE = "on"
-CGO_ENABLED = "1"
-GOPROXY = "https://proxy.golang.org,direct"
-# Build configuration
-SQLITE_TAGS = "sqlite_foreign_keys"
-DEFAULT_PORT = "8080"
-# GitHub Package Registry
-NPM_CONFIG_REGISTRY = "https://registry.npmjs.org/"
-# Docker configuration
-DOCKER_IMAGE = "braincraftio:latest"
-GITHUB_REPOSITORY_OWNER = "braincraftio"
-# Development environment
-EDITOR = "code"
-COLORTERM = "truecolor"
-# AI Assistant configuration
-CLAUDE_WORKSPACE = "true"
-
-# mise-specific settings
+# Settings
 [settings]
 always_keep_download = true
 legacy_version_file = true
-unix_default_inline_shell_args = "bash -c"
-task_output = "quiet"                      # Only show task output, not mise's prefixes
+task_output = "prefix"
+jobs = 4
 
-# ========================================
-# Orchestration Tasks (Tier 1)
-# ========================================
+# Task aliases
+[alias]
+i = "install"
+b = "build"
+t = "test"
+# l = "lint"  # Removed - conflicts with lint task
+f = "format"
+g = "git"
+x = "exec"
+d = "doctor"
 
-# Install all project dependencies
-[tasks.install]
-description = "Install all project dependencies"
-depends = [
-  "install:actions",
-  "install:containers",
-  "install:dot-github",
-  "install:style-system",
-]
+# Core tasks
+[tasks.setup]
+description = "Initial workspace setup and configuration"
+depends = ["setup:tools", "setup:repos", "setup:hooks"]
+alias = ["s", "init"]
 
-# Individual install tasks
-[tasks."install:actions"]
-hide = true
-run = "mise -C actions run install || echo 'No install task defined for actions yet'"
-[tasks."install:containers"]
-hide = true
-run = "mise -C containers run install || echo 'No install task defined for containers yet'"
-[tasks."install:dot-github"]
-hide = true
-run = "mise -C dot-github run install || echo 'No install task defined for dot-github yet'"
-[tasks."install:style-system"]
-hide = true
-run = "mise -C style-system run install || echo 'No install task defined for style-system yet'"
+[tasks."setup:tools"]
+description = "Install all required tools"
+run = "mise install"
 
-# Build all projects
-[tasks.build]
-description = "Build all projects"
-depends = [
-  "install",
-  "build:actions",
-  "build:containers",
-  "build:dot-github",
-  "build:style-system",
-  "build:devcontainer",
-]
+[tasks."setup:repos"]
+description = "Clone all child repositories"
+run = "mise run git:clone"
 
-# Individual build tasks
-[tasks."build:actions"]
-hide = true
-run = "mise -C actions run build || echo 'No build task defined for actions yet'"
-[tasks."build:containers"]
-hide = true
-run = "mise -C containers run build || echo 'No build task defined for containers yet'"
-[tasks."build:dot-github"]
-hide = true
-run = "mise -C dot-github run build || echo 'No build task defined for dot-github yet'"
-[tasks."build:style-system"]
-hide = true
-run = "mise -C style-system run build || echo 'No build task defined for style-system yet'"
-[tasks."build:devcontainer"]
-hide = true
-run = "mise -C containers run build"
+[tasks."setup:hooks"]
+description = "Install git hooks (pre-commit)"
+run = "pre-commit install --install-hooks"
 
-# Run all tests
-[tasks.test]
-description = "Run all tests"
-depends = [
-  "test:actions",
-  "test:containers",
-  "test:dot-github",
-  "test:style-system",
-]
+[tasks."doctor:workspace"]
+description = "Enterprise-grade workspace health check with actionable fixes"
+run = "mise run doctor-workspace"
+alias = ["dr", "doctor"]
 
-# Individual test tasks
-[tasks."test:actions"]
-hide = true
-run = "mise -C actions run test || echo 'No test task defined for actions yet'"
-[tasks."test:containers"]
-hide = true
-run = "mise -C containers run test || echo 'No test task defined for containers yet'"
-[tasks."test:dot-github"]
-hide = true
-run = "mise -C dot-github run test || echo 'No test task defined for dot-github yet'"
-[tasks."test:style-system"]
-hide = true
-run = "mise -C style-system run test || echo 'No test task defined for style-system yet'"
-
-
-# Run all linters and format checks
+# Linting tasks
 [tasks.lint]
-description = "Run all linters and format checks"
-depends = [
-  "lint:prettier",
-  "lint:black",
-  "lint:isort",
-  "lint:shellcheck",
-  "lint:yamllint",
-  "lint:markdownlint",
-  "lint:actionlint",
-  "lint:golangci",
-  "lint:eslint",
-  "lint:actions",
-  "lint:containers",
-  "lint:dot-github",
-  "lint:style-system",
-  "lint:workflows",
-]
+description = "Run all linters across the polyglot workspace"
+depends = ["lint:bash"]
 
-# Individual workspace lint tasks for parallel execution
-[tasks."lint:prettier"]
-hide = true
-run = "pre-commit run prettier --all-files"
-env = { SKIP = "no-commit-to-branch" }
+[tasks."lint:bash"]
+description = "Run all bash linters and quality checks"
+depends = ["lint:bash:shellcheck", "lint:bash:dead-code"]
 
-[tasks."lint:black"]
-hide = true
-run = "pre-commit run black --all-files || true"
-env = { SKIP = "no-commit-to-branch" }
+[tasks."lint:bash:shellcheck"]
+description = "Lint bash scripts with shellcheck for style and errors"
+run = "mise run lint-bash-shellcheck"
+alias = ["shellcheck"]
 
-[tasks."lint:isort"]
-hide = true
-run = "pre-commit run isort --all-files || true"
-env = { SKIP = "no-commit-to-branch" }
+[tasks."lint:bash:dead-code"]
+description = "Find unused functions in bash scripts"
+run = "mise run lint-bash-dead-code"
+alias = ["dead", "unused"]
 
-[tasks."lint:shellcheck"]
-hide = true
-run = "pre-commit run shellcheck --all-files"
-env = { SKIP = "no-commit-to-branch" }
+# Git tasks
+[tasks."git:status"]
+description = "Show git status across all repositories"
+run = "mise run git status --porcelain"
+alias = ["gs"]
 
-[tasks."lint:yamllint"]
-hide = true
-run = "pre-commit run yamllint --all-files"
-env = { SKIP = "no-commit-to-branch" }
-
-[tasks."lint:markdownlint"]
-hide = true
-run = "pre-commit run markdownlint-cli2 --all-files"
-env = { SKIP = "no-commit-to-branch" }
-
-[tasks."lint:actionlint"]
-hide = true
-run = "pre-commit run actionlint --all-files"
-env = { SKIP = "no-commit-to-branch" }
-
-[tasks."lint:golangci"]
-hide = true
-run = "pre-commit run golangci-lint --all-files || true"
-env = { SKIP = "no-commit-to-branch" }
-
-[tasks."lint:eslint"]
-hide = true
-run = "pre-commit run eslint --all-files || true"
-env = { SKIP = "no-commit-to-branch" }
-
-# Individual lint tasks for child repositories
-[tasks."lint:actions"]
-hide = true
-run = "mise -C actions run lint || echo 'No lint task defined for actions yet'"
-[tasks."lint:containers"]
-hide = true
-run = "mise -C containers run lint || echo 'No lint task defined for containers yet'"
-[tasks."lint:dot-github"]
-hide = true
-run = "mise -C dot-github run lint || echo 'No lint task defined for dot-github yet'"
-[tasks."lint:style-system"]
-hide = true
-run = "mise -C style-system run lint || echo 'No lint task defined for style-system yet'"
-
-# Lint all GitHub Actions workflows with centralized config
-[tasks."lint:workflows"]
-description = "Lint all GitHub Actions workflows"
-run = '''
-    echo "🔍 Linting GitHub Actions workflows..."
-
-    # Find all workflow files across the workspace
-    workflow_files=$(find . -path "*/node_modules" -prune -o -path "*/.github/workflows/*.yml" -type f -print -o -path "*/.github/workflows/*.yaml" -type f -print | grep -v node_modules)
-
-    if [ -n "$workflow_files" ]; then
-        # Use centralized actionlint config
-        actionlint -config-file .github/actionlint.yaml $workflow_files
-        echo "✅ Workflow linting complete"
-    else
-        echo "⚠️  No workflow files found"
-    fi
-'''
-
-# Clean build artifacts
-[tasks.clean]
-description = "Clean build artifacts"
-depends = [
-  "clean:actions",
-  "clean:containers",
-  "clean:dot-github",
-  "clean:style-system",
-]
-
-# Individual clean tasks
-[tasks."clean:actions"]
-hide = true
-run = "mise -C actions run clean || echo 'No clean task defined for actions yet'"
-[tasks."clean:containers"]
-hide = true
-run = "mise -C containers run clean || echo 'No clean task defined for containers yet'"
-[tasks."clean:dot-github"]
-hide = true
-run = "mise -C dot-github run clean || echo 'No clean task defined for dot-github yet'"
-[tasks."clean:style-system"]
-hide = true
-run = "mise -C style-system run clean || echo 'No clean task defined for style-system yet'"
-
-# ========================================
-# Workspace-Level Tasks
-# ========================================
-
-# Format all code
-[tasks.format]
-description = "Format all code"
-depends = ["format:prettier", "format:go", "format:rust", "format:python"]
-
-# Format with Prettier
-[tasks."format:prettier"]
-description = "Format with Prettier"
-sources = ["**/*.{js,ts,jsx,tsx,json,yaml,yml,md}"]
-outputs = { auto = true }
-run = "npx prettier --write ."
-
-# Format Go code
-[tasks."format:go"]
-description = "Format Go code"
-run = '''
-    # Format Go files in workspace
-    find . -name "*.go" -type f \
-        ! -path "*/vendor/*" ! -path "*/node_modules/*" \
-        -exec gofmt -w {} +
-'''
-
-# Format Rust code
-[tasks."format:rust"]
-description = "Format Rust code"
-run = '''
-    # Format Rust files in workspace
-    find . -name "*.rs" -type f \
-        ! -path "*/target/*" ! -path "*/node_modules/*" \
-        -exec rustfmt {} +
-'''
-
-# Format Python code
-[tasks."format:python"]
-description = "Format Python code"
-run = '''
-    poetry run black scripts/
-    poetry run isort scripts/
-'''
-
-# Run all pre-commit hooks
-[tasks."pre-commit"]
-description = "Run all pre-commit hooks"
-run = "pre-commit run --all-files"
-env = { SKIP = "no-commit-to-branch" }
-
-# ========================================
-# Git Operations
-# ========================================
-
-# Configure git for all repositories
-[tasks."git:setup"]
-description = "Configure git for all repositories"
-run = '''
-    git config --global --add safe.directory '*'
-    echo "✓ Git safe directory configured"
-'''
-
-
-# Clone all repositories
 [tasks."git:clone"]
-description = "Clone all repositories"
-depends = [
-  "git:clone:actions",
-  "git:clone:containers",
-  "git:clone:dot-github",
-  "git:clone:style-system",
-]
+description = "Clone all child repositories"
+run = "mise run git clone"
+alias = ["gc", "clone"]
 
-# Individual clone tasks
-[tasks."git:clone:actions"]
-hide = true
-run = '''
-    if [[ ! -d "actions" ]]; then
-        git clone https://github.com/braincraftio/actions.git
-        echo "✓ Cloned actions"
-    else
-        echo "✓ actions already exists"
-    fi
-'''
-
-[tasks."git:clone:containers"]
-hide = true
-run = '''
-    if [[ ! -d "containers" ]]; then
-        git clone https://github.com/braincraftio/containers.git
-        echo "✓ Cloned containers"
-    else
-        echo "✓ containers already exists"
-    fi
-'''
-
-[tasks."git:clone:dot-github"]
-hide = true
-run = '''
-    if [[ ! -d "dot-github" ]]; then
-        git clone https://github.com/braincraftio/.github.git dot-github
-        echo "✓ Cloned dot-github"
-    else
-        echo "✓ dot-github already exists"
-    fi
-'''
-
-[tasks."git:clone:style-system"]
-hide = true
-run = '''
-    if [[ ! -d "style-system" ]]; then
-        git clone https://github.com/braincraftio/style-system.git
-        echo "✓ Cloned style-system"
-    else
-        echo "✓ style-system already exists"
-    fi
-'''
-
-# Pull latest changes for all repositories
 [tasks."git:pull"]
 description = "Pull latest changes for all repositories"
-depends = [
-  "git:pull:actions",
-  "git:pull:containers",
-  "git:pull:dot-github",
-  "git:pull:style-system",
-]
+run = "mise run git pull"
+alias = ["gp", "pull"]
 
-# Individual pull tasks
-[tasks."git:pull:actions"]
-hide = true
-run = '''
-    if [[ -d "actions" ]]; then
-        cd actions && git pull
-        echo "✓ Updated actions"
-    else
-        echo "⚠ actions not found"
-    fi
-'''
+[tasks."git:fetch"]
+description = "Fetch updates for all repositories"
+run = "mise run git fetch"
+alias = ["gf", "fetch"]
 
-[tasks."git:pull:containers"]
-hide = true
-run = '''
-    if [[ -d "containers" ]]; then
-        cd containers && git pull
-        echo "✓ Updated containers"
-    else
-        echo "⚠ containers not found"
-    fi
-'''
+[tasks."git:branch"]
+description = "Show branches for all repositories"
+run = "mise run git branch"
+alias = ["gb"]
 
-[tasks."git:pull:dot-github"]
-hide = true
-run = '''
-    if [[ -d "dot-github" ]]; then
-        cd dot-github && git pull
-        echo "✓ Updated dot-github"
-    else
-        echo "⚠ dot-github not found"
-    fi
-'''
+[tasks."git:log"]
+description = "Show recent commits for all repositories"
+run = "mise run git log --oneline -5"
+alias = ["gl"]
 
-[tasks."git:pull:style-system"]
-hide = true
-run = '''
-    if [[ -d "style-system" ]]; then
-        cd style-system && git pull
-        echo "✓ Updated style-system"
-    else
-        echo "⚠ style-system not found"
-    fi
-'''
+# Pre-commit tasks
+[tasks."pre-commit:install"]
+description = "Install pre-commit hooks for the workspace"
+run = "pre-commit install --install-hooks"
+alias = ["pci"]
 
-# Show git status for all repositories
-[tasks."git:status"]
-description = "Show git status for all repositories"
-depends = [
-  "git:status:actions",
-  "git:status:containers",
-  "git:status:dot-github",
-  "git:status:style-system",
-]
+[tasks."pre-commit:run"]
+description = "Run pre-commit checks on all files"
+run = "pre-commit run --all-files"
+alias = ["pc", "precommit"]
 
-# Individual status tasks
-[tasks."git:status:actions"]
-hide = true
-run = '''
-    if [[ -d "actions" ]]; then
-        echo "📂 [actions]"
-        cd actions && git status -sb
-        echo
-    else
-        echo "⚠ actions not found"
-    fi
-'''
+[tasks."pre-commit:run:staged"]
+description = "Run pre-commit checks on staged files only"
+run = "pre-commit run"
+alias = ["pcs"]
 
-[tasks."git:status:containers"]
-hide = true
-run = '''
-    if [[ -d "containers" ]]; then
-        echo "📂 [containers]"
-        cd containers && git status -sb
-        echo
-    else
-        echo "⚠ containers not found"
-    fi
-'''
+[tasks."pre-commit:update"]
+description = "Update pre-commit hooks to latest versions"
+run = "pre-commit autoupdate"
+alias = ["pcu"]
 
-[tasks."git:status:dot-github"]
-hide = true
-run = '''
-    if [[ -d "dot-github" ]]; then
-        echo "📂 [dot-github]"
-        cd dot-github && git status -sb
-        echo
-    else
-        echo "⚠ dot-github not found"
-    fi
-'''
-
-[tasks."git:status:style-system"]
-hide = true
-run = '''
-    if [[ -d "style-system" ]]; then
-        echo "📂 [style-system]"
-        cd style-system && git status -sb
-        echo
-    else
-        echo "⚠ style-system not found"
-    fi
-'''
-
-# ========================================
-# Setup and Initialization Tasks
-# ========================================
-
-# NPM authentication setup (informational)
-[tasks."setup:npm-auth"]
-description = "Configure npm authentication for private packages"
-run = '''
-    echo "=> NPM Private Registry Setup"
-    echo ""
-    echo "This project may require access to private packages."
-    echo ""
-    echo "To configure authentication:"
-    echo "  1. Obtain an npm token for private packages"
-    echo "  2. Create ~/.npmrc with the following content:"
-    echo ""
-    echo "     @braincraftio:registry=https://npm.pkg.github.com/"
-    echo "     //npm.pkg.github.com/:_authToken=YOUR_TOKEN"
-    echo ""
-    echo "  3. Replace 'your-registry.com' with the actual registry URL"
-    echo "  4. Replace 'YOUR_TOKEN' with your authentication token"
-    echo ""
-    echo "Once configured, run 'mise run install' to install dependencies."
-'''
-
-# Complete development environment setup
-[tasks.setup]
-description = "Complete development environment setup"
-depends = ["git:setup", "git:clone", "symlink"]
-
-# ========================================
-# Project-Specific Tasks
-# ========================================
-
-# Build specific projects
-[tasks."build:workspace"]
-description = "Build the workspace documentation"
-run = "echo 'Building workspace documentation...'"
-
-# Demo Tasks
-[tasks."demo:style-system"]
-description = "Serve the Aurora Design System demo on port 8080"
-run = '''
-    cd style-system
-
-    # Kill any existing Python http.server process on port 8080
-    ps aux | grep -E "python.*http.server.*8080" | grep -v grep | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
-
-    echo "🎨 Starting Aurora Design System demo server..."
-    echo "📍 Open http://localhost:8080/demo.html in your browser"
-    echo "📝 Press Ctrl+C to stop the server"
-    python3 -m http.server 8080
-'''
-
-# ========================================
-# Docker Tasks
-# ========================================
-
-# Build devcontainer
-[tasks."docker:devcontainer:build"]
-description = "Build the BrainCraft.io devcontainer image"
-run = "mise -C containers run docker:build"
-
-# Run devcontainer
-[tasks."docker:devcontainer:run"]
-description = "Run the BrainCraft.io devcontainer"
-run = "mise -C containers run docker:run"
-
-# Test devcontainer
-[tasks."docker:devcontainer:test"]
-description = "Test the BrainCraft.io devcontainer"
-run = "mise -C containers run docker:test"
-
-# ========================================
-# Codespaces Tasks
-# ========================================
-
-# Task run by onCreateCommand
-[tasks."codespaces:on-create"]
-description = "Setup workspace when Codespaces container is created"
-depends = [
-  "git:setup",
-  "codespaces:clone-if-needed",
-  "codespaces:configure-git-user",
-  "codespaces:warm-tools",
-  "mcp:install"
-]
-
-# Clone repositories if not present (for Codespaces)
-[tasks."codespaces:clone-if-needed"]
-hide = true
-run = '''
-    echo "🚀 Setting up BrainCraft.io workspace..."
-
-    # Clone only the repositories needed for Codespaces
-    repos=(
-      "actions"
-      "containers"
-      ".github:dot-github"
-      "style-system"
-    )
-
-    for repo_spec in "${repos[@]}"; do
-      IFS=':' read -r repo_name clone_dir <<< "$repo_spec"
-      clone_dir="${clone_dir:-$repo_name}"
-
-      if [[ ! -d "$clone_dir" ]]; then
-        echo "📦 Cloning $repo_name..."
-        git clone "https://github.com/braincraftio/$repo_name.git" "$clone_dir"
-      fi
-    done
-'''
-
-# Configure git user from Codespaces environment
-[tasks."codespaces:configure-git-user"]
-hide = true
-run = '''
-    if [[ -n "${GITHUB_USER:-}" ]]; then
-      git config --global user.name "$GITHUB_USER"
-      git config --global user.email "$GITHUB_USER@users.noreply.github.com"
-      echo "✓ Configured git user as $GITHUB_USER"
-    fi
-'''
-
-# Pre-warm mise tool downloads
-[tasks."codespaces:warm-tools"]
-hide = true
-run = '''
-    echo "🔧 Pre-warming mise tools..."
-    mise trust --yes
-    mise install --jobs 4
-    echo "✅ Tools installed successfully!"
-'''
-
-# Task run by postStartCommand
-[tasks."codespaces:post-start"]
-description = "Initialize workspace after Codespaces container starts"
-depends = ["codespaces:verify-mcp", "git:status"]
-run = '''
-    echo "🎉 Development environment ready!"
-    echo "💡 Run 'mise tasks' to see available commands"
-'''
-
-# Verify MCP servers are accessible
-[tasks."codespaces:verify-mcp"]
-hide = true
-run = '''
-    echo "🔍 Verifying MCP servers..."
-    # Check for MCP servers
-    which mcp-server-fetch && echo "✓ mcp-server-fetch available" || echo "⚠️  mcp-server-fetch not found"
-    which mcp-server-git && echo "✓ mcp-server-git available" || echo "⚠️  mcp-server-git not found"
-'''
-
-# ========================================
-# MCP Server Management
-# ========================================
-
-# Pre-install MCP server packages to eliminate warnings and ensure availability
-[tasks."mcp:install"]
-description = "Pre-install MCP server packages for faster startup"
-run = '''
-    echo "📦 Installing MCP server packages..."
-    
-    # Install packages globally to ensure they're available
-    # These are used by .mcp.json via npx, but pre-installing eliminates warnings
-    npm install -g @modelcontextprotocol/server-memory@latest || echo "⚠️  Failed to install server-memory"
-    npm install -g @modelcontextprotocol/server-sequential-thinking@latest || echo "⚠️  Failed to install server-sequential-thinking"
-    npm install -g @modelcontextprotocol/server-github@latest || echo "⚠️  Failed to install server-github"
-    npm install -g @playwright/mcp@latest || echo "⚠️  Failed to install playwright-mcp"
-    npm install -g server-perplexity-ask@latest || echo "⚠️  Failed to install server-perplexity-ask"
-    
-    echo "✅ MCP server packages installed"
-'''
-
-# Cache MCP server packages using npx (alternative approach)
-[tasks."mcp:cache"]
-description = "Pre-cache MCP server packages using npx"
-hide = true
-run = '''
-    echo "🔄 Pre-caching MCP server packages..."
-    
-    # Pre-download packages using npx to populate cache
-    npx -y @modelcontextprotocol/server-memory --version 2>/dev/null || true
-    npx -y @modelcontextprotocol/server-sequential-thinking --version 2>/dev/null || true
-    npx -y @modelcontextprotocol/server-github --version 2>/dev/null || true
-    npx -y @playwright/mcp --version 2>/dev/null || true
-    npx -y server-perplexity-ask --version 2>/dev/null || true
-    
-    echo "✅ MCP server packages cached"
-'''
+[tasks."pre-commit:clean"]
+description = "Clean pre-commit cache"
+run = "pre-commit clean && pre-commit gc"
+alias = ["pcc"]

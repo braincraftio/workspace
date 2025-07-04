@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash
+#
+# exec - Execute commands across all workspace repositories
+#
+# Purpose:
+#   Dynamically execute arbitrary commands across all repositories defined in workspace.json
+#   Provides consistent execution environment and error handling
+#
+# Usage:
+#   mise run exec [COMMAND] [ARGS...]
+#
+# Examples:
+#   mise run exec pwd                    # Show working directory in each repo
+#   mise run exec ls -la                 # List files in each repo
+#   mise run exec grep -l "TODO" *.md    # Search for TODOs in markdown files
+#
+# Environment Variables:
+#   EXEC_TASK_QUIET="${EXEC_TASK_QUIET:-false}"      - Suppress decorative output
+#   EXEC_TASK_PARALLEL="${EXEC_TASK_PARALLEL:-false}" - Run in parallel (experimental)
+#
+# Exit Codes:
+#   0 - All repositories processed successfully
+#   1 - One or more repositories failed
+#
+#MISE description="Execute commands across all repositories"
+#MISE alias=["e", "x"]
+
+set -euo pipefail
+
+# Set task name for error context
+export MISE_TASK_NAME="exec"
+
+# shellcheck disable=SC1091
+# SC1091: MISE_PROJECT_ROOT is set at runtime by mise, path cannot be resolved statically
+source "${MISE_PROJECT_ROOT}/.config/mise/lib/common.sh" "$@"
+
+# Initialize standardized error handling after sourcing
+init_task_error_handling 2>/dev/null || true
+
+# shellcheck disable=SC1091
+# SC1091: MISE_PROJECT_ROOT is set at runtime by mise, path cannot be resolved statically
+source "${MISE_PROJECT_ROOT}/.config/mise/lib/task-runner.sh"
+
+#######################################
+# Execute command in repository
+# Arguments:
+#   $1 - repo_name: Repository name
+#   $2 - repo_path: Repository path
+#   $@ - command and args
+# Returns:
+#   Command exit code
+#######################################
+# shellcheck disable=SC2317
+# SC2317: Function is called indirectly via run_task_across_repos
+execute_cmd_in_repo() {
+    local repo_name="$1"
+    local repo_path="$2"
+    shift 2
+    execute_in_repo_generic "${repo_name}" "${repo_path}" "" "$@"
+}
+
+# Show usage if no arguments
+show_usage() {
+    local examples="  mise run exec pwd                    # Show working directory in each repo
+  mise run exec ls -la                 # List files in each repo  
+  mise run exec git branch             # Show current branch in each repo
+  mise run exec grep -l \"TODO\" *.md    # Search for TODOs in markdown files
+  mise run exec make test              # Run make test in each repo"
+    
+    local env_vars="  EXEC_TASK_QUIET=true       # Suppress headers and summary
+  EXEC_TASK_PARALLEL=true    # Run in parallel (experimental)
+  EXEC_TASK_FORMAT=pretty    # Output format (minimal|pretty)"
+    
+    show_task_usage "exec" "Execute commands across all workspace repositories." "${examples}" "${env_vars}"
+}
+
+# Main execution
+main() {
+    if [[ $# -eq 0 ]]; then
+        show_usage
+        return 0
+    fi
+    
+    # Run the task across all repos (always include workspace root)
+    run_task_across_repos "exec" execute_cmd_in_repo "validate_command_input" "true" "$@"
+    return $?
+}
+
+# Call main with all arguments
+main "$@"
+MAIN_EXIT_CODE=$?
+exit ${MAIN_EXIT_CODE}

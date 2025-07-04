@@ -1,0 +1,53 @@
+# Environment configuration
+[env]
+_.file = ".env"
+
+# Core paths - using relative paths since config-time expansion not supported
+# Use MISE_PROJECT_ROOT directly in bash scripts for absolute paths
+WORKSPACE_CONFIG_PATH = ".github/config/workspace.json"
+WORKSPACE_ROOT = "."
+
+# Organization settings
+ORGANIZATION = "braincraftio"
+DEFAULT_BRANCH = "main"
+REGISTRY = "ghcr.io"
+
+# Development environment
+GOPRIVATE = "github.com/braincraftio/*"
+DOCKER_BUILDKIT = "1"
+GO111MODULE = "on"
+CGO_ENABLED = "1"
+GOPROXY = "https://proxy.golang.org,direct"
+SQLITE_TAGS = "sqlite_foreign_keys"
+DEFAULT_PORT = "8080"
+NPM_CONFIG_REGISTRY = "https://registry.npmjs.org/"
+DOCKER_IMAGE = "containers:devcontainer-latest"
+GITHUB_REPOSITORY_OWNER = "braincraftio"
+EDITOR = "code"
+COLORTERM = "truecolor"
+
+# Task defaults
+MISE_TASK_FORMAT_DEFAULT = "pretty"
+MISE_TASK_QUIET_DEFAULT = "false"
+MISE_TASK_PARALLEL_DEFAULT = "false"
+
+# Health check requirements (exported for external tools)
+MIN_MISE_VERSION = "2024.1.0"
+MIN_GIT_VERSION = "2.30.0"
+MIN_DOCKER_MEMORY_GB = "2.0"
+MIN_DISK_SPACE_GB = "5"
+
+# Health check thresholds (available in shell scripts)
+DOCKER_HIGH_CONTAINER_COUNT = "20"
+DOCKER_HIGH_IMAGE_COUNT = "50"
+DISK_USAGE_WARNING_PERCENT = "80"
+NETWORK_TIMEOUT_SECONDS = "3"
+NETWORK_MIN_ENDPOINTS_SUCCESS = "2"
+
+# Network endpoints for connectivity checks
+HEALTH_CHECK_ENDPOINTS = "github.com:443,ghcr.io:443,registry.npmjs.org:443"
+
+# CI/CD detection
+MISE_YES = "1"
+# Don't override environment variables that may already be set
+# These will be available if running in their respective environments
