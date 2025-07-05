@@ -1,23 +1,40 @@
 # Tool versions for all projects
+# Last reviewed: 2025-07-05
 [tools]
-go = "1.24.4"
-node = "24"
-python = "3.13.5"
-uv = "latest"
-rust = "latest"
-pnpm = "latest"
-poetry = "latest"
-ruff = "latest"
-direnv = "latest"
-shellcheck = "latest"
-yamllint = "latest"
-markdownlint-cli2 = "latest"
-pre-commit = "latest"
-shfmt = "latest"
-golangci-lint = "2.2.1"
-actionlint = "latest"
-jq = "latest"
-gh = "latest"
+# Primary languages - Specific versions for consistency
+go = "1.24.4"        # Latest stable (keeping current version)
+node = "24"          # Latest LTS (keeping current version)
+python = "3.13.5"    # Latest stable (keeping current version)
+rust = "latest"      # Keep latest for Rust's stability guarantees
+
+# Package managers
+pnpm = "latest"      # Faster npm alternative
+poetry = "latest"    # Python dependency management
+uv = "latest"        # Ultra-fast Python package installer
+pipx = "latest"      # Python app isolation
+
+# Development tools
+pre-commit = "latest" # Git hooks framework
+jq = "latest"        # JSON processor
+gh = "latest"        # GitHub CLI
+
+# Linters and code quality
+ruff = "latest"      # Fast Python linter
+shellcheck = "latest" # Shell script analysis
+yamllint = "latest"  # YAML linter
+markdownlint-cli2 = "latest" # Markdown linter
+actionlint = "latest" # GitHub Actions linter
+golangci-lint = "2.2.1" # Go linters aggregator (keeping current version)
+lychee = "latest"    # Link checker
+
+# Formatters
+shfmt = "latest"     # Shell formatter
+#black = { tool = "pipx:black", version = "latest" } # Python formatter - NEW
+biome = "latest"     # Modern JS/TS/JSON/JSONC formatter and linter
+"pipx:check-jsonschema" = "latest" # JSON Schema validator
+
+# Security tools via pipx
+"pipx:detect-secrets" = "latest"  # Secret detection for pre-commit
 
 # MCP servers via pipx
 "pipx:mcp-server-fetch" = "latest"
@@ -28,3 +45,6 @@ gh = "latest"
 "npm:@google/gemini-cli" = "latest"
 "npm:@openai/codex" = "latest"
 "npm:@playwright/test" = "latest"
+"npm:prettier" = "latest"     # Universal code formatter - NEW
+"npm:jsonc-parser" = "latest" # JSON with comments parser - NEW
+"npm:glob" = "latest"         # File pattern matching - NEW

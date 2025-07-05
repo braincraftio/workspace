@@ -52,7 +52,11 @@ logs/
 
 # Mise local overrides
 .mise.local.toml
+.mise.*.local.toml
 .tool-versions.local
+
+# Reports and analysis
+.reports/
 
 # act configuration
 .env.act

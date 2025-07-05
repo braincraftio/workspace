@@ -24,7 +24,7 @@
 # AVAILABLE REGIONS:
 # GitHub Codespaces uses Azure infrastructure. Common regions include:
 # - WestUs2: West US 2 (Oregon)
-# - EastUs: East US (Virginia)  
+# - EastUs: East US (Virginia)
 # - WestEurope: West Europe (Netherlands) - Note: May route to UK South
 # - SoutheastAsia: Southeast Asia (Singapore) - Note: May route to Central India
 # - AustraliaEast: Australia East (New South Wales)
@@ -50,18 +50,18 @@ on:
   # Trigger on pushes to main branch
   push:
     branches: [main]
-  
+
   # Weekly rebuilds ensure security updates are included
   # Runs at 2 AM UTC on Mondays (adjust for your team's timezone)
   schedule:
     - cron: "0 2 * * 1"
-  
+
   # Manual trigger for testing or forced rebuilds
   workflow_dispatch:
 
 permissions:
-  contents: read    # Read repository content
-  packages: read    # Read container images from ghcr.io
+  contents: read # Read repository content
+  packages: read # Read container images from ghcr.io
 
 jobs:
   prebuild:
@@ -78,7 +78,7 @@ jobs:
           # - WestUs2 chosen as primary US West Coast presence
           # - Add more regions as needed: "WestUs2,EastUs,WestEurope,SoutheastAsia"
           regions: "WestUs2"
-          
+
           # SKU CONFIGURATION:
           # Machine types available for prebuilds:
           # - basicLinux32gb: 2 cores, 8 GB RAM, 32 GB storage
@@ -89,7 +89,6 @@ jobs:
           # Note: Larger SKUs create prebuilds faster but cost more
           # The SKU only affects prebuild creation, not the codespace runtime
           sku_name: "standardLinux32gb"
-
 # ENTERPRISE CONSIDERATIONS:
 # 1. Use GITHUB_TOKEN with packages:read for private container registries
 # 2. Consider using self-hosted runners for prebuild creation in regulated environments

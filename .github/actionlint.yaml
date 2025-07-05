@@ -12,22 +12,22 @@ paths:
     ignore:
       # SC2086: Double quote to prevent globbing and word splitting
       # False positive - GitHub Actions expressions are already safely preprocessed
-      - 'shellcheck reported issue in this script: SC2086:.+'
+      - "shellcheck reported issue in this script: SC2086:.+"
 
       # SC2129: Consider using { cmd1; cmd2; } >> file instead of individual redirects
       # Not applicable - GitHub Actions step summaries work fine with individual redirects
-      - 'shellcheck reported issue in this script: SC2129:.+'
+      - "shellcheck reported issue in this script: SC2129:.+"
 
       # SC2162: read without -r will mangle backslashes
       # False positive - GitHub Actions output doesn't contain raw backslashes
-      - 'shellcheck reported issue in this script: SC2162:.+'
+      - "shellcheck reported issue in this script: SC2162:.+"
 
   # Similar false positives in markdown-link-check.yml
   dot-github/.github/workflows/markdown-link-check.yml:
     ignore:
-      - 'shellcheck reported issue in this script: SC2086:.+'
+      - "shellcheck reported issue in this script: SC2086:.+"
 
   # False positive in devcontainer build workflow
   devcontainer/.github/workflows/build.yaml:
     ignore:
-      - 'shellcheck reported issue in this script: SC2086:.+'
+      - "shellcheck reported issue in this script: SC2086:.+"

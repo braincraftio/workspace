@@ -22,10 +22,21 @@
 
 # Settings
 [settings]
-always_keep_download = true
+status.show_env = true
+yes = true
+verbose = false
+always_keep_download = false
 legacy_version_file = true
+activate_aggressive = true
 task_output = "prefix"
+auto_install = true
+task_run_auto_install = true
+trusted_config_paths = ["/workspace/", "/workspace/actions/", "/workspace/dot-github/", "/workspace/containers", "/workspace/style-system" ]
+color = true
 jobs = 4
+
+go_download_mirror = "https://dl.google.com/go"
+go_repo = "https://github.com/golang/go"
 
 # Task aliases
 [alias]
@@ -68,7 +79,7 @@ alias = ["dr", "doctor"]
 # Linting tasks
 [tasks.lint]
 description = "Run all linters across the polyglot workspace"
-depends = ["lint:bash"]
+depends = ["lint:bash", "lint:markdown"]
 
 [tasks."lint:bash"]
 description = "Run all bash linters and quality checks"
@@ -83,6 +94,93 @@ alias = ["shellcheck"]
 description = "Find unused functions in bash scripts"
 run = "mise run lint-bash-dead-code"
 alias = ["dead", "unused"]
+
+[tasks."lint:markdown"]
+description = "Run all markdown linters and link checkers"
+depends = ["lint:markdown:format", "lint:markdown:links"]
+
+[tasks."lint:markdown:format"]
+description = "Lint markdown files with markdownlint"
+run = "markdownlint-cli2 '**/*.md' '#node_modules' '#.git'"
+alias = ["mdlint"]
+
+# Markdown link checking - unified task
+[tasks."lint:markdown:links"]
+description = "Check markdown links across repositories"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Default configuration
+OFFLINE="--offline"
+TARGETS=()
+
+# Check for --online flag
+if [[ "${1:-}" == "--online" ]]; then
+  OFFLINE=""
+  shift
+fi
+
+# Use remaining args as targets if provided
+if [[ $# -gt 0 ]]; then
+  TARGETS=("$@")
+else
+  # Default: check markdown files in workspace and child repos only
+  TARGETS=(
+    "*.md"
+    ".github/**/*.md"
+    ".config/**/*.md"
+    "actions/**/*.md"
+    "containers/**/*.md"
+    "style-system/**/*.md"
+    "dot-github/**/*.md"
+  )
+fi
+
+# Build command
+CMD="lychee --no-progress $OFFLINE"
+[[ -f "lychee.toml" ]] && CMD="$CMD --config lychee.toml"
+
+# Add exclusions
+CMD="$CMD --exclude-path '.npm-global' --exclude-path 'node_modules' --exclude-path '.git'"
+
+echo "🔗 Checking markdown links..."
+exec $CMD "${TARGETS[@]}"
+'''
+alias = ["mdlinks"]
+
+[tasks."lint:markdown:report"]
+description = "Generate broken links report for all repositories"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+
+mkdir -p .reports
+
+# Check each repository
+for repo in . actions containers style-system dot-github; do
+  if [[ -d "$repo" ]]; then
+    echo "📊 Checking $repo..."
+    if [[ "$repo" == "." ]]; then
+      # For workspace root, check specific files
+      lychee --offline --format markdown --output ".reports/broken-links-workspace.md" \
+        --exclude-path '.npm-global' --exclude-path 'node_modules' \
+        "*.md" ".github/**/*.md" ".config/**/*.md" 2>/dev/null || true
+    else
+      # For child repos, check all markdown
+      lychee --offline --format markdown --output ".reports/broken-links-${repo//\//-}.md" \
+        --exclude-path 'node_modules' \
+        "$repo/**/*.md" 2>/dev/null || true
+    fi
+  fi
+done
+
+# Consolidate reports
+echo "📋 Consolidating reports..."
+cat .reports/broken-links-*.md > .reports/broken-links-all.md 2>/dev/null || echo "No broken links found!"
+echo "✅ Report saved to: .reports/broken-links-all.md"
+'''
+alias = ["mdreport"]
 
 # Git tasks
 [tasks."git:status"]
@@ -140,3 +238,32 @@ alias = ["pcu"]
 description = "Clean pre-commit cache"
 run = "pre-commit clean && pre-commit gc"
 alias = ["pcc"]
+
+# Formatting tasks
+[tasks.format]
+description = "Format all code (runs pre-commit formatters)"
+run = "pre-commit run --all-files prettier shfmt biome-format-json black || true"
+alias = ["fmt"]
+
+[tasks."format:fix"]
+description = "Auto-fix all code issues"
+run = "pre-commit run --all-files"
+alias = ["fix"]
+
+# Validation tasks
+[tasks."validate:mise"]
+description = "Validate mise configuration files"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Check that mise can read all config files
+if mise config ls >/dev/null 2>&1; then
+  echo "✅ All mise configuration files are valid"
+  exit 0
+else
+  echo "❌ Error reading mise configuration files"
+  exit 1
+fi
+'''
+alias = ["validate-mise"]

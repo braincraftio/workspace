@@ -1,0 +1,36 @@
+name: Check Markdown Links
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**.md"
+      - ".mise.toml"
+      - ".config/mise/conf.d/**"
+      - "lychee.toml"
+
+  pull_request:
+    paths:
+      - "**.md"
+      - ".mise.toml"
+      - ".config/mise/conf.d/**"
+      - "lychee.toml"
+
+  # Run comprehensive checks weekly
+  schedule:
+    - cron: "0 0 * * 0"
+
+  workflow_dispatch:
+    inputs:
+      check-external:
+        description: "Check external links (slower but more thorough)"
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  check-links:
+    uses: braincraftio/actions/.github/workflows/lint-markdown-links.yml@main
+    with:
+      check-external: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.inputs.check-external == 'true' }}
+      generate-report: true
+      repository-name: ${{ github.event.repository.name }}

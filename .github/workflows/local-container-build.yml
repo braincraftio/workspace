@@ -119,12 +119,14 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Local Container Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Image Built Successfully**" >> $GITHUB_STEP_SUMMARY
-          echo "- Tags:" >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.meta.outputs.tags }}" | while read tag; do
-            echo "  - \`$tag\`" >> $GITHUB_STEP_SUMMARY
-          done
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- Platforms: linux/amd64 (local build)" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Local Container Build Summary"
+            echo ""
+            echo "✅ **Image Built Successfully**"
+            echo "- Tags:"
+            echo "${{ steps.meta.outputs.tags }}" | while IFS= read -r tag; do
+              echo "  - \`${tag}\`"
+            done
+            echo ""
+            echo "- Platforms: linux/amd64 (local build)"
+          } >> "$GITHUB_STEP_SUMMARY"

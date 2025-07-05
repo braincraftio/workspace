@@ -46,17 +46,12 @@
         "terminal.integrated.profiles.linux": {
           "bash": {
             "path": "/bin/bash",
-            "args": [
-              "-l"
-            ]
+            "args": ["-l"]
           }
         },
         "editor.formatOnSave": true,
         "editor.formatOnPaste": true,
-        "editor.rulers": [
-          80,
-          120
-        ],
+        "editor.rulers": [80, 120],
         "files.trimTrailingWhitespace": true,
         "files.insertFinalNewline": true,
         "go.toolsManagement.checkForUpdates": "off",
@@ -66,11 +61,7 @@
       }
     },
     "codespaces": {
-      "openFiles": [
-        "README.md",
-        "CONTRIBUTING.md",
-        "braincraftio.code-workspace"
-      ],
+      "openFiles": ["README.md", "CONTRIBUTING.md", "braincraftio.code-workspace"],
       "repositories": {
         "braincraftio/*": {
           "permissions": "write-all"
@@ -87,15 +78,9 @@
   // Run as non-root user
   "remoteUser": "ubuntu",
   // Mount Docker socket for Docker-outside-of-Docker
-  "mounts": [
-    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-  ],
+  "mounts": ["source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"],
   // Keep container running
   "overrideCommand": true,
   // Container capabilities
-  "runArgs": [
-    "--cap-add=SYS_PTRACE",
-    "--security-opt=seccomp:unconfined",
-    "--network=host"
-  ]
+  "runArgs": ["--cap-add=SYS_PTRACE", "--security-opt=seccomp:unconfined", "--network=host"]
 }
