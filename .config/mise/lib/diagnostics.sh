@@ -237,10 +237,16 @@ generate_fix_commands() {
                 fix_commands+=("eval \$(ssh-agent)")
                 fix_commands+=("ssh-add")
                 ;;
-            *"Git config"*)
+            *"Git user config"*)
                 fix_commands+=("# Configure Git:")
-                fix_commands+=("git config --global user.name 'Your Name'")
-                fix_commands+=("git config --global user.email 'your@email.com'")
+                if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+                    fix_commands+=("# Auto-configure from GitHub:")
+                    fix_commands+=("gh api user --jq '.login as \$u | .name as \$n | \"git config --global user.name \\\"\(\$n // \$u)\\\"\"' | sh")
+                    fix_commands+=("gh api user --jq '.login as \$u | \"git config --global user.email \\\"\(\$u)@users.noreply.github.com\\\"\"' | sh")
+                else
+                    fix_commands+=("git config --global user.name 'Your Name'")
+                    fix_commands+=("git config --global user.email 'your@email.com'")
+                fi
                 ;;
             *"Git credential helper"*)
                 fix_commands+=("# Configure Git credential helper with GitHub CLI:")

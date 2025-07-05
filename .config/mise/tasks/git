@@ -151,6 +151,13 @@ main() {
                 fi
             fi
             
+            # Validate URL exists
+            if [[ -z "${url}" || "${url}" == "null" ]]; then
+                print_status error "Missing repository URL in workspace.json"
+                failed_repos+=("${name}")
+                continue
+            fi
+            
             # Clone the repository
             if git clone "${url}" "${path}"; then
                 print_status success "Successfully cloned"

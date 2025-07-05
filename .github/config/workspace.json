@@ -10,24 +10,28 @@
   "repositories": [
     {
       "name": "actions",
+      "url": "https://github.com/braincraftio/actions.git",
       "path": "actions",
       "clone": true,
       "tasks": ["build", "test", "lint"]
     },
     {
       "name": "containers",
+      "url": "https://github.com/braincraftio/containers.git",
       "path": "containers",
       "clone": true,
       "tasks": ["build", "test", "lint", "docker"]
     },
     {
       "name": "style-system",
+      "url": "https://github.com/braincraftio/style-system.git",
       "path": "style-system",
       "clone": true,
       "tasks": ["build", "test", "lint"]
     },
     {
       "name": "dot-github",
+      "url": "https://github.com/braincraftio/.github.git",
       "path": "dot-github",
       "clone": true,
       "tasks": ["build", "test", "lint"]
