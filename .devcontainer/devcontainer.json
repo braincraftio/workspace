@@ -9,9 +9,10 @@
   },
   // Use 'forwardPorts' to make a list of ports inside the container available locally
   "forwardPorts": [],
-  "onCreateCommand": "",
-  "postCreateCommand": "mise trust --yes && mise install || echo '⚠️  Some tools failed to install due to rate limits. Your environment is functional but incomplete. Fix: export GITHUB_TOKEN=your_token && mise install'",
-  "postStartCommand": "mise run codespaces:post-start || echo '⚠️  Post-start verification failed. MCP servers (for Claude web/git features) may be unavailable. To retry: mise run codespaces:post-start'",
+  "onCreateCommand": "mise run setup",
+  "postCreateCommand": "",
+  "postStartCommand": "mise run doctor --quick || true",
+  "postAttachCommand": "mise tasks",
   // Configure tool-specific properties
   "customizations": {
     "vscode": {
