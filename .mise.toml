@@ -41,7 +41,7 @@ d = "doctor"
 # Core tasks
 [tasks.setup]
 description = "Initial workspace setup and configuration"
-depends = ["setup:tools", "setup:repos", "setup:hooks"]
+depends = ["setup:tools", "setup:repos", "setup:hooks", "git:setup"]
 alias = ["s", "init"]
 
 [tasks."setup:tools"]
@@ -55,6 +55,10 @@ run = "mise run git:clone"
 [tasks."setup:hooks"]
 description = "Install git hooks (pre-commit)"
 run = "pre-commit install --install-hooks"
+
+[tasks."git:setup"]
+description = "Configure Git user and credential helper"
+run = "mise run git-setup"
 
 [tasks."doctor:workspace"]
 description = "Enterprise-grade workspace health check with actionable fixes"

@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash
+#
+# setup-git - Configure Git user and credential helper
+#
+# Purpose:
+#   Automatically configure Git with appropriate user settings
+#   and credential helper based on the environment
+#
+# Usage:
+#   mise run setup:git
+#
+#MISE description="Configure Git user and credential helper for the environment"
+#MISE hide=true
+
+set -euo pipefail
+
+# shellcheck disable=SC1091
+source "${MISE_PROJECT_ROOT}/.config/mise/lib/common.sh"
+
+# Function to configure git user
+configure_git_user() {
+    local current_name current_email
+    current_name=$(git config --global user.name 2>/dev/null || true)
+    current_email=$(git config --global user.email 2>/dev/null || true)
+
+    # Skip if already configured
+    if [[ -n "${current_name}" ]] && [[ -n "${current_email}" ]]; then
+        echo "✓ Git user already configured: ${current_name} <${current_email}>"
+        return 0
+    fi
+
+    # In Codespaces, use environment variables
+    if [[ -n "${CODESPACES:-}" ]] && [[ -n "${GITHUB_USER:-}" ]]; then
+        echo "🔧 Configuring Git for Codespaces environment..."
+        git config --global user.name "${GITHUB_USER}"
+        git config --global user.email "${GITHUB_USER}@users.noreply.github.com"
+        echo "✓ Git user configured: ${GITHUB_USER} <${GITHUB_USER}@users.noreply.github.com>"
+        return 0
+    fi
+
+    # On local machines, use GitHub CLI if available
+    if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+        echo "🔧 Configuring Git from GitHub account..."
+        local gh_user gh_name gh_email
+        gh_user=$(gh api user --jq .login 2>/dev/null || true)
+        gh_name=$(gh api user --jq .name 2>/dev/null || true)
+        gh_email=$(gh api user --jq .email 2>/dev/null || true)
+
+        if [[ -n "${gh_user}" ]]; then
+            # Use real name if available, otherwise username
+            local display_name="${gh_name:-${gh_user}}"
+
+            # Prefer noreply email for privacy, but allow user's real email if set
+            local email="${gh_user}@users.noreply.github.com"
+            if [[ -n "${gh_email}" ]] && [[ "${gh_email}" != "null" ]]; then
+                # Ask user preference (only in interactive mode)
+                if [[ -t 0 ]]; then
+                    echo "Found GitHub email: ${gh_email}"
+                    echo "Would you like to use:"
+                    echo "  1) Privacy email: ${gh_user}@users.noreply.github.com (recommended)"
+                    echo "  2) Public email: ${gh_email}"
+                    read -r -p "Choice [1]: " choice
+                    if [[ "${choice}" == "2" ]]; then
+                        email="${gh_email}"
+                    fi
+                fi
+            fi
+
+            git config --global user.name "${display_name}"
+            git config --global user.email "${email}"
+            echo "✓ Git user configured: ${display_name} <${email}>"
+            return 0
+        fi
+    fi
+
+    # If we get here, manual configuration is needed
+    echo "ℹ️  Git user configuration required. Run:"
+    echo "  git config --global user.name 'Your Name'"
+    echo "  git config --global user.email 'your-email@example.com'"
+    return 1
+}
+
+# Function to configure credential helper
+configure_credential_helper() {
+    # Check if credential helper is already configured
+    if git config --global --get-regexp 'credential.*helper' 2>/dev/null | grep -q "gh auth git-credential"; then
+        echo "✓ Git credential helper already configured"
+        return 0
+    fi
+
+    # Configure credential helper if gh is available and authenticated
+    if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+        echo "🔧 Configuring Git credential helper..."
+        gh auth setup-git
+        echo "✓ Git credential helper configured"
+        return 0
+    fi
+
+    # In Codespaces with GITHUB_TOKEN, credential helper might not be needed
+    if [[ -n "${CODESPACES:-}" ]] && [[ -n "${GITHUB_TOKEN:-}" ]]; then
+        echo "ℹ️  Running in Codespaces with GITHUB_TOKEN - credential helper may not be required"
+        return 0
+    fi
+
+    echo "ℹ️  Git credential helper not configured. Run: gh auth setup-git"
+    return 1
+}
+
+# Main execution
+echo "🏥 Git Configuration Setup"
+echo "========================="
+
+# Track if any configuration failed
+failed=0
+
+# Configure user
+configure_git_user || ((failed++))
+
+# Configure credential helper
+configure_credential_helper || ((failed++))
+
+# Summary
+echo ""
+if [[ ${failed} -eq 0 ]]; then
+    echo "✅ Git configuration complete!"
+else
+    echo "⚠️  Some Git configuration steps require manual intervention"
+    exit 1
+fi

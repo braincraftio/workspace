@@ -177,16 +177,16 @@ else
     # Show condensed summary
     mise_output=$(mise doctor 2>&1)
     mise_exit_code=$?
-    
+
     if [[ ${mise_exit_code} -eq 0 ]]; then
         echo "✓ All mise checks passed"
     else
         # Extract key information from mise doctor output
         echo "⚠️  mise doctor found issues:"
-        
+
         # Show errors and warnings only
         echo "${mise_output}" | grep -E "(ERROR|WARNING|FAILED|✗)" | head -10 || true
-        
+
         echo ""
         echo "Run with --verbose to see full mise doctor output"
     fi
@@ -282,8 +282,13 @@ fi
 run_health_check "GitHub token scopes" "check_github_token_scopes" "important"
 run_health_check "Git user config" "check_git_config" "critical"
 run_health_check "Git credential helper" "check_git_credential_helper" "important"
-run_health_check "SSH agent running" "check_ssh_agent" "optional"
-run_health_check "SSH key permissions" "check_ssh_key_permissions" "optional"
+
+# Skip SSH checks in Codespaces (HTTPS is used instead)
+if [[ -z "${CODESPACES:-}" ]]; then
+    run_health_check "SSH agent running" "check_ssh_agent" "optional"
+    run_health_check "SSH key permissions" "check_ssh_key_permissions" "optional"
+fi
+
 run_health_check ".env file permissions" "check_env_file_permissions" "critical"
 
 stop_timer "auth" >/dev/null
@@ -315,7 +320,7 @@ check_config_consistency() {
     # Check that hardcoded values in 00-env.toml match workspace.json
     local config_org
     config_org=$(jq -r '.organization // "unknown"' "${workspace_json_path}" 2>/dev/null || echo "unknown")
-    
+
     if [[ "${ORGANIZATION:-}" != "${config_org}" ]] && [[ "${config_org}" != "unknown" ]]; then
         echo "  ⚠️  Warning: ORGANIZATION env var (${ORGANIZATION:-unset}) doesn't match workspace.json (${config_org})"
     fi
@@ -377,18 +382,18 @@ if [[ -f "${workspace_json_path}" ]]; then
             # Quick checks
             repo_status="OK"
             repo_details=()
-            
+
             if ! check_repo_clean_status "${path}"; then
                 repo_details+=("dirty")
             fi
-            
+
             if [[ "${CONFIG[quick]}" != "true" ]]; then
                 if ! check_repo_remote_connectivity "${path}" "${name}"; then
                     repo_details+=("no remote")
                     repo_status="WARNING"
                 fi
             fi
-            
+
             if [[ ${#repo_details[@]} -gt 0 ]]; then
                 echo -e "  $(printf "%-48s" "${name}:") ${WARN} ${repo_details[*]}"
             else
@@ -433,7 +438,7 @@ for check_name in "${!HEALTH_CHECK_RESULTS[@]}"; do
     if [[ "${HEALTH_CHECK_RESULTS[${check_name}]}" == "failed" ]]; then
         # Get category from CHECK_CATEGORIES array
         check_category="${CHECK_CATEGORIES[${check_name}]:-optional}"
-        
+
         case "${check_category}" in
             critical)
                 failed_critical+=("${check_name}")
@@ -482,17 +487,17 @@ fi
 #######################################
 if [[ ${#failed_critical[@]} -gt 0 ]] || [[ ${#failed_important[@]} -gt 0 ]]; then
     print_section_header "🔧 Actionable Fixes" "==================="
-    
+
     # Generate fix commands for all failures
     all_failures=("${failed_critical[@]}" "${failed_important[@]}")
     generate_fix_commands "${all_failures[@]}"
-    
+
     # Attempt automatic fixes if requested
     if [[ "${CONFIG[fix]}" == "true" ]]; then
         echo ""
         echo "🔧 Attempting automatic fixes..."
         echo "==============================="
-        
+
         # Example: Auto-trust mise
         if [[ " ${all_failures[*]} " =~ "mise configuration trusted" ]]; then
             echo "Trusting mise configuration..."
@@ -502,18 +507,22 @@ if [[ ${#failed_critical[@]} -gt 0 ]] || [[ ${#failed_important[@]} -gt 0 ]]; th
                 print_status error "Failed to trust mise configuration"
             fi
         fi
-        
+
         # Auto-configure Git user
         if [[ " ${all_failures[*]} " =~ "Git user config" ]]; then
             echo "Configuring Git user..."
-            if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+            # Check if we're in Codespaces first
+            if [[ -n "${CODESPACES:-}" ]] && [[ -n "${GITHUB_USER:-}" ]]; then
+                git config --global user.name "${GITHUB_USER}"
+                git config --global user.email "${GITHUB_USER}@users.noreply.github.com"
+                print_status success "Git user configured from Codespaces environment"
+            elif command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
                 # Get user info from GitHub
-                local gh_user gh_name
                 gh_user=$(gh api user --jq .login 2>/dev/null || true)
                 gh_name=$(gh api user --jq .name 2>/dev/null || true)
-                
+
                 if [[ -n "${gh_user}" ]]; then
-                    git config --global user.name "${gh_name:-$gh_user}"
+                    git config --global user.name "${gh_name:-${gh_user}}"
                     git config --global user.email "${gh_user}@users.noreply.github.com"
                     print_status success "Git user configured from GitHub"
                 else
@@ -523,7 +532,7 @@ if [[ ${#failed_critical[@]} -gt 0 ]] || [[ ${#failed_important[@]} -gt 0 ]]; th
                 print_status warning "GitHub CLI not authenticated, skipping auto-config"
             fi
         fi
-        
+
         # Auto-configure Git credential helper
         if [[ " ${all_failures[*]} " =~ "Git credential helper" ]]; then
             echo "Configuring Git credential helper..."
@@ -537,7 +546,7 @@ if [[ ${#failed_critical[@]} -gt 0 ]] || [[ ${#failed_important[@]} -gt 0 ]]; th
                 print_status warning "GitHub CLI not authenticated, skipping credential helper"
             fi
         fi
-        
+
         # Add more automatic fixes here
     fi
 fi
