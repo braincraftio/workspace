@@ -1,5 +1,5 @@
 {
-  "name": "BrainCraft.io DevContainer",
+  "name": "BrainCraft.io Workspace",
   "image": "ghcr.io/braincraftio/containers:devcontainer-latest",
   //"dockerFile": "../containers/devcontainer/Dockerfile",
   "workspaceFolder": "/workspace",
@@ -22,29 +22,24 @@
         // AI Assistants
         "github.copilot",
         "github.copilot-chat",
-        "continue.continue",
         // Language Support
         "golang.go",
-        "rust-lang.rust-analyzer",
         "ms-python.python",
         "ms-python.vscode-pylance",
+        "rust-lang.rust-analyzer",
         // DevOps Tools
+        "pulumi.pulumi-lsp-client",
+        "pulumi.pulumi-vscode-tools",
+        "pulumi.pulumi-vscode-copilot",
         "ms-kubernetes-tools.vscode-kubernetes-tools",
-        "ms-azuretools.vscode-docker",
-        "hashicorp.terraform",
         // Development Tools
         "github.vscode-github-actions",
-        "tamasfe.even-better-toml",
         "redhat.vscode-yaml",
-        "ms-vscode.makefile-tools",
         "timonwong.shellcheck",
         // Editor Enhancements
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
-        "editorconfig.editorconfig",
-        "streetsidesoftware.code-spell-checker",
-        "usernamehw.errorlens",
-        "shardulm94.trailing-spaces"
+        "editorconfig.editorconfig"
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "bash",
@@ -73,11 +68,12 @@
     "codespaces": {
       "openFiles": [
         "README.md",
-        "CONTRIBUTING.md"
+        "CONTRIBUTING.md",
+        "braincraftio.code-workspace"
       ],
       "repositories": {
         "braincraftio/*": {
-          "permissions": "write"
+          "permissions": "write-all"
         }
       }
     }
