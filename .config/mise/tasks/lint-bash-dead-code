@@ -73,30 +73,30 @@ for file in "${FILES[@]}"; do
     if [[ ! -f "${file}" ]]; then
         continue
     fi
-    
+
     # Extract function names (excluding sourcing guards and variable assignments)
     mapfile -t FUNCTIONS < <(grep -E "^[a-zA-Z_][a-zA-Z0-9_]*\(\)" "${file}" 2>/dev/null | \
                             grep -v "^declare\|^source" | \
                             sed 's/().*//' | \
                             sort -u)
-    
+
     if [[ ${#FUNCTIONS[@]} -eq 0 ]]; then
         continue
     fi
-    
+
     echo -e "${BLUE}Checking ${file}:${NC}"
     FILE_HAS_DEAD_CODE=false
-    
+
     for func in "${FUNCTIONS[@]}"; do
         TOTAL_FUNCTIONS=$((TOTAL_FUNCTIONS + 1))
-        
+
         # Count occurrences across all files
         # Exclude comments and the function definition line itself
         count=$(grep -w "${func}" "${SEARCH_FILES[@]}" 2>/dev/null | \
                 grep -v "^[[:space:]]*#" | \
                 grep -v "${func}()" | \
                 wc -l)
-        
+
         if [[ ${count} -eq 0 ]]; then
             echo -e "  ${RED}✗ DEAD CODE:${NC} ${func}() - defined but never called"
             DEAD_FUNCTIONS=$((DEAD_FUNCTIONS + 1))
@@ -107,7 +107,7 @@ for file in "${FILES[@]}"; do
             echo -e "  ${GREEN}✓ USED:${NC} ${func}() - ${count} references"
         fi
     done
-    
+
     if [[ "${FILE_HAS_DEAD_CODE}" == "false" ]] && [[ ${#FUNCTIONS[@]} -gt 0 ]]; then
         echo -e "  ${GREEN}✓ All ${#FUNCTIONS[@]} functions are used${NC}"
     fi
