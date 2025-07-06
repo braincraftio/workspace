@@ -29,12 +29,16 @@ lychee = "latest"    # Link checker
 
 # Formatters
 shfmt = "latest"     # Shell formatter
-#black = { tool = "pipx:black", version = "latest" } # Python formatter - NEW
+"pipx:black" = "latest"            # Python formatter
 biome = "latest"     # Modern JS/TS/JSON/JSONC formatter and linter
 "pipx:check-jsonschema" = "latest" # JSON Schema validator
 
 # Security tools via pipx
 "pipx:detect-secrets" = "latest"  # Secret detection for pre-commit
+"pipx:bandit" = "latest"          # Python security linter
+
+# Python type checking
+"pipx:mypy" = "latest"            # Static type checker
 
 # MCP servers via pipx
 "pipx:mcp-server-fetch" = "latest"
