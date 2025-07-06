@@ -99,13 +99,5 @@
     "wcag",
     "xmlstarlet"
   ],
-  "ignorePaths": [
-    "node_modules/**",
-    ".git/**",
-    "*.min.js",
-    "*.min.css",
-    "build/**",
-    "dist/**",
-    ".DS_Store"
-  ]
+  "ignorePaths": ["node_modules/**", ".git/**", "*.min.js", "*.min.css", "build/**", "dist/**", ".DS_Store"]
 }
