@@ -1,11 +1,11 @@
 {
-    "git.ignoreLimitWarning": true,
-    "cSpell.customDictionaries": {
-        "project-words": {
-            "name": "project-words",
-            "path": "${workspaceRoot}/cspell.json",
-            "addWords": true,
-            "scope": "workspace"
-        }
+  "git.ignoreLimitWarning": true,
+  "cSpell.customDictionaries": {
+    "project-words": {
+      "name": "project-words",
+      "path": "${workspaceRoot}/cspell.json",
+      "addWords": true,
+      "scope": "workspace"
     }
+  }
 }
