@@ -16,13 +16,13 @@ repos:
     hooks:
       # check-json moved to JSON/JSONC section for better handling
       - id: check-yaml
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
       - id: end-of-file-fixer
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
       - id: trailing-whitespace
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
       - id: check-added-large-files
-        args: ["--maxkb=1000"]
+        args: [--maxkb=1000]
       - id: check-merge-conflict
       - id: detect-private-key
 
@@ -32,24 +32,43 @@ repos:
     hooks:
       - id: black
         language_version: python3.13
-        args: ["--line-length=120"]
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        args: [--line-length=100]
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
 
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
-        args: ["--profile=black", "--line-length=120"]
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        args: [--profile=black, --line-length=100]
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.7.0
     hooks:
       - id: ruff
-        args: ["--fix"]
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        args: [--fix]
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
       - id: ruff-format
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
+
+  # Python type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        args: [--config-file, mypy.ini]
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
+        additional_dependencies:
+          - types-requests
+          - types-PyYAML
+
+  # Python security analysis
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.10
+    hooks:
+      - id: bandit
+        args: [-c, .bandit, -r, .]
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
 
   # JavaScript/TypeScript/Markdown/YAML formatting
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -57,7 +76,7 @@ repos:
     hooks:
       - id: prettier
         types_or: [javascript, jsx, ts, tsx, markdown, yaml, css, scss, html]
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
         additional_dependencies:
           - prettier@3.3.3
           - "@prettier/plugin-xml@3.4.1"
@@ -67,15 +86,15 @@ repos:
     rev: v0.10.0.1
     hooks:
       - id: shellcheck
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
-        args: ["--severity=warning"]
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
+        args: [--severity=warning]
 
   - repo: https://github.com/scop/pre-commit-shfmt
     rev: v3.11.0-1
     hooks:
       - id: shfmt
-        args: ["-i", "2", "-ci", "-sr", "-kp"]
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        args: [-i, "2", -ci, -sr, -kp]
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
 
   # Bash dead code detection
   - repo: local
@@ -84,8 +103,8 @@ repos:
         name: Find unused bash functions
         entry: mise run lint:bash:dead-code
         language: system
-        files: '\.sh$|^\.config/mise/tasks/'
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        files: \.sh$|^\.config/mise/tasks/
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
         pass_filenames: false
 
   # YAML linting
@@ -93,20 +112,16 @@ repos:
     rev: v1.35.1
     hooks:
       - id: yamllint
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
-        args:
-          [
-            "-d",
-            "{extends: relaxed, rules: {line-length: {max: 120}, comments: {min-spaces-from-content: 1}}}",
-          ]
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
+        args: [-c, .yamllint.yaml]
 
   # Markdown linting and link checking
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.14.0
     hooks:
       - id: markdownlint-cli2
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
-        args: ["--fix"]
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
+        args: [--config, .markdownlint.yaml, --fix]
 
   # Markdown link checking (internal links only for pre-commit)
   - repo: local
@@ -115,8 +130,8 @@ repos:
         name: Check Markdown Links (offline)
         entry: mise run lint:markdown:links
         language: system
-        files: '\.md$'
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        files: \.md$
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
         pass_filenames: false
 
   # GitHub Actions workflow linting
@@ -124,23 +139,23 @@ repos:
     rev: v1.7.4
     hooks:
       - id: actionlint
-        exclude: "^(actions|containers|dot-github|style-system)/"
+        exclude: ^(actions|containers|dot-github|style-system)/
 
   # Go linting (workspace-level Go files only)
   - repo: https://github.com/golangci/golangci-lint
     rev: v1.62.2
     hooks:
       - id: golangci-lint
-        args: ["--timeout=5m"]
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        args: [--timeout=5m]
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
 
   # JavaScript/TypeScript linting (workspace-level only)
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v9.15.0
     hooks:
       - id: eslint
-        files: '\.(js|jsx|ts|tsx)$'
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        files: \.(js|jsx|ts|tsx)$
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
         additional_dependencies:
           - eslint@9.15.0
           - "@typescript-eslint/parser@8.0.0"
@@ -151,8 +166,8 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
-        args: ["--baseline", ".secrets.baseline"]
-        exclude: '.*\.(lock|sum)$|^node_modules/|^\.pnpm-store/|^\.npm-global/'
+        args: [--baseline, .secrets.baseline]
+        exclude: .*\.(lock|sum)$|^node_modules/|^\.pnpm-store/|^\.npm-global/
 
   # JSON/JSONC validation and formatting
   - repo: local
@@ -162,16 +177,16 @@ repos:
         name: Validate strict JSON files
         entry: bash -c 'for file in "$@"; do jq . "$file" >/dev/null || exit 1; done' --
         language: system
-        files: '\.json$'
-        exclude: '^(actions|containers|dot-github|style-system)/|node_modules/|(devcontainer|tsconfig.*|.*/tsconfig.*|biome|lychee)\.json$'
+        files: \.json$
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/|(devcontainer|tsconfig.*|.*/tsconfig.*|biome|lychee)\.json$
 
       # JSONC validation and formatting with Biome
       - id: biome-check-jsonc
         name: Validate JSONC files (Biome)
         entry: biome check --write
         language: system
-        files: '(devcontainer|tsconfig.*|.*/tsconfig.*|biome)\.json$'
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        files: (devcontainer|tsconfig.*|.*/tsconfig.*|biome)\.json$
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
 
       # All JSON/JSONC formatting with Biome
       - id: biome-format-json
@@ -179,7 +194,7 @@ repos:
         entry: biome format --write
         language: system
         types: [json]
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
 
   # JSON Schema validation
   # Note: check-jsonschema doesn't support JSONC, so we rely on Biome for devcontainer.json validation
@@ -188,22 +203,22 @@ repos:
     hooks:
       - id: check-jsonschema
         name: Validate package.json schema
-        files: 'package\.json$'
-        args: ["--schemafile", "https://json.schemastore.org/package.json"]
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        files: package\.json$
+        args: [--schemafile, https://json.schemastore.org/package.json]
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
       - id: check-jsonschema
         name: Validate composer.json schema
-        files: 'composer\.json$'
-        args: ["--schemafile", "https://getcomposer.org/schema.json"]
-        exclude: "^(actions|containers|dot-github|style-system)/|node_modules/"
+        files: composer\.json$
+        args: [--schemafile, https://getcomposer.org/schema.json]
+        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
 
   # TOML linting for mise configs
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: check-toml
-        files: '\.toml$'
-        exclude: "^(actions|containers|dot-github|style-system)/"
+        files: \.toml$
+        exclude: ^(actions|containers|dot-github|style-system)/
 
   # mise configuration validation
   - repo: local
@@ -212,14 +227,14 @@ repos:
         name: Validate mise configuration
         entry: mise run validate:mise
         language: system
-        files: '^\.mise\.toml$|^\.config/mise/.*\.toml$'
+        files: ^\.mise\.toml$|^\.config/mise/.*\.toml$
         pass_filenames: false
 
       - id: mise-task-validation
         name: Validate mise tasks
         entry: bash -c 'mise tasks --no-header >/dev/null'
         language: system
-        files: '^\.mise\.toml$|^\.config/mise/tasks/'
+        files: ^\.mise\.toml$|^\.config/mise/tasks/
         pass_filenames: false
 
 # Configuration for specific file types
