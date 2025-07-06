@@ -21,25 +21,25 @@ should_use_color() {
     for arg in "$@"; do
         [[ "${arg}" == "--no-color" ]] && return 1
     done
-    
+
     # Respect NO_COLOR environment variable
     [[ -n "${NO_COLOR:-}" ]] && return 1
-    
+
     # Disable colors in CI environments
     [[ "${CI:-}" == "true" ]] && return 1
-    
+
     # If running under mise with COLORTERM set, force colors
     # mise sets up the environment but may pipe output for task_output = "prefix"
     if [[ -n "${MISE_TASK_FORMAT_DEFAULT:-}" ]] && [[ "${COLORTERM:-}" == "truecolor" ]]; then
         return 0
     fi
-    
+
     # Disable colors if not running in a terminal
     [[ ! -t 1 ]] && return 1
-    
+
     # Disable colors for dumb terminals
     [[ "${TERM:-}" == "dumb" ]] && return 1
-    
+
     # Colors are supported
     return 0
 }
@@ -98,7 +98,7 @@ validate_workspace_config() {
     if [[ ! "${config_path}" = /* ]]; then
         config_path="${MISE_PROJECT_ROOT}/${config_path}"
     fi
-    
+
     if [[ ! -f "${config_path}" ]]; then
         print_status error "workspace.json not found at ${config_path}"
         return 1
@@ -119,13 +119,13 @@ if declare -F handle_error_with_context >/dev/null 2>&1; then
     handle_error() {
         local exit_code="$1"
         local context="$2"
-        
+
         if [[ ${exit_code} -ne 0 ]]; then
             # Use enhanced version with context tracking
             handle_error_with_context "${exit_code}" "Failed: ${context}"
             return "${exit_code}"
         fi
-        
+
         return 0
     }
 else
