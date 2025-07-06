@@ -63,15 +63,15 @@ execute_cmd_in_repo() {
 # Show usage if no arguments
 show_usage() {
     local examples="  mise run exec pwd                    # Show working directory in each repo
-  mise run exec ls -la                 # List files in each repo  
+  mise run exec ls -la                 # List files in each repo
   mise run exec git branch             # Show current branch in each repo
   mise run exec grep -l \"TODO\" *.md    # Search for TODOs in markdown files
   mise run exec make test              # Run make test in each repo"
-    
+
     local env_vars="  EXEC_TASK_QUIET=true       # Suppress headers and summary
   EXEC_TASK_PARALLEL=true    # Run in parallel (experimental)
   EXEC_TASK_FORMAT=pretty    # Output format (minimal|pretty)"
-    
+
     show_task_usage "exec" "Execute commands across all workspace repositories." "${examples}" "${env_vars}"
 }
 
@@ -81,7 +81,7 @@ main() {
         show_usage
         return 0
     fi
-    
+
     # Run the task across all repos (always include workspace root)
     run_task_across_repos "exec" execute_cmd_in_repo "validate_command_input" "true" "$@"
     return $?
