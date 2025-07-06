@@ -25,7 +25,7 @@ source "${MISE_PROJECT_ROOT}/.config/mise/lib/workspace.sh"
 #   $@ - Additional arguments to pass to execute_func
 # Returns:
 #   0 if all succeed, 1 if any fail
-# 
+#
 # The execute_func will be called with:
 #   - repo_name
 #   - repo_path
@@ -37,34 +37,34 @@ execute_across_repos() {
     local quiet="$3"
     shift 3
     local args=("$@")
-    
+
     # Track status
     local total_repos=0
     local success_count=0
     local -a failed_repos=()
-    
+
     # First, run in the workspace root if requested
     if [[ "${include_workspace}" == "true" ]] && [[ -d "${MISE_PROJECT_ROOT}" ]]; then
         total_repos=$((total_repos + 1))
-        
+
         if "${execute_func}" "workspace" "." "${args[@]}"; then
             success_count=$((success_count + 1))
         else
             failed_repos+=("workspace")
         fi
     fi
-    
+
     # Execute for each repository from workspace.json
     while IFS=: read -r name path; do
         total_repos=$((total_repos + 1))
-        
+
         if "${execute_func}" "${name}" "${path}" "${args[@]}"; then
             success_count=$((success_count + 1))
         else
             failed_repos+=("${name}")
         fi
     done < <(list_repositories)
-    
+
     # Return results via global variables (bash doesn't have good return mechanisms)
     # These variables are used by scripts that source this library (git and exec tasks)
     # Using namespaced associative array for better organization
@@ -77,7 +77,7 @@ execute_across_repos() {
     # shellcheck disable=SC2034
     # SC2034: MISE_EXEC_FAILED_REPOS is used by git and exec tasks that source this library
     declare -ga MISE_EXEC_FAILED_REPOS=("${failed_repos[@]}")
-    
+
     # Return exit code
     [[ ${#failed_repos[@]} -eq 0 ]] && return 0 || return 1
 }
@@ -95,7 +95,7 @@ validate_repo_exists() {
     local repo_name="$1"
     local repo_path="$2"
     local quiet="${3:-false}"
-    
+
     if [[ ! -d "${repo_path}" ]]; then
         if [[ "${quiet}" != "true" ]]; then
             echo ""
@@ -103,7 +103,7 @@ validate_repo_exists() {
         fi
         return 1
     fi
-    
+
     return 0
 }
 
@@ -120,10 +120,10 @@ validate_git_repo() {
     local repo_name="$1"
     local repo_path="$2"
     local quiet="${3:-false}"
-    
+
     # First check if directory exists
     validate_repo_exists "${repo_name}" "${repo_path}" "${quiet}" || return 1
-    
+
     if [[ ! -d "${repo_path}/.git" ]]; then
         if [[ "${quiet}" != "true" ]]; then
             echo ""
@@ -131,7 +131,7 @@ validate_git_repo() {
         fi
         return 1
     fi
-    
+
     return 0
 }
 
@@ -160,7 +160,7 @@ show_available_repos() {
 format_usage_header() {
     local command="$1"
     local description="$2"
-    
+
     cat << EOF
 Usage: mise run ${command} <command> [args...]
 
