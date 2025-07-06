@@ -1,0 +1,62 @@
+# ESLint ignore file for BrainCraft.io workspace
+
+# Child repositories (have their own configs)
+actions/
+containers/
+dot-github/
+style-system/
+
+# Dependencies
+node_modules/
+.npm-global/
+.pnpm-store/
+vendor/
+
+# Build outputs
+dist/
+build/
+out/
+coverage/
+.next/
+.nuxt/
+public/
+
+# Cache
+.cache/
+.tmp/
+tmp/
+
+# Generated files
+*.min.js
+*.min.css
+*.generated.*
+*.map
+
+# Mise
+.mise/
+
+# Git
+.git/
+
+# IDE
+.vscode/
+.idea/
+
+# Test reports
+.reports/
+
+# Binary/Media files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.pdf
+*.ico
+*.svg
+
+# Other config files
+*.json
+*.yaml
+*.yml
+*.toml
+*.md
