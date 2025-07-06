@@ -6,13 +6,13 @@
 validate_command_input() {
     local cmd_name="$1"
     local context="${2:-command}"  # Optional context (e.g., "git command")
-    
+
     # Debug output
     [[ "${MISE_DEBUG:-}" == "1" ]] && echo "DEBUG: Validating ${context}: ${cmd_name}" >&2
-    
+
     # Check for dangerous characters that could lead to command injection
     # Check each dangerous character individually for clarity
-    local dangerous_chars=(';' '|' '&' '$' '(' ')' '{' '}' '[' ']' '<' '>' '`' '\')
+    local dangerous_chars=(';' '|' '&' '$' '(' ')' '{' '}' '[' ']' '<' '>' '`' "\\")
     for char in "${dangerous_chars[@]}"; do
         if [[ "${cmd_name}" == *"${char}"* ]]; then
             print_status error "Security: ${context} contains potentially dangerous character '${char}'"
@@ -31,7 +31,7 @@ validate_command_input() {
             return 1
         fi
     done
-    
+
     # Check for path traversal attempts
     if [[ "${cmd_name}" =~ \.\. ]]; then
         print_status error "Security: ${context} contains path traversal"
@@ -43,25 +43,25 @@ validate_command_input() {
         echo ""
         return 1
     fi
-    
+
     return 0
 }
 
 # Validate git-specific commands
 validate_git_command_input() {
     local git_cmd="$1"
-    
+
     # First run general validation
     if ! validate_command_input "${git_cmd}" "git command"; then
         return 1
     fi
-    
+
     # Git-specific validations
     # Prevent certain dangerous git operations
     local dangerous_git_cmds=("config" "remote" "submodule" "worktree" "hook")
     local first_word
     first_word=$(echo "${git_cmd}" | awk '{print $1}')
-    
+
     for dangerous_cmd in "${dangerous_git_cmds[@]}"; do
         if [[ "${first_word}" == "${dangerous_cmd}" ]]; then
             print_status warning "Git command '${dangerous_cmd}' requires careful review"
@@ -71,7 +71,7 @@ validate_git_command_input() {
             # Return 0 to allow but warn - can be changed to return 1 to block
         fi
     done
-    
+
     return 0
 }
 
@@ -80,7 +80,7 @@ validate_repository_path() {
     local repo_path="$1"
     # Use MISE_PROJECT_ROOT as the workspace root
     local workspace_root="${MISE_PROJECT_ROOT:-${WORKSPACE_ROOT:-$(pwd)}}"
-    
+
     # Handle case where path doesn't exist yet (for new repos)
     if [[ ! -e "${repo_path}" ]]; then
         # For non-existent paths, check the parent directory
@@ -96,22 +96,22 @@ validate_repository_path() {
                 print_status error "Invalid repository path: ${repo_path}"
                 return 1
             fi
-            
+
             if [[ "${abs_path}" == "${workspace_root}"* ]]; then
                 return 0  # Allow non-existent paths within workspace
             fi
         fi
     fi
-    
+
     # Resolve the absolute path
     local abs_path
     abs_path=$(cd "${repo_path}" 2>/dev/null && pwd)
-    
+
     if [[ -z "${abs_path}" ]]; then
         print_status error "Invalid repository path: ${repo_path}"
         return 1
     fi
-    
+
     # Ensure the path is within the workspace
     if [[ "${abs_path}" != "${workspace_root}"* ]]; then
         print_status error "Security: Repository path is outside workspace"
@@ -123,7 +123,7 @@ validate_repository_path() {
         echo ""
         return 1
     fi
-    
+
     return 0
 }
 
