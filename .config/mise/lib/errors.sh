@@ -42,20 +42,20 @@ handle_error_with_context() {
     local file="${3:-${BASH_SOURCE[1]}}"
     local function="${4:-${FUNCNAME[1]}}"
     local line="${5:-${LINENO}}"
-    
+
     # Store context for detailed reporting
     MISE_ERROR_CONTEXT[file]="${file}"
     MISE_ERROR_CONTEXT[function]="${function}"
     MISE_ERROR_CONTEXT[line]="${line}"
     MISE_ERROR_CONTEXT[message]="${context}"
-    
+
     # Use existing print_status for consistency
     if [[ "${MISE_DEBUG:-}" == "1" ]]; then
         print_status error "${context} (${file}:${function}:${line})"
     else
         print_status error "${context}"
     fi
-    
+
     return ${exit_code}
 }
 
@@ -63,7 +63,7 @@ handle_error_with_context() {
 if declare -F handle_error >/dev/null 2>&1; then
     # Rename existing function
     eval "$(declare -f handle_error | sed '1s/handle_error/handle_error_original/')"
-    
+
     # Create wrapper
     handle_error() {
         local exit_code="$1"
@@ -77,18 +77,18 @@ fi
 die() {
     local message="${1:-Fatal error}"
     local exit_code="${2:-1}"
-    
+
     # Set task name context if available
     MISE_ERROR_CONTEXT[task]="${MISE_TASK_NAME:-${0##*/}}"
-    
+
     print_status error "${message}"
-    
+
     # Show context in debug mode
     if [[ "${MISE_DEBUG:-}" == "1" ]] && [[ -n "${MISE_ERROR_CONTEXT[file]}" ]]; then
         echo "  Task: ${MISE_ERROR_CONTEXT[task]}" >&2
         echo "  Location: ${MISE_ERROR_CONTEXT[file]}:${MISE_ERROR_CONTEXT[function]}:${MISE_ERROR_CONTEXT[line]}" >&2
     fi
-    
+
     exit ${exit_code}
 }
 
@@ -96,7 +96,7 @@ die() {
 die_with_code() {
     local error_type="$1"
     local message="${2:-Error occurred}"
-    
+
     local exit_code="${MISE_ERROR_CODES[${error_type}]:-1}"
     die "${message}" "${exit_code}"
 }
@@ -105,12 +105,12 @@ die_with_code() {
 assert_success() {
     local exit_code=$?
     local message="${1:-Command failed}"
-    
+
     if [[ ${exit_code} -ne 0 ]]; then
         handle_error ${exit_code} "${message}"
         return ${exit_code}
     fi
-    
+
     return 0
 }
 
@@ -118,11 +118,11 @@ assert_success() {
 run_or_die() {
     local error_message="${1:-Command failed}"
     shift
-    
+
     if [[ "${MISE_DEBUG:-}" == "1" ]]; then
         echo "  Running: $*" >&2
     fi
-    
+
     if ! "$@"; then
         local exit_code=$?
         die "${error_message}" ${exit_code}
@@ -134,7 +134,7 @@ capture_or_die() {
     local var_name="$1"
     local error_message="${2:-Command failed}"
     shift 2
-    
+
     local output
     if ! output=$("$@" 2>&1); then
         local exit_code=$?
@@ -142,9 +142,10 @@ capture_or_die() {
         [[ -n "${output}" ]] && echo "${output}" >&2
         exit ${exit_code}
     fi
-    
+
     # Use nameref to set the variable
     declare -n var_ref="${var_name}"
+    # shellcheck disable=SC2034 # var_ref is a nameref that sets ${var_name}
     var_ref="${output}"
 }
 
@@ -152,7 +153,7 @@ capture_or_die() {
 require_command() {
     local cmd="$1"
     local message="${2:-Required command '${cmd}' not found}"
-    
+
     if ! command -v "${cmd}" >/dev/null 2>&1; then
         die_with_code DEPENDENCY_ERROR "${message}"
     fi
@@ -162,7 +163,7 @@ require_command() {
 require_env() {
     local var_name="$1"
     local message="${2:-Required environment variable '${var_name}' not set}"
-    
+
     if [[ -z "${!var_name:-}" ]]; then
         die_with_code CONFIG_ERROR "${message}"
     fi
@@ -172,7 +173,7 @@ require_env() {
 init_task_error_handling() {
     # Use mise-standard error handling
     set -uo pipefail
-    
+
     # Set error trap for better debugging
     if [[ "${MISE_DEBUG:-}" == "1" ]]; then
         set -E  # Inherit ERR trap
