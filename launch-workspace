@@ -27,7 +27,6 @@ readonly BRAINCRAFTIO_TAGLINE="Practitioner first AI Codegen Framework"
 
 # DevContainer configuration
 # Default image - will be auto-detected from devcontainer.json if possible
-DEVCONTAINER_IMAGE=""
 readonly DEFAULT_IMAGE="ghcr.io/braincraftio/devcontainer:latest"
 readonly WORKSPACE_FILE="braincraft.code-workspace"
 
@@ -271,7 +270,7 @@ detect_devcontainer_image() {
     log verbose "jq not found, using basic parsing"
 
     # Look for simple "image": "value" pattern
-    detected_image=$(grep -E '^\s*"image":\s*"[^"]+"\s*,?\s*$' "$devcontainer_json" 2>/dev/null | 
+    detected_image=$(grep -E '^\s*"image":\s*"[^"]+"\s*,?\s*$' "$devcontainer_json" 2>/dev/null |
                     sed 's/.*"image":\s*"\([^"]*\)".*/\1/' | head -1 || true)
 
     if [[ -n "$detected_image" ]]; then
@@ -629,10 +628,10 @@ run_doctor() {
 check_mise_health() {
   echo
   log header "${ICONS[tools]} Mise Environment:"
-  
+
   if has_command mise; then
     log success "mise $(get_version mise)"
-    
+
     # Check mise doctor
     if mise doctor >/dev/null 2>&1; then
       log success "mise doctor: Healthy"
@@ -640,11 +639,11 @@ check_mise_health() {
       log warn "mise doctor: Issues detected"
       log info "  Run 'mise doctor' for details"
     fi
-    
+
     # Check if .mise.toml exists
     if [[ -f "$SCRIPT_DIR/.mise.toml" ]]; then
       log success ".mise.toml found"
-      
+
       # Check if mise is trusted
       if mise list >/dev/null 2>&1; then
         log success "mise configuration trusted"
@@ -905,7 +904,7 @@ launch_with_devcontainer_cli() {
 
   # Start devcontainer
   log info "Starting devcontainer..."
-  
+
   if [[ "${CONFIG[dry_run]}" == "true" ]]; then
     log info "[DRY RUN] Would execute: devcontainer up --workspace-folder . ${args[*]}"
   else
