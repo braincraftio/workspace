@@ -24,12 +24,12 @@ source "${MISE_PROJECT_ROOT}/.config/mise/lib/common.sh"
 get_repo_info() {
     local repo_path="$1"
     local branch remote_url
-    
+
     # Get current branch
     if ! branch=$(cd "${repo_path}" && git rev-parse --abbrev-ref HEAD 2>/dev/null); then
         branch="<no-branch>"
     fi
-    
+
     # Get remote URL (prefer origin)
     if ! remote_url=$(cd "${repo_path}" && git remote get-url origin 2>/dev/null); then
         # Try first available remote
@@ -37,7 +37,7 @@ get_repo_info() {
             remote_url="<no-remote>"
         fi
     fi
-    
+
     echo "${branch}:${remote_url}"
 }
 
@@ -50,7 +50,7 @@ get_repo_info() {
 #######################################
 make_absolute_path() {
     local path="$1"
-    
+
     if [[ "${path}" = /* ]]; then
         echo "${path}"
     elif [[ "${path}" = "." ]]; then
@@ -75,26 +75,26 @@ format_repo_header() {
     local repo_path="$2"
     local format="${3:-pretty}"
     local include_git_info="${4:-true}"
-    
+
     local abs_path
     abs_path=$(make_absolute_path "${repo_path}")
-    
+
     case "${format}" in
         minimal)
             echo -e "${BLUE}[${repo_name}]${NC} ${GRAY}${abs_path}${NC}"
             echo "─────────────────────────────────────────────────"
             ;;
-            
+
         simple)
             echo "[${repo_name}]"
             ;;
-            
+
         pretty|*)
             if [[ "${include_git_info}" == "true" ]] && [[ -d "${repo_path}/.git" ]]; then
                 local repo_info branch remote_url
                 repo_info=$(get_repo_info "${repo_path}")
                 IFS=: read -r branch remote_url <<< "${repo_info}"
-                
+
                 echo -e "${BLUE}[${repo_name}]${NC} ${GREEN}(${branch})${NC} → ${YELLOW}${abs_path}${NC}"
                 if [[ "${remote_url}" != "<no-remote>" ]]; then
                     echo -e "  ${GRAY}↳ ${remote_url}${NC}"
@@ -121,14 +121,14 @@ format_summary() {
     local success="$2"
     local failed_repos="$3"
     local failed_count=$((total - success))
-    
+
     echo ""
     echo "================================================================================"
     echo "📊 Summary"
     echo "---------"
     printf "Total repositories: %d\n" "${total}"
     printf "Successful: %d\n" "${success}"
-    
+
     if [[ ${failed_count} -gt 0 ]]; then
         printf "Failed: %d" "${failed_count}"
         if [[ -n "${failed_repos}" ]]; then
@@ -149,7 +149,7 @@ format_summary() {
 #######################################
 format_operation_header() {
     local operation="$1"
-    
+
     echo "🔄 ${operation}"
     echo "================================================================================"
 }
