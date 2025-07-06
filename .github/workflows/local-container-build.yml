@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       push:
-        description: "Push image to registry"
+        description: Push image to registry
         required: false
         type: boolean
         default: false
