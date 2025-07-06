@@ -3,28 +3,19 @@
     "memory": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ],
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
       "env": {}
     },
     "sequential-thinking": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
-      ],
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
       "env": {}
     },
     "github": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-github"
-      ],
+      "args": ["-y", "@modelcontextprotocol/server-github"],
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN:-${GITHUB_TOKEN:-${GH_TOKEN}}}"
       }
@@ -38,10 +29,7 @@
     "git": {
       "type": "stdio",
       "command": "mcp-server-git",
-      "args": [
-        "--repository",
-        "/workspace"
-      ],
+      "args": ["--repository", "/workspace"],
       "env": {}
     },
     "playwright": {
@@ -62,10 +50,7 @@
     "perplexity": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "-y",
-        "server-perplexity-ask"
-      ],
+      "args": ["-y", "server-perplexity-ask"],
       "env": {
         "PERPLEXITY_API_KEY": "${PERPLEXITY_API_KEY}"
       }
