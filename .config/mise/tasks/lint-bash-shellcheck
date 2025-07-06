@@ -30,7 +30,7 @@ declare -r SHELLCHECK_CONFIG="${MISE_PROJECT_ROOT}/.shellcheckrc"
 # Find all bash scripts if no arguments provided
 find_bash_scripts() {
     local -a scripts=()
-    
+
     # Add executable files without extensions
     while IFS= read -r -d '' file; do
         if file "${file}" | grep -qE "(shell script|bash)"; then
@@ -45,7 +45,7 @@ find_bash_scripts() {
         ! -name "*.*" \
         -perm -u+x \
         -print0 2>/dev/null)
-    
+
     # Add all .sh and .bash files
     while IFS= read -r -d '' file; do
         scripts+=("${file}")
@@ -57,7 +57,7 @@ find_bash_scripts() {
         ! -path "*/tmp/*" \
         ! -path "*/.npm-global/*" \
         -print0 2>/dev/null)
-    
+
     # Remove duplicates and sort
     printf '%s\n' "${scripts[@]}" | sort -u
 }
@@ -66,7 +66,7 @@ find_bash_scripts() {
 main() {
     local verbose=false
     local -a files_to_check=()
-    
+
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -90,37 +90,37 @@ main() {
                 ;;
         esac
     done
-    
+
     # Find scripts if none specified
     if [[ ${#files_to_check[@]} -eq 0 ]]; then
         mapfile -t files_to_check < <(find_bash_scripts)
     fi
-    
+
     # Check if shellcheck is available
     if ! command -v shellcheck >/dev/null 2>&1; then
         print_status error "shellcheck not found. Install with: mise install shellcheck"
         exit 1
     fi
-    
+
     # Check if config exists
     if [[ ! -f "${SHELLCHECK_CONFIG}" ]]; then
         print_status warning "No .shellcheckrc found, using defaults"
     fi
-    
+
     format_operation_header "Running shellcheck on ${#files_to_check[@]} files"
-    
+
     local failed=0
     local passed=0
-    
+
     for file in "${files_to_check[@]}"; do
         if [[ ! -f "${file}" ]]; then
             continue
         fi
-        
+
         if [[ "${verbose}" == "true" ]]; then
             printf "Checking: %s ... " "${file#"${MISE_PROJECT_ROOT}/"}"
         fi
-        
+
         if shellcheck --rcfile="${SHELLCHECK_CONFIG}" "${file}"; then
             ((passed++))
             if [[ "${verbose}" == "true" ]]; then
@@ -133,13 +133,13 @@ main() {
             fi
         fi
     done
-    
+
     echo
     format_summary "Linting Results" \
         "Files checked: ${#files_to_check[@]}" \
         "Passed: ${passed}" \
         "Failed: ${failed}"
-    
+
     if [[ ${failed} -gt 0 ]]; then
         print_status error "Linting failed with ${failed} errors"
         exit 1
