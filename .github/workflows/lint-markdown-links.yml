@@ -31,6 +31,6 @@ jobs:
   check-links:
     uses: braincraftio/actions/.github/workflows/lint-markdown-links.yml@main
     with:
-      check-external: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.inputs.check-external == 'true' }}
+      check-external: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.check-external == true) }}
       generate-report: true
       repository-name: ${{ github.event.repository.name }}
