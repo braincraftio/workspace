@@ -1,0 +1,309 @@
+#!/usr/bin/env bash
+#MISE description="📋 List tasks with intelligent namespace filtering"
+#MISE alias=["tl", "list"]
+#MISE hide=true
+
+set -euo pipefail
+
+# shellcheck disable=SC1091
+source "${MISE_PROJECT_ROOT}/.config/mise/lib/common.sh"
+
+# Configuration defaults
+declare -A CONFIG=(
+                                      [show_aliases]="false"
+                                      [show_source]="false"
+                                      [show_hidden]="false"
+                                      [json_output]="false"
+                                      [raw_output]="false"
+                                      [namespaces_only]="false"
+                                      [sort_by]="name"
+                                      [sort_order]="asc"
+)
+
+# Namespace filters
+NAMESPACES=()
+
+show_help() {
+    cat << 'EOF'
+task-list - Advanced task listing with namespace filtering
+
+USAGE:
+    mise run task-list [NAMESPACE...] [OPTIONS]
+
+ARGUMENTS:
+    NAMESPACE    Filter by task namespace (e.g., lint, format, check)
+                 Multiple namespaces can be provided
+
+OPTIONS:
+    -a, --aliases      Show task aliases column
+    -s, --source       Show task source column
+    -w, --wide         Show all columns (aliases + source)
+    --namespace        Show only top-level namespaces (also: --namespaces, --ns)
+    -H, --hidden       Include hidden tasks
+    -j, --json         Output in JSON format
+    -r, --raw          Raw output without formatting
+    --sort COLUMN      Sort by column (name|alias|description|source)
+    --desc             Sort in descending order
+    -h, --help         Show this help message
+
+EXAMPLES:
+    mise run task-list                    # List all tasks
+    mise run task-list lint               # Show only lint tasks
+    mise run task-list format             # Show only format tasks
+    mise run task-list lint python        # Show lint:python tasks
+    mise run task-list check security     # Show check:security tasks
+    mise run task-list --namespace        # Show only top-level namespaces
+    mise run task-list -a                 # Show with aliases
+    mise run task-list -w                 # Show all columns
+    mise run task-list --json lint        # JSON output for lint tasks
+    mise run task-list lint --sort alias  # Sort lint tasks by alias
+
+NAMESPACE EXAMPLES:
+    lint         → lint:*
+    lint python  → lint:python:*
+    format       → format:*
+    check        → check:*
+    git          → git:*
+    validate     → validate:*
+
+TIPS:
+    • Use 'tl' as a short alias: mise tl lint
+    • Combine namespaces: mise tl lint format
+    • Use --wide to see all task details
+    • JSON output is useful for scripting
+
+EOF
+}
+
+parse_arguments() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h | --help)
+                show_help
+                exit 0
+                ;;
+            -a | --aliases)
+                CONFIG[show_aliases]="true"
+                shift
+                ;;
+            -s | --source)
+                CONFIG[show_source]="true"
+                shift
+                ;;
+            -w | --wide)
+                CONFIG[show_aliases]="true"
+                CONFIG[show_source]="true"
+                shift
+                ;;
+            --namespace | --namespaces | --ns)
+                CONFIG[namespaces_only]="true"
+                shift
+                ;;
+            -H | --hidden)
+                CONFIG[show_hidden]="true"
+                shift
+                ;;
+            -j | --json)
+                CONFIG[json_output]="true"
+                shift
+                ;;
+            -r | --raw)
+                CONFIG[raw_output]="true"
+                shift
+                ;;
+            --sort)
+                if [[ -z "${2:-}" ]]; then
+                    echo "❌ --sort requires a column name" >&2
+                    exit 1
+        fi
+                CONFIG[sort_by]="$2"
+                shift 2
+                ;;
+            --desc)
+                CONFIG[sort_order]="desc"
+                shift
+                ;;
+            -*)
+                echo "❌ Unknown option: $1" >&2
+                echo "Run 'mise run task-list --help' for usage" >&2
+                exit 1
+                ;;
+            *)
+                NAMESPACES+=("$1")
+                shift
+                ;;
+    esac
+  done
+}
+
+build_mise_command() {
+    local -a cmd=(mise tasks ls)
+
+    # Suppress headers when filtering
+    if [[ ${#NAMESPACES[@]} -gt 0 ]]; then
+        cmd+=(--no-header)
+  fi
+
+    # Add flags based on configuration
+    [[ "${CONFIG[show_hidden]}" == "true" ]] && cmd+=(--hidden)
+    [[ "${CONFIG[json_output]}" == "true" ]] && cmd+=(--json)
+
+    # Wide mode requires extended output
+    if [[ "${CONFIG[show_aliases]}" == "true" && "${CONFIG[show_source]}" == "true" ]]; then
+        cmd+=(--extended)
+  fi
+
+    # Sort options
+    cmd+=(--sort "${CONFIG[sort_by]}")
+    cmd+=(--sort-order "${CONFIG[sort_order]}")
+
+    echo "${cmd[@]}"
+}
+
+filter_tasks() {
+    local input="$1"
+
+    # Filter for top-level namespaces only
+    if [[ "${CONFIG[namespaces_only]}" == "true" ]]; then
+        if [[ "${CONFIG[json_output]}" == "true" ]]; then
+            # For JSON, filter tasks without colons
+            echo "${input}" | jq '[.[] | select(.name | contains(":") | not)]' 2> /dev/null || echo "[]"
+    else
+            # For text, filter lines where the first field (task name) doesn't contain a colon
+            echo "${input}" | awk '$1 !~ /:/ || NF < 2'
+    fi
+        return
+  fi
+
+    # No filtering if no namespaces specified
+    if [[ ${#NAMESPACES[@]} -eq 0 ]]; then
+        echo "${input}"
+        return
+  fi
+
+    if [[ "${CONFIG[json_output]}" == "true" ]]; then
+        # JSON filtering with jq
+        local filter="["
+        local first=true
+        for ns in "${NAMESPACES[@]}"; do
+            if [[ "${first}" == "true" ]]; then
+                first=false
+      else
+                filter+=","
+      fi
+            filter+=" .[] | select(.name | startswith(\"${ns}:\") or . == \"${ns}\")"
+    done
+        filter+="]"
+
+        echo "${input}" | jq "${filter}" 2> /dev/null || echo "[]"
+  else
+        # Text filtering with grep
+        local pattern=""
+        for ns in "${NAMESPACES[@]}"; do
+            local escaped="${ns//./\\.}"
+            if [[ -z "${pattern}" ]]; then
+                pattern="^${escaped}(:|\\s)"
+      else
+                pattern="${pattern}|^${escaped}(:|\\s)"
+      fi
+    done
+
+        echo "${input}" | grep -E "${pattern}" || true
+  fi
+}
+
+format_output() {
+    local input="${1}"
+
+    # Raw output bypasses formatting
+    if [[ "${CONFIG[raw_output]}" == "true" ]]; then
+        echo "${input}"
+        return
+  fi
+
+    # JSON output needs no formatting
+    if [[ "${CONFIG[json_output]}" == "true" ]]; then
+        echo "${input}"
+        return
+  fi
+
+    # Handle empty results
+    if [[ -z "${input}" ]]; then
+        if [[ ${#NAMESPACES[@]} -gt 0 ]]; then
+            echo "No tasks found matching namespace(s): ${NAMESPACES[*]}"
+    else
+            echo "No tasks found"
+    fi
+        return
+  fi
+
+    # Add header for unfiltered output
+    if [[ ${#NAMESPACES[@]} -eq 0 ]]; then
+        local header="Task"
+        if [[ "${CONFIG[show_aliases]}" == "true" ]]; then
+            header+="                         Aliases"
+    fi
+        header+="                          Description"
+        if [[ "${CONFIG[show_source]}" == "true" ]]; then
+            header+="                             Source"
+    fi
+
+        echo -e "${BLUE}${header}${NC}"
+        printf '━%.0s' {1..128}
+        echo
+  fi
+
+    echo "${input}"
+}
+
+count_tasks() {
+    local input="${1}"
+
+    if [[ "${CONFIG[json_output]}" == "true" ]]; then
+        echo "${input}" | jq 'length' 2> /dev/null || echo "0"
+  else
+        echo "${input}" | grep -c . || echo "0"
+  fi
+}
+
+main() {
+    parse_arguments "$@"
+
+    # Build command
+    local cmd output
+    cmd=$(build_mise_command)
+
+    # Execute command
+    if [[ "${CONFIG[json_output]}" == "true" ]]; then
+        # Use eval for clean JSON without prefixes
+        if ! output=$(eval "${cmd}" 2>&1); then
+            echo "❌ Failed to list tasks" >&2
+            echo "${output}" >&2
+            exit 1
+    fi
+  else
+        # Direct execution
+        if ! output=$(${cmd} 2>&1); then
+            echo "❌ Failed to list tasks" >&2
+            echo "${output}" >&2
+            exit 1
+    fi
+  fi
+
+    # Apply filtering
+    local filtered
+    filtered=$(filter_tasks "${output}")
+
+    # Format and display
+    format_output "${filtered}"
+
+    # Show summary for filtered results
+    if [[ ${#NAMESPACES[@]} -gt 0 && "${CONFIG[json_output]}" != "true" ]]; then
+        local count
+        count=$(count_tasks "${filtered}")
+        echo
+        echo -e "${GRAY}Found ${count} task(s) matching: ${NAMESPACES[*]}${NC}"
+  fi
+}
+
+main "$@"

@@ -1,0 +1,79 @@
+# Prettier ignore file for BrainCraft.io workspace
+# https://prettier.io/docs/en/ignore.html
+
+# Child repositories (have their own prettier configs)
+actions/
+containers/
+dot-github/
+style-system/
+
+# Dependencies
+node_modules/
+.npm-global/
+.pnpm-store/
+vendor/
+.cargo/
+
+# Build outputs
+dist/
+build/
+out/
+target/
+coverage/
+.next/
+.nuxt/
+
+# Cache directories
+.cache/
+.tmp/
+tmp/
+.reports/
+
+# Generated files
+*.min.js
+*.min.css
+*.map
+*.generated.*
+
+# Large/Binary files
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.svg
+*.woff
+*.woff2
+*.eot
+*.ttf
+*.otf
+
+# Lock files (don't format)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+Cargo.lock
+Gemfile.lock
+composer.lock
+
+# Mise
+.mise/
+.mise.local.toml
+
+# Git
+.git/
+.gitmodules
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Specific files that should not be formatted
+LICENSE*
+CHANGELOG*
+.prettierrc.yaml

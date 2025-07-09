@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+# rust - Unified Rust linting and formatting tool with automatic discovery
+#MISE hide=true
+
+set -uo pipefail
+
+# Source common functions
+source "$(dirname "$0")/../lib/common.sh"
+
+# Default mode
+MODE=""
+
+# Function to show help
+show_help() {
+  cat << EOF
+Rust Tool - Lint and format Rust code with automatic project discovery
+
+Usage: $(basename "$0") [OPTIONS] [DIRECTORIES...]
+
+OPTIONS:
+  --lint       Run cargo check and clippy on Rust projects
+  --format     Format Rust code with rustfmt
+  --help       Show this help message
+
+ARGUMENTS:
+  DIRECTORIES  Optional list of directories to process
+               If not provided, auto-discovers Rust projects by finding Cargo.toml files
+
+EXAMPLES:
+  $(basename "$0") --lint                    # Lint all discovered Rust projects
+  $(basename "$0") --format                  # Format all discovered Rust projects
+  $(basename "$0") --lint ./my-crate         # Lint specific directory
+  $(basename "$0") --format ./my-crate       # Format specific directory
+
+EOF
+  exit 0
+}
+
+# Function to find Rust directories
+find_rust_dirs() {
+  find . -name "Cargo.toml" -type f \
+    -not -path "./.git/*" \
+    -not -path "./target/*" \
+    -not -path "./node_modules/*" \
+    -not -path "./.npm-global/*" \
+    -not -path "./.cache/*" \
+    -not -path "./vendor/*" \
+    -not -path "./actions/*" \
+    -not -path "./containers/*" \
+    -not -path "./dot-github/*" \
+    -not -path "./style-system/*" \
+    -exec dirname {} \; | sort -u
+}
+
+# Parse command line arguments
+DIRS=()
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --lint)
+      MODE="lint"
+      shift
+      ;;
+    --format)
+      MODE="format"
+      shift
+      ;;
+    --help)
+      show_help
+      ;;
+    -*)
+      echo "❌ Unknown option: $1"
+      echo "Run with --help for usage information"
+      exit 1
+      ;;
+    *)
+      DIRS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+# Validate mode
+if [[ -z "${MODE}" ]]; then
+  echo "❌ No mode specified. Use --lint or --format"
+  echo "Run with --help for usage information"
+  exit 1
+fi
+
+# If no directories specified, auto-discover
+if [[ ${#DIRS[@]} -eq 0 ]]; then
+  mapfile -t DIRS < <(find_rust_dirs)
+fi
+
+# Exit gracefully if no Rust projects found
+if [[ ${#DIRS[@]} -eq 0 ]]; then
+  echo "ℹ️  No Rust projects found (no Cargo.toml files)"
+  exit 0
+fi
+
+# Track overall success
+FAILED=0
+
+# Process based on mode
+case "${MODE}" in
+  lint)
+    echo "🔍 Linting Rust code in ${#DIRS[@]} project(s)..."
+
+    for dir in "${DIRS[@]}"; do
+      echo ""
+      echo "📦 Checking ${dir}"
+
+      # Run cargo check
+      if ! (cd "${dir}" && cargo check --all-targets --all-features 2>&1); then
+        FAILED=1
+      fi
+
+      # Run clippy
+      if ! (cd "${dir}" && cargo clippy --all-targets --all-features -- -D warnings 2>&1); then
+        FAILED=1
+      fi
+    done
+    ;;
+
+  format)
+    echo "🎨 Formatting Rust code in ${#DIRS[@]} project(s)..."
+
+    for dir in "${DIRS[@]}"; do
+      echo ""
+      echo "📦 Formatting ${dir}"
+
+      if ! (cd "${dir}" && cargo fmt --all 2>&1); then
+        FAILED=1
+      fi
+    done
+    ;;
+
+  *)
+    echo "❌ Invalid mode: ${MODE}"
+    exit 1
+    ;;
+esac
+
+# Summary and exit
+if [[ ${FAILED} -eq 0 ]]; then
+  echo ""
+  echo "✅ Rust ${MODE} completed successfully"
+  exit 0
+else
+  echo ""
+  echo "❌ Rust ${MODE} failed"
+  exit 1
+fi

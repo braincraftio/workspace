@@ -1,0 +1,198 @@
+#!/usr/bin/env bash
+# go - Unified Go linting and formatting tool with automatic discovery
+#MISE hide=true
+
+set -uo pipefail
+
+# Source common functions
+source "$(dirname "$0")/../lib/common.sh"
+
+# Default mode
+MODE=""
+
+# Function to show help
+show_help() {
+  cat << EOF
+Go Tool - Lint and format Go code with automatic module discovery
+
+Usage: $(basename "$0") [OPTIONS] [DIRECTORIES...]
+
+OPTIONS:
+  --lint       Run golangci-lint on Go modules
+  --format     Format Go code with goimports and gofumpt
+  --help       Show this help message
+
+ARGUMENTS:
+  DIRECTORIES  Optional list of directories to process
+               If not provided, auto-discovers Go modules by finding go.mod files
+
+EXAMPLES:
+  $(basename "$0") --lint                    # Lint all discovered Go modules
+  $(basename "$0") --format                  # Format all discovered Go modules
+  $(basename "$0") --lint ./cmd ./pkg        # Lint specific directories
+  $(basename "$0") --format ./cmd            # Format specific directory
+
+EOF
+  exit 0
+}
+
+# Function to find Go directories
+find_go_dirs() {
+  find . -name "go.mod" -type f \
+    -not -path "./.git/*" \
+    -not -path "./node_modules/*" \
+    -not -path "./.npm-global/*" \
+    -not -path "./.cache/*" \
+    -not -path "./vendor/*" \
+    -exec dirname {} \; | sort -u
+}
+
+# Parse command line arguments
+DIRS=()
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --lint)
+      MODE="lint"
+      shift
+      ;;
+    --format)
+      MODE="format"
+      shift
+      ;;
+    --help)
+      show_help
+      ;;
+    -*)
+      echo "❌ Unknown option: $1"
+      echo "Run with --help for usage information"
+      exit 1
+      ;;
+    *)
+      DIRS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+# Validate mode
+if [[ -z "${MODE}" ]]; then
+  echo "❌ No mode specified. Use --lint or --format"
+  echo "Run with --help for usage information"
+  exit 1
+fi
+
+# Determine directories to process
+if [[ ${#DIRS[@]} -gt 0 ]]; then
+  # Use provided directories
+  GO_DIRS=("${DIRS[@]}")
+  if [[ "${MODE}" == "lint" ]]; then
+    echo "🔍 Running Go linters on specified directories: ${GO_DIRS[*]}"
+  else
+    echo "🔧 Formatting Go code in specified directories: ${GO_DIRS[*]}"
+  fi
+else
+  # Auto-discover Go directories
+  mapfile -t GO_DIRS < <(find_go_dirs)
+
+  if [[ ${#GO_DIRS[@]} -eq 0 ]]; then
+    if [[ "${MODE}" == "lint" ]]; then
+      echo "ℹ️  No Go modules found - Go linting skipped"
+    else
+      echo "ℹ️  No Go modules found - Go formatting skipped"
+    fi
+    exit 0
+  fi
+
+  if [[ "${MODE}" == "lint" ]]; then
+    echo "🔍 Found Go modules in: ${GO_DIRS[*]}"
+  else
+    echo "🔧 Found Go modules to format: ${GO_DIRS[*]}"
+  fi
+fi
+
+# Track overall status
+overall_status=0
+
+# Execute based on mode
+if [[ "${MODE}" == "lint" ]]; then
+  # Linting mode
+  for dir in "${GO_DIRS[@]}"; do
+    if [[ -d "${dir}" ]]; then
+      echo ""
+      echo "📦 Linting Go module: ${dir}"
+      echo "────────────────────────────────────────"
+
+      # Run golangci-lint in the directory
+      (cd "${dir}" && golangci-lint run --timeout=5m --concurrency=4)
+      rc=$?
+
+      # Handle exit codes
+      if [[ ${rc} -eq 0 ]]; then
+        echo "✅ ${dir}: All checks passed"
+      elif [[ ${rc} -eq 7 ]]; then
+        echo "⚠️  ${dir}: No Go files found in module"
+      else
+        echo "❌ ${dir}: Issues found (exit code: ${rc})"
+        overall_status=${rc}
+      fi
+    else
+      echo "⚠️  Directory not found: ${dir}"
+    fi
+  done
+
+  # Summary
+  echo ""
+  echo "════════════════════════════════════════"
+  if [[ ${overall_status} -eq 0 ]]; then
+    echo "✅ Go linting completed successfully"
+  else
+    echo "❌ Go linting found issues"
+  fi
+
+else
+  # Formatting mode
+  # First pass: organize imports with goimports
+  echo ""
+  echo "📦 Phase 1: Organizing imports with goimports"
+  echo "════════════════════════════════════════════"
+
+  for dir in "${GO_DIRS[@]}"; do
+    if [[ -d "${dir}" ]]; then
+      echo "→ Processing ${dir}..."
+      (cd "${dir}" && goimports -w .)
+      rc=$?
+      if [[ ${rc} -ne 0 ]]; then
+        echo "❌ Failed to organize imports in ${dir}"
+        overall_status=${rc}
+      fi
+    fi
+  done
+
+  # Second pass: format with gofumpt (stricter than gofmt)
+  echo ""
+  echo "📦 Phase 2: Formatting with gofumpt"
+  echo "════════════════════════════════════════════"
+
+  for dir in "${GO_DIRS[@]}"; do
+    if [[ -d "${dir}" ]]; then
+      echo "→ Processing ${dir}..."
+      (cd "${dir}" && gofumpt -w .)
+      rc=$?
+      if [[ ${rc} -ne 0 ]]; then
+        echo "❌ Failed to format ${dir}"
+        overall_status=${rc}
+      fi
+    fi
+  done
+
+  # Summary
+  echo ""
+  echo "════════════════════════════════════════"
+  if [[ ${overall_status} -eq 0 ]]; then
+    echo "✅ Go formatting completed successfully"
+  else
+    echo "❌ Go formatting encountered errors"
+  fi
+fi
+
+exit ${overall_status}

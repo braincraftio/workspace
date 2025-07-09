@@ -1,0 +1,111 @@
+# yamllint configuration for BrainCraft.io workspace
+# https://yamllint.readthedocs.io/en/stable/configuration.html
+
+extends: default
+
+rules:
+  # Line length
+  line-length:
+    max: 100
+    level: warning
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+
+  # Indentation
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+    check-multi-line-strings: false
+
+  # Comments
+  comments:
+    min-spaces-from-content: 1 # Match Prettier's behavior
+    require-starting-space: true
+
+  # Braces and brackets
+  braces:
+    forbid: false
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+    min-spaces-inside-empty: 0
+    max-spaces-inside-empty: 0
+
+  brackets:
+    forbid: false
+    min-spaces-inside: 0
+    max-spaces-inside: 0
+    min-spaces-inside-empty: 0
+    max-spaces-inside-empty: 0
+
+  # Colons
+  colons:
+    max-spaces-before: 0
+    max-spaces-after: 1
+
+  # Commas
+  commas:
+    max-spaces-before: 0
+    min-spaces-after: 1
+    max-spaces-after: 1
+
+  # Empty lines
+  empty-lines:
+    max: 2
+    max-start: 0
+    max-end: 0
+
+  # Keys
+  key-duplicates: enable
+  key-ordering: disable # mise.toml files may have specific ordering requirements
+
+  # Document boundaries
+  document-start:
+    present: false # Don't require --- at start of files
+
+  document-end:
+    present: false
+
+  # Truthy values (GitHub Actions compatibility)
+  truthy:
+    allowed-values: ["true", "false", "yes", "no", "on", "off"]
+    check-keys: false # Don't check keys like 'on:' in GitHub Actions
+
+  # Quoted strings
+  quoted-strings:
+    quote-type: any
+    required: false # Don't enforce quotes - let prettier handle it
+    allow-quoted-quotes: false
+
+  # Empty values
+  empty-values:
+    forbid-in-block-mappings: false
+    forbid-in-flow-mappings: true
+
+  # Octal values
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: false # Allow 0o644 style
+
+  # Float values
+  float-values:
+    forbid-inf: false
+    forbid-nan: false
+    forbid-scientific-notation: false
+    require-numeral-before-decimal: true
+
+# Files to ignore
+ignore: |
+  .git/
+  node_modules/
+  vendor/
+  .npm-global/
+  .pnpm-store/
+  .cargo/
+  .cache/
+  .mise/
+  actions/
+  containers/
+  dot-github/
+  style-system/
+  *.generated.yml
+  *.generated.yaml

@@ -1,0 +1,232 @@
+#!/usr/bin/env bash
+# docker - Unified Docker linting and formatting tool with automatic discovery
+#MISE hide=true
+
+set -uo pipefail
+
+# Source common functions
+source "$(dirname "$0")/../lib/common.sh"
+
+# Default mode
+MODE=""
+
+# Function to show help
+show_help() {
+  cat << EOF
+Docker Tool - Lint and format Dockerfiles with automatic discovery
+
+Usage: $(basename "$0") [OPTIONS] [FILES...]
+
+OPTIONS:
+  --lint       Lint Dockerfiles with hadolint
+  --format     Format Dockerfiles with dockerfmt
+  --help       Show this help message
+
+ARGUMENTS:
+  FILES        Optional list of Dockerfiles to process
+               If not provided, auto-discovers Dockerfiles using these patterns:
+               - Dockerfile
+               - Dockerfile.*
+               - *.dockerfile
+               - **/Dockerfile
+               - **/Dockerfile.*
+               - **/*.dockerfile
+
+EXAMPLES:
+  $(basename "$0") --lint                    # Lint all discovered Dockerfiles
+  $(basename "$0") --format                  # Format all discovered Dockerfiles
+  $(basename "$0") --lint Dockerfile         # Lint specific Dockerfile
+  $(basename "$0") --format ./containers/*/Dockerfile  # Format matching Dockerfiles
+
+CONFIGURATION:
+  hadolint uses .hadolint.yaml for configuration
+  dockerfmt CLI flags:
+    --indent=2         (2-space indentation)
+    --newline          (ensure trailing newline)
+    --space-redirects  (space after redirect operators)
+
+EOF
+  exit 0
+}
+
+# Function to find Dockerfiles
+find_dockerfiles() {
+  # Use find to locate Dockerfiles with common patterns
+  find . \( \
+    -name "Dockerfile" -o \
+    -name "Dockerfile.*" -o \
+    -name "*.dockerfile" \
+    \) -type f \
+    -not -path "./.git/*" \
+    -not -path "./node_modules/*" \
+    -not -path "./.npm-global/*" \
+    -not -path "./.cache/*" \
+    -not -path "./vendor/*" \
+    -not -path "./tmp/*" \
+    -not -path "./build/*" \
+    -not -path "./dist/*" | sort -u
+}
+
+# Parse command line arguments
+FILES=()
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --lint)
+      MODE="lint"
+      shift
+      ;;
+    --format)
+      MODE="format"
+      shift
+      ;;
+    --help)
+      show_help
+      ;;
+    -*)
+      echo "❌ Unknown option: $1"
+      echo "Run with --help for usage information"
+      exit 1
+      ;;
+    *)
+      FILES+=("$1")
+      shift
+      ;;
+  esac
+done
+
+# Validate mode
+if [[ -z "${MODE}" ]]; then
+  echo "❌ No mode specified. Use --lint or --format"
+  echo "Run with --help for usage information"
+  exit 1
+fi
+
+# Determine files to process
+if [[ ${#FILES[@]} -gt 0 ]]; then
+  # Use provided files
+  DOCKERFILES=("${FILES[@]}")
+  if [[ "${MODE}" == "lint" ]]; then
+    echo "🔍 Running hadolint on specified files: ${DOCKERFILES[*]}"
+  else
+    echo "🔧 Formatting specified Dockerfiles: ${DOCKERFILES[*]}"
+  fi
+else
+  # Auto-discover Dockerfiles
+  mapfile -t DOCKERFILES < <(find_dockerfiles)
+
+  if [[ ${#DOCKERFILES[@]} -eq 0 ]]; then
+    if [[ "${MODE}" == "lint" ]]; then
+      echo "ℹ️  No Dockerfiles found - Docker linting skipped"
+    else
+      echo "ℹ️  No Dockerfiles found - Docker formatting skipped"
+    fi
+    exit 0
+  fi
+
+  if [[ "${MODE}" == "lint" ]]; then
+    echo "🔍 Found Dockerfiles to lint:"
+    printf "   %s\n" "${DOCKERFILES[@]}"
+  else
+    echo "🔧 Found Dockerfiles to format:"
+    printf "   %s\n" "${DOCKERFILES[@]}"
+  fi
+fi
+
+# Track overall status
+overall_status=0
+
+# Execute based on mode
+if [[ "${MODE}" == "lint" ]]; then
+  # Linting mode with hadolint
+  echo ""
+  echo "📦 Linting Dockerfiles with hadolint"
+  echo "════════════════════════════════════════"
+
+  for dockerfile in "${DOCKERFILES[@]}"; do
+    if [[ -f "${dockerfile}" ]]; then
+      echo ""
+      echo "→ Linting ${dockerfile}..."
+
+      # Run hadolint with configuration file if it exists, capturing output
+      if [[ -f ".hadolint.yaml" ]]; then
+        output=$(hadolint --config .hadolint.yaml "${dockerfile}" 2>&1)
+      else
+        output=$(hadolint "${dockerfile}" 2>&1)
+      fi
+      rc=$?
+
+      # Display the output
+      echo "${output}"
+
+      if [[ ${rc} -eq 0 ]]; then
+        echo "✅ ${dockerfile}: All checks passed"
+      else
+        # Count the number of issues
+        issue_count=$(echo "${output}" | grep -c "^${dockerfile}:")
+        echo "❌ ${dockerfile}: ${issue_count} issues found (exit code: ${rc})"
+        overall_status=${rc}
+      fi
+    else
+      echo "⚠️  File not found: ${dockerfile}"
+    fi
+  done
+
+  # Summary
+  echo ""
+  echo "════════════════════════════════════════"
+  if [[ ${overall_status} -eq 0 ]]; then
+    echo "✅ Docker linting completed successfully"
+  else
+    echo "❌ Docker linting found issues"
+  fi
+
+else
+  # Formatting mode with dockerfmt
+  # First check if dockerfmt is available
+  if ! command -v dockerfmt &> /dev/null; then
+    echo "❌ dockerfmt is not installed"
+    echo "   Please install it with: mise install"
+    echo "   Or manually: go install github.com/reteps/dockerfmt@latest"
+    exit 1
+  fi
+
+  echo ""
+  echo "📦 Formatting Dockerfiles with dockerfmt"
+  echo "════════════════════════════════════════"
+
+  for dockerfile in "${DOCKERFILES[@]}"; do
+    if [[ -f "${dockerfile}" ]]; then
+      echo ""
+      echo "→ Formatting ${dockerfile}..."
+
+      # Run dockerfmt with enterprise-standard flags
+      dockerfmt \
+        --indent=2 \
+        --newline \
+        --space-redirects \
+        --write \
+        "${dockerfile}"
+      rc=$?
+
+      if [[ ${rc} -eq 0 ]]; then
+        echo "✅ ${dockerfile}: Formatted successfully"
+      else
+        echo "❌ ${dockerfile}: Formatting failed (exit code: ${rc})"
+        overall_status=${rc}
+      fi
+    else
+      echo "⚠️  File not found: ${dockerfile}"
+    fi
+  done
+
+  # Summary
+  echo ""
+  echo "════════════════════════════════════════"
+  if [[ ${overall_status} -eq 0 ]]; then
+    echo "✅ Docker formatting completed successfully"
+  else
+    echo "❌ Docker formatting encountered errors"
+  fi
+fi
+
+exit ${overall_status}

@@ -1,0 +1,213 @@
+#!/usr/bin/env bash
+# web - Unified CSS/HTML linting and formatting tool with automatic discovery
+#MISE hide=true
+
+set -uo pipefail
+
+# Source common functions
+source "$(dirname "$0")/../lib/common.sh"
+
+# Default mode
+MODE=""
+
+# Function to show help
+show_help() {
+  local EXIT_CODE=${1:-0}
+  cat << EOF
+Web Tool - Lint and format CSS/HTML code with automatic file discovery
+
+Usage: $(basename "$0") [OPTIONS] [FILES/DIRECTORIES...]
+
+OPTIONS:
+  --lint-css     Run stylelint on CSS/SCSS files
+  --lint-html    Run htmlhint on HTML files
+  --format-css   Format CSS/SCSS with Prettier
+  --format-html  Format HTML with Prettier
+  --help         Show this help message
+
+ARGUMENTS:
+  FILES/DIRS     Optional list of files or directories to process
+                 If not provided, auto-discovers CSS/HTML files
+
+EXAMPLES:
+  $(basename "$0") --lint-css                    # Lint all discovered CSS files
+  $(basename "$0") --format-css                  # Format all discovered CSS files
+  $(basename "$0") --lint-html                   # Lint all discovered HTML files
+  $(basename "$0") --format-html                 # Format all discovered HTML files
+  $(basename "$0") --lint-css ./styles           # Lint CSS in specific directory
+  $(basename "$0") --format-html index.html      # Format specific HTML file
+
+EOF
+  exit "${EXIT_CODE}"
+}
+
+# Function to find CSS files
+find_css_files() {
+  find . \( -name "*.css" -o -name "*.scss" -o -name "*.sass" \) -type f \
+    -not -path "./.git/*" \
+    -not -path "./node_modules/*" \
+    -not -path "./.npm-global/*" \
+    -not -path "./dist/*" \
+    -not -path "./build/*" \
+    -not -path "./coverage/*" \
+    -not -path "./vendor/*" \
+    -not -path "./actions/*" \
+    -not -path "./containers/*" \
+    -not -path "./dot-github/*" \
+    -not -path "./style-system/*" \
+    -not -path "./.cache/*" \
+    -not -path "./.taplo-cache/*" \
+    -not -name "*.min.css" | sort
+}
+
+# Function to find HTML files
+find_html_files() {
+  find . \( -name "*.html" -o -name "*.htm" \) -type f \
+    -not -path "./.git/*" \
+    -not -path "./node_modules/*" \
+    -not -path "./.npm-global/*" \
+    -not -path "./dist/*" \
+    -not -path "./build/*" \
+    -not -path "./coverage/*" \
+    -not -path "./vendor/*" \
+    -not -path "./actions/*" \
+    -not -path "./containers/*" \
+    -not -path "./dot-github/*" \
+    -not -path "./style-system/*" \
+    -not -path "./.cache/*" \
+    -not -path "./.taplo-cache/*" | sort
+}
+
+# Parse command line arguments
+FILES=()
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --lint-css)
+      MODE="lint-css"
+      shift
+      ;;
+    --lint-html)
+      MODE="lint-html"
+      shift
+      ;;
+    --format-css)
+      MODE="format-css"
+      shift
+      ;;
+    --format-html)
+      MODE="format-html"
+      shift
+      ;;
+    --help)
+      show_help
+      ;;
+    -*)
+      echo "❌ Unknown option: $1"
+      echo "Run with --help for usage information"
+      exit 1
+      ;;
+    *)
+      FILES+=("$1")
+      shift
+      ;;
+  esac
+done
+
+# Validate mode
+if [[ -z "${MODE}" ]]; then
+  echo "❌ No mode specified. Use --lint-css, --lint-html, --format-css, or --format-html"
+  echo "Run with --help for usage information"
+  exit 1
+fi
+
+# If no files specified, auto-discover based on mode
+if [[ ${#FILES[@]} -eq 0 ]]; then
+  case "${MODE}" in
+    lint-css | format-css)
+      mapfile -t FILES < <(find_css_files)
+      ;;
+    lint-html | format-html)
+      mapfile -t FILES < <(find_html_files)
+      ;;
+    *)
+      echo "❌ Invalid mode: ${MODE}"
+      echo ""
+      show_help 1
+      ;;
+  esac
+fi
+
+# Exit gracefully if no files found
+if [[ ${#FILES[@]} -eq 0 ]]; then
+  case "${MODE}" in
+    lint-css | format-css)
+      echo "ℹ️  No CSS files found"
+      ;;
+    lint-html | format-html)
+      echo "ℹ️  No HTML files found"
+      ;;
+    *)
+      echo "❌ Invalid mode: ${MODE}"
+      exit 1
+      ;;
+  esac
+  exit 0
+fi
+
+# Track overall success
+FAILED=0
+
+# Process based on mode
+case "${MODE}" in
+  lint-css)
+    echo "🔍 Linting ${#FILES[@]} CSS/SCSS file(s)..."
+
+    # Run stylelint on all files at once for better performance
+    if ! stylelint "${FILES[@]}" 2>&1; then
+      FAILED=1
+    fi
+    ;;
+
+  lint-html)
+    echo "🔍 Linting ${#FILES[@]} HTML file(s)..."
+
+    # Run htmlhint on all files at once for better performance
+    if ! htmlhint "${FILES[@]}" 2>&1; then
+      FAILED=1
+    fi
+    ;;
+
+  format-css)
+    echo "🎨 Formatting ${#FILES[@]} CSS/SCSS file(s)..."
+
+    # Run prettier on CSS files
+    if ! prettier --write "${FILES[@]}" 2>&1; then
+      FAILED=1
+    fi
+    ;;
+
+  format-html)
+    echo "🎨 Formatting ${#FILES[@]} HTML file(s)..."
+
+    # Run prettier on HTML files
+    if ! prettier --write "${FILES[@]}" 2>&1; then
+      FAILED=1
+    fi
+    ;;
+
+  *)
+    echo "❌ Invalid mode: ${MODE}"
+    exit 1
+    ;;
+esac
+
+# Summary and exit
+if [[ ${FAILED} -eq 0 ]]; then
+  echo ""
+  echo "✅ Web ${MODE} completed successfully"
+  exit 0
+else
+  echo ""
+  echo "❌ Web ${MODE} failed"
+  exit 1
+fi

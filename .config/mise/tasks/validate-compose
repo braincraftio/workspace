@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+#MISE description="🐳 Validate Docker Compose files"
+#MISE hide=true
+
+set -euo pipefail
+
+# Source common functions for consistent output
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+source "${SCRIPT_DIR}/../lib/common.sh"
+
+# Stage 1: Check if docker CLI is available
+if ! command -v docker &> /dev/null; then
+  echo "⚠️  WARNING: Docker CLI not found - skipping compose validation"
+  exit 0
+fi
+
+# Stage 2: Check if docker compose subcommand is available
+if ! docker compose version &> /dev/null; then
+  echo "⚠️  WARNING: Docker Compose not available - skipping compose validation"
+  exit 0
+fi
+
+# Stage 3: Check for compose configuration files
+# Docker Compose auto-discovers: compose.yaml, compose.yml, docker-compose.yaml, docker-compose.yml
+compose_files=()
+for file in compose.yaml compose.yml docker-compose.yaml docker-compose.yml; do
+  if [[ -f "${file}" ]]; then
+    compose_files+=("${file}")
+  fi
+done
+
+# If no files found, exit gracefully
+if [[ ${#compose_files[@]} -eq 0 ]]; then
+  echo "ℹ️  No Docker Compose files found - validation skipped"
+  exit 0
+fi
+
+# Stage 4: Validate detected compose files
+echo "🔍 Found ${#compose_files[@]} compose file(s): ${compose_files[*]}"
+echo ""
+
+validation_failed=0
+for file in "${compose_files[@]}"; do
+  echo "  Validating ${file}..."
+  if docker compose -f "${file}" config --quiet 2> /dev/null; then
+    echo "  ✅ ${file} is valid"
+  else
+    echo "  ❌ ${file} validation failed"
+    # Run again without quiet to show error details
+    docker compose -f "${file}" config 2>&1 | sed 's/^/     /'
+    validation_failed=1
+  fi
+done
+
+if [[ ${validation_failed} -eq 1 ]]; then
+  echo ""
+  echo "❌ Docker Compose validation failed"
+  exit 1
+else
+  echo ""
+  echo "✅ All Docker Compose files are valid"
+fi

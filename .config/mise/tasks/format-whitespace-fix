@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#MISE description="🧹 Fixes trailing whitespace and ensures final newlines"
+#MISE hide=true
+# This script intentionally avoids `set -e` (errexit).
+# The fixer tools (`trailing-whitespace-fixer`, `end-of-file-fixer`)
+# exit with status 1 if they modify a file. In the context of a format
+# script, this is a successful outcome, not an error. Using `set -e`
+# would cause the script to fail incorrectly when a file is fixed.
+#
+# shellcheck disable=SC2016
+# ^ We use single quotes in the xargs command below because we want $1 to be
+# expanded by the inner bash process that xargs spawns, not by this script.
+# The {} from xargs becomes $0, and our file path becomes $1 in that context.
+set -uo pipefail
+
+echo "🧹 Fixing trailing whitespace and ensuring final newlines..."
+
+# The `|| true` at the end of the pipeline is critical. It ensures the
+# entire command exits with status 0, even if the fixer tools exit with 1
+# after successfully modifying files.
+find . -type f \( \
+  -name "*.md" -o -name "*.txt" -o -name "*.yml" -o -name "*.yaml" -o \
+  -name "*.json" -o -name "*.toml" -o -name "*.ini" -o -name "*.cfg" -o \
+  -name "*.sh" -o -name "*.bash" -o -name "*.zsh" -o -name "*.fish" -o \
+  -name "*.py" -o -name "*.js" -o -name "*.ts" -o -name "*.jsx" -o -name "*.tsx" -o \
+  -name "*.css" -o -name "*.scss" -o -name "*.less" -o -name "*.html" -o -name "*.xml" -o \
+  -name "*.go" -o -name "*.rs" -o -name "*.c" -o -name "*.cpp" -o -name "*.h" -o \
+  -name "Dockerfile" -o -name "Makefile" -o -name ".gitignore" -o -name ".env*" \
+  \) \
+  -not -path "./.git/*" \
+  -not -path "./node_modules/*" \
+  -not -path "./.npm-global/*" \
+  -not -path "./.cache/*" \
+  -not -path "./tmp/*" \
+  -not -path "./build/*" \
+  -not -path "./dist/*" \
+  -print0 | xargs -0 -r -I {} bash -c 'trailing-whitespace-fixer "$1" && end-of-file-fixer "$1"' -- {} || true
+
+echo "✅ Whitespace fixing complete."

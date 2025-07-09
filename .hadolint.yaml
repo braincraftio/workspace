@@ -1,0 +1,31 @@
+# Hadolint configuration for BrainCraft.io workspace
+# https://github.com/hadolint/hadolint
+
+# Ignore specific rules
+ignored:
+  - DL3008 # Pin versions in apt-get install (often impractical in dev containers)
+  - DL3009 # Delete apt lists after install (handled by our cleanup scripts)
+  - DL4006 # Add shell -o pipefail (we handle this differently)
+
+# Trusted registries for base images
+trustedRegistries:
+  - docker.io
+  - ghcr.io
+  - quay.io
+  - gcr.io
+  - registry.hub.docker.com
+
+# Override rule severities
+override:
+  error:
+    - DL3002 # Do not switch to root USER
+    - DL3004 # Do not use sudo
+    - DL3025 # Do not use apt-get dist-upgrade
+  warning:
+    - DL3003 # Use WORKDIR to switch directories
+    - DL3015 # Avoid additional packages with --no-install-recommends
+    - DL3047 # wget without progress bar
+  info:
+    - DL3059 # Multiple consecutive RUN instructions
+    - SC2016 # Expressions in single quotes (often intentional)
+    - SC2086 # Double quote variables (we use set -u)

@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+#MISE description="📋 Validate all JSON/JSONC files against their schemas"
+#MISE hide=true
+
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+source "${SCRIPT_DIR}/../lib/common.sh"
+
+echo "🔍 Validating JSON schemas..."
+echo
+
+FAILED=0
+PASSED=0
+SKIPPED=0
+
+# Files explicitly excluded from schema validation
+SCHEMA_EXCLUSIONS=(
+  ".act-event.json"           # GitHub event payloads - no official schema
+  ".claude/settings.json"     # Proprietary Claude format
+  ".claude/settings.local.json" # Proprietary Claude format
+  ".gemini/settings.json"     # Proprietary Gemini format
+  "package-lock.json"         # Auto-generated, should not be modified
+)
+
+# Process all JSON/JSONC files
+while IFS= read -r -d '' file; do
+  relative_file="${file#./}"
+  printf "  %-40s " "${relative_file}"
+
+  if [[ ! -f "${file}" ]]; then
+    echo -e "${YELLOW}SKIP${NC} (not found)"
+    ((SKIPPED++))
+    continue
+  fi
+
+  # Check if file is in exclusions list
+  for excluded in "${SCHEMA_EXCLUSIONS[@]}"; do
+    if [[ "${relative_file}" == "${excluded}" ]]; then
+      echo -e "${GRAY}EXCLUDED${NC} (validation skipped)"
+      ((SKIPPED++))
+      continue 2
+    fi
+  done
+
+  # Check if file has a schema
+  if ! grep -q "\"\$schema\"" "${file}" 2> /dev/null; then
+    echo -e "${RED}FAIL${NC} (no schema)"
+    ((FAILED++))
+    continue
+  fi
+
+  # Validate with AJV
+  if json-schema-ajv "${file}" > /dev/null 2>&1; then
+    echo -e "${GREEN}PASS${NC}"
+    ((PASSED++))
+  else
+    echo -e "${RED}FAIL${NC}"
+    json-schema-ajv "${file}" 2>&1 | sed 's/^/    /'
+    ((FAILED++))
+  fi
+done < <(find . \( -name "*.json" -o -name "*.jsonc" \) -type f \
+  -not -path "./.git/*" \
+  -not -path "./node_modules/*" \
+  -not -path "./.npm-global/*" \
+  -not -path "./actions/*" \
+  -not -path "./containers/*" \
+  -not -path "./dot-github/*" \
+  -not -path "./style-system/*" \
+  -not -path "./tmp/*" \
+  -not -path "./.cache/*" \
+  -not -path "./dist/*" \
+  -not -path "./build/*" \
+  -print0 2> /dev/null | sort -z)
+
+# Summary
+echo
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📊 Summary:"
+echo "  Passed:   ${PASSED}"
+echo "  Failed:   ${FAILED}"
+echo "  Excluded: ${SKIPPED} (blacklisted from validation)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if [[ ${FAILED} -eq 0 ]]; then
+  echo "✅ All JSON files have valid schemas"
+  exit 0
+else
+  echo "❌ ${FAILED} validation failures found"
+  exit 1
+fi
