@@ -1,0 +1,127 @@
+#!/usr/bin/env node
+import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
+import { readFile } from 'fs/promises';
+import stripJsonComments from 'strip-json-comments';
+
+// Track schema requests to prevent infinite loops
+const schemaCache = new Map();
+const requestCounts = new Map();
+const MAX_REQUESTS_PER_SCHEMA = 3;
+
+const ajv = new Ajv({
+  allErrors: true,
+  strict: false,
+  loadSchema: async (uri) => {
+    // Circuit breaker for recursive schemas
+    const requestCount = (requestCounts.get(uri) || 0) + 1;
+    requestCounts.set(uri, requestCount);
+    
+    if (requestCount > MAX_REQUESTS_PER_SCHEMA) {
+      // Known recursive schema - return a permissive schema
+      return true;
+    }
+    
+    // Check cache first
+    if (schemaCache.has(uri)) {
+      return schemaCache.get(uri);
+    }
+    
+    // Handle vscode:// protocol
+    if (uri.startsWith('vscode://')) {
+      // Return permissive schema for VS Code internal schemas
+      return true;
+    }
+    
+    // Handle file:// protocol
+    if (uri.startsWith('file://')) {
+      const filePath = uri.replace('file://', '');
+      try {
+        const content = await readFile(filePath, 'utf8');
+        const schema = JSON.parse(content);
+        schemaCache.set(uri, schema);
+        return schema;
+      } catch (error) {
+        console.error(`❌ Failed to read ${uri}: ${error.message}`);
+        throw error;
+      }
+    }
+    
+    // Fetch HTTP/HTTPS schemas
+    try {
+      const response = await fetch(uri);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const schema = await response.json();
+      
+      // Cache the schema
+      schemaCache.set(uri, schema);
+      return schema;
+    } catch (error) {
+      console.error(`❌ Failed to fetch ${uri}: ${error.message}`);
+      throw error;
+    }
+  }
+});
+
+// Add standard formats
+addFormats(ajv);
+
+// Main validation function
+async function validateFile(filePath) {
+  try {
+    // Clear request counts for each validation to prevent false positives
+    requestCounts.clear();
+    
+    const content = await readFile(filePath, 'utf8');
+    
+    // Parse JSON/JSONC
+    let data;
+    try {
+      // Handle JSONC with comments
+      const cleaned = stripJsonComments(content, { whitespace: false });
+      data = JSON.parse(cleaned);
+    } catch (e) {
+      // Fallback to direct parse
+      data = JSON.parse(content);
+    }
+    
+    // Get schema URL from file
+    const schemaUrl = data.$schema;
+    if (!schemaUrl) {
+      return { valid: true, warning: 'No $schema property' };
+    }
+    
+    // Compile and validate
+    const validate = await ajv.compileAsync({ $ref: schemaUrl });
+    const valid = validate(data);
+    
+    return {
+      valid,
+      errors: validate.errors || []
+    };
+  } catch (error) {
+    return {
+      valid: false,
+      errors: [{ message: error.message }]
+    };
+  }
+}
+
+// CLI interface
+if (process.argv.length > 2) {
+  const file = process.argv[2];
+  const result = await validateFile(file);
+  
+  if (result.valid) {
+    console.log(`✅ ${file} - VALID`);
+    process.exit(0);
+  } else {
+    console.log(`❌ ${file} - INVALID`);
+    result.errors.forEach(err => {
+      console.log(`   ${err.instancePath || '/'}: ${err.message}`);
+    });
+    process.exit(1);
+  }
+}

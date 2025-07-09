@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+
+# Detect if script is being sourced
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    echo "Error: This script should not be sourced. Please run it directly:"
+    echo "  ./.github/bin/tree"
+    echo "  bash .github/bin/tree"
+    echo "  /full/path/to/.github/bin/tree"
+    # shellcheck disable=SC2317
+    # SC2317: The exit is reachable when script is sourced vs executed
+    return 1 2> /dev/null || exit 1
+fi
+
+# Custom tree command wrapper for BrainCraft.io workspace and organization repositories
+# Shows all files including hidden ones while filtering out unnecessary directories
+#
+# Usage examples:
+#   tree             - Show repository with defaults (depth 4)
+#   tree -L 1        - Show only top-level directories and files
+#   tree app         - Show only the app directory structure
+#   tree -d          - Show only directories
+#   tree --du        - Show disk usage for directories
+#   tree -P "*.yml"  - Show only YAML files
+#   tree -f          - Show full path for each file
+
+# Function to find the tree command
+find_tree_command() {
+    # Try common locations first
+    local tree_locations=(
+        "/opt/homebrew/bin/tree"
+        "/usr/bin/tree"
+        "/usr/local/bin/tree"
+  )
+
+    # Check specific locations first
+    for location in "${tree_locations[@]}"; do
+        if [[ -x "${location}" ]]; then
+            echo "${location}"
+            return 0
+    fi
+  done
+
+    # Fall back to searching PATH if not found in specific locations
+    # SC2155: Declare and assign separately to avoid masking return values
+    # This ensures we can check the exit status of the command pipeline
+    # https://www.shellcheck.net/wiki/SC2155
+    local path_tree
+    path_tree=$(which tree 2> /dev/null | grep -v ".github/bin/tree")
+
+    if [[ -n "${path_tree}" ]]; then
+        echo "${path_tree}"
+        return 0
+  fi
+
+    # Not found
+    return 1
+}
+
+# Find and set tree command
+TREE_CMD=$(find_tree_command)
+if [[ -z "${TREE_CMD}" ]]; then
+    echo "Error: tree command not found. Please install tree first."
+    exit 1
+fi
+
+# Build exclude pattern for directories
+# Uses path patterns to exclude .git while allowing .github
+declare -a exclude_dirs=(
+    ".git"
+    "node_modules"
+    "__pycache__"
+    ".pytest_cache"
+    ".mypy_cache"
+    ".ruff_cache"
+    ".venv"
+    "venv"
+    "dist"
+    "build"
+    "coverage"
+    ".coverage"
+    ".eggs"
+    "*.egg-info"
+    ".npm-global"
+    "vendor"
+    "__debug*"
+    ".artifacts"
+    "*.data"
+    "*test-archive"
+    ".env"
+    ".claude"
+    ".gemini"
+    ".vscode"
+    ".devcontainer"
+)
+
+# Build the exclude pattern
+EXCLUDE_PATTERN=""
+for dir in "${exclude_dirs[@]}"; do
+    if [[ -n "${EXCLUDE_PATTERN}" ]]; then
+        EXCLUDE_PATTERN="${EXCLUDE_PATTERN}|${dir}"
+  else
+        EXCLUDE_PATTERN="${dir}"
+  fi
+done
+
+# Parse arguments to handle -L flag properly
+DEPTH_LIMIT="-L 4"  # Default depth
+FILTERED_ARGS=()
+SKIP_NEXT=false
+
+# Parse arguments
+i=1
+while [[ ${i} -le $# ]]; do
+    arg="${!i}"
+
+    if [[ "${SKIP_NEXT}" == true ]]; then
+        SKIP_NEXT=false
+        ((i++))
+        continue
+  fi
+
+    if [[ "${arg}" == "-L" ]]; then
+        # Check if next argument exists and is a number
+        next_idx=$((i + 1))
+        if [[ ${next_idx} -le $# ]]; then
+            next_arg="${!next_idx}"
+            if [[ "${next_arg}" =~ ^[0-9]+$ ]]; then
+                # Valid -L with number, keep both arguments
+                FILTERED_ARGS+=("${arg}")
+                FILTERED_ARGS+=("${next_arg}")
+                SKIP_NEXT=true
+                DEPTH_LIMIT=""  # Don't use default since user provided valid -L
+      else
+                # -L without valid number, skip -L but keep next arg
+                # Default depth will be used
+                :
+      fi
+    else
+            # -L is last argument, skip it
+            # Default depth will be used
+            :
+    fi
+  else
+        # Keep all other arguments
+        FILTERED_ARGS+=("${arg}")
+  fi
+    ((i++))
+done
+
+# Execute tree with preferred options
+# We don't quote $DEPTH_LIMIT because it contains the flag and value (-L 4)
+# that need to be treated as separate arguments
+# shellcheck disable=SC2086
+if [[ -n "${DEPTH_LIMIT}" ]]; then
+    ${TREE_CMD} \
+        -a \
+        -h \
+        -F \
+        -C \
+        -I "${EXCLUDE_PATTERN}" \
+        --prune \
+        --dirsfirst \
+        ${DEPTH_LIMIT} \
+        "${FILTERED_ARGS[@]}"
+else
+    ${TREE_CMD} \
+        -a \
+        -h \
+        -F \
+        -C \
+        -I "${EXCLUDE_PATTERN}" \
+        --prune \
+        --dirsfirst \
+        "${FILTERED_ARGS[@]}"
+fi
