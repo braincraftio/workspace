@@ -67,3 +67,9 @@ logs/
 .secrets.act
 .act-event.json
 /tmp/act-*
+
+# MCP configuration files with hardcoded secrets
+# These files contain hardcoded API keys due to MCP bug
+# See: https://github.com/anthropics/claude-code/issues/1254
+.mcp.json
+.gemini/settings.json
