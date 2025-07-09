@@ -14,7 +14,7 @@ timeout = 20
 max_retries = 2
 
 # Accept these status codes
-accept = [200, 201, 202, 203, 204, 206, 301, 302, 304, 401, 403]
+accept = [ 200, 201, 202, 203, 204, 206, 301, 302, 304, 401, 403 ]
 
 # Exclude patterns
 exclude = [
@@ -37,6 +37,21 @@ exclude = [
 
   # Private GitHub repos (will 404 without auth)
   "^https://github\\.com/braincraftio/.*/(pull|issues|actions)",
+
+  # NPM package internal file references (these don't exist in published packages)
+  "^file://.*\\.npm-global/",
+  "^file://.*node_modules/",
+
+  # Common npm package documentation files that don't exist
+  "CONTRIBUTING\\.md$",
+  "CHANGELOG\\.md$",
+  "MIGRATION\\.md$",
+  "/docs/.*\\.md$",
+  "/examples/.*\\.(js|ts|md)$",
+  "/test/.*\\.(js|ts)$",
+  "\\.verb\\.md$",
+  "screenshot\\.(png|jpg|gif|svg)$",
+  "logo\\.(png|jpg|gif|svg)$",
 ]
 
 # Check anchors
@@ -60,7 +75,11 @@ exclude_mail = true
 # Exclude paths
 exclude_path = [
   ".npm-global",
+  ".npm-global/**",
+  "**/.npm-global/**",
   "node_modules",
+  "node_modules/**",
+  "**/node_modules/**",
   ".git",
   ".mise",
   ".cargo",
@@ -68,5 +87,6 @@ exclude_path = [
   "target",
   "dist",
   "build",
-  "tmp"
+  "tmp",
+  ".reports",
 ]

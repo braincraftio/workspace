@@ -1,4 +1,5 @@
 {
+  "$schema": "file:///workspace/.github/schemas/vscode-settings.json",
   "git.ignoreLimitWarning": true,
   "cSpell.customDictionaries": {
     "project-words": {

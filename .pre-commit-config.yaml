@@ -1,246 +1,27 @@
-# BrainCraft.io Pre-commit Configuration
-# https://pre-commit.com
+# .pre-commit-config.yaml v4
 #
-# This centralized configuration runs linting and formatting checks across
-# all repositories in the workspace. Child repositories are excluded from
-# workspace-level checks as they have their own pre-commit configs.
+# Runs a comprehensive suite of non-mutating checks before each commit.
+# All logic is delegated to the `mise` task runner for a single source of truth.
+# See `.mise.toml` for task definitions.
 
-# Global settings
 minimum_pre_commit_version: 3.5.0
-fail_fast: false
+fail_fast: true
 
 repos:
-  # General file checks
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
-      # check-json moved to JSON/JSONC section for better handling
-      - id: check-yaml
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-      - id: end-of-file-fixer
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-      - id: trailing-whitespace
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-      - id: check-added-large-files
-        args: [--maxkb=1000]
-      - id: check-merge-conflict
-      - id: detect-private-key
-
-  # Python formatting and linting
-  - repo: https://github.com/psf/black
-    rev: 24.10.0
-    hooks:
-      - id: black
-        language_version: python3.13
-        args: [--line-length=100]
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: [--profile=black, --line-length=100]
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.7.0
-    hooks:
-      - id: ruff
-        args: [--fix]
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-      - id: ruff-format
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-
-  # Python type checking
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
-    hooks:
-      - id: mypy
-        args: [--config-file, mypy.ini]
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-        additional_dependencies:
-          - types-requests
-          - types-PyYAML
-
-  # Python security analysis
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.10
-    hooks:
-      - id: bandit
-        args: [-c, .bandit, -r, .]
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-
-  # JavaScript/TypeScript/Markdown/YAML formatting
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.1.0
-    hooks:
-      - id: prettier
-        types_or: [javascript, jsx, ts, tsx, markdown, yaml, css, scss, html]
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-        additional_dependencies:
-          - prettier@3.3.3
-          - "@prettier/plugin-xml@3.4.1"
-
-  # Shell script linting and formatting
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
-    hooks:
-      - id: shellcheck
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-        args: [--severity=warning]
-
-  - repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.11.0-1
-    hooks:
-      - id: shfmt
-        args: [-i, "2", -ci, -sr, -kp]
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-
-  # Bash dead code detection
   - repo: local
     hooks:
-      - id: bash-dead-code
-        name: Find unused bash functions
-        entry: mise run lint:bash:dead-code
+      # This single hook runs all linters, tests, and security scans
+      # via `mise run pre-commit` (alias `pc`).
+      # It is a non-mutating quality gate.
+      - id: mise-pre-commit-checks
+        name: Run mise pre-commit checks
+        entry: bash -l -c 'mise run pre-commit:smart'
         language: system
-        files: \.sh$|^\.config/mise/tasks/
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
         pass_filenames: false
-
-  # YAML linting
-  - repo: https://github.com/adrienverge/yamllint
-    rev: v1.35.1
-    hooks:
-      - id: yamllint
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-        args: [-c, .yamllint.yaml]
-
-  # Markdown linting and link checking
-  - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.14.0
-    hooks:
-      - id: markdownlint-cli2
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-        args: [--config, .markdownlint.yaml, --fix]
-
-  # Markdown link checking (internal links only for pre-commit)
-  - repo: local
-    hooks:
-      - id: markdown-link-check
-        name: Check Markdown Links (offline)
-        entry: mise run lint:markdown:links
-        language: system
-        files: \.md$
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-        pass_filenames: false
-
-  # GitHub Actions workflow linting
-  - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.4
-    hooks:
-      - id: actionlint
-        exclude: ^(actions|containers|dot-github|style-system)/
-
-  # Go linting (workspace-level Go files only)
-  - repo: https://github.com/golangci/golangci-lint
-    rev: v1.62.2
-    hooks:
-      - id: golangci-lint
-        args: [--timeout=5m]
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-
-  # JavaScript/TypeScript linting (workspace-level only)
-  - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v9.15.0
-    hooks:
-      - id: eslint
-        files: \.(js|jsx|ts|tsx)$
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-        additional_dependencies:
-          - eslint@9.15.0
-          - "@typescript-eslint/parser@8.0.0"
-          - "@typescript-eslint/eslint-plugin@8.0.0"
-
-  # Security scanning
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
-    hooks:
-      - id: detect-secrets
-        args: [--baseline, .secrets.baseline]
-        exclude: .*\.(lock|sum)$|^node_modules/|^\.pnpm-store/|^\.npm-global/
-
-  # JSON/JSONC validation and formatting
-  - repo: local
-    hooks:
-      # Strict JSON validation (no comments allowed)
-      - id: check-strict-json
-        name: Validate strict JSON files
-        entry: bash -c 'for file in "$@"; do jq . "$file" >/dev/null || exit 1; done' --
-        language: system
-        files: \.json$
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/|(devcontainer|tsconfig.*|.*/tsconfig.*|biome|lychee)\.json$
-
-      # JSONC validation and formatting with Biome
-      - id: biome-check-jsonc
-        name: Validate JSONC files (Biome)
-        entry: biome check --write
-        language: system
-        files: (devcontainer|tsconfig.*|.*/tsconfig.*|biome)\.json$
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-
-      # All JSON/JSONC formatting with Biome
-      - id: biome-format-json
-        name: Format JSON/JSONC files (Biome)
-        entry: biome format --write
-        language: system
-        types: [json]
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-
-  # JSON Schema validation
-  # Note: check-jsonschema doesn't support JSONC, so we rely on Biome for devcontainer.json validation
-  - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.30.0
-    hooks:
-      - id: check-jsonschema
-        name: Validate package.json schema
-        files: package\.json$
-        args: [--schemafile, https://json.schemastore.org/package.json]
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-      - id: check-jsonschema
-        name: Validate composer.json schema
-        files: composer\.json$
-        args: [--schemafile, https://getcomposer.org/schema.json]
-        exclude: ^(actions|containers|dot-github|style-system)/|node_modules/
-
-  # TOML linting for mise configs
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
-    hooks:
-      - id: check-toml
-        files: \.toml$
-        exclude: ^(actions|containers|dot-github|style-system)/
-
-  # mise configuration validation
-  - repo: local
-    hooks:
-      - id: mise-config-validation
-        name: Validate mise configuration
-        entry: mise run validate:mise
-        language: system
-        files: ^\.mise\.toml$|^\.config/mise/.*\.toml$
-        pass_filenames: false
-
-      - id: mise-task-validation
-        name: Validate mise tasks
-        entry: bash -c 'mise tasks --no-header >/dev/null'
-        language: system
-        files: ^\.mise\.toml$|^\.config/mise/tasks/
-        pass_filenames: false
-
-# Configuration for specific file types
-default_language_version:
-  python: python3.13
-  node: system # Use mise-managed node instead of downloading
+        always_run: false
+        verbose: true
+        # Run when any source file is modified
+        files: '\.(py|js|jsx|ts|tsx|sh|bash|yml|yaml|toml|json)$'
 
 # Files to always exclude
 exclude: |
@@ -263,16 +44,3 @@ exclude: |
     target/|
     tmp/
   )
-
-# Additional settings
-ci:
-  autofix_commit_msg: |
-    [pre-commit.ci] auto fixes from pre-commit hooks
-
-    for more information, see https://pre-commit.ci
-  autofix_prs: true
-  autoupdate_branch: ""
-  autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
-  autoupdate_schedule: weekly
-  skip: [mise-config-validation, mise-task-validation, markdown-link-check]
-  submodules: false

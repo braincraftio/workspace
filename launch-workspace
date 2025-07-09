@@ -19,7 +19,7 @@ set -uo pipefail
 readonly SCRIPT_VERSION="1.0.0"
 readonly SCRIPT_NAME="${0##*/}"
 SCRIPT_DIR_TEMP="$(cd "$(dirname "$0")" && pwd -P)"
-readonly SCRIPT_DIR="$SCRIPT_DIR_TEMP"
+readonly SCRIPT_DIR="${SCRIPT_DIR_TEMP}"
 
 # BrainCraft.io branding
 readonly BRAINCRAFTIO_BANNER="BrainCraft.io Development Environment"
@@ -39,70 +39,70 @@ readonly EXIT_IMAGE_PULL_FAILURE=4
 
 # ANSI color codes for beautiful output
 declare -A -r COLORS=(
-  [reset]='\033[0m'
-  [bold]='\033[1m'
-  [dim]='\033[2m'
-  [green]='\033[0;32m'
-  [yellow]='\033[1;33m'
-  [red]='\033[0;31m'
-  [blue]='\033[0;34m'
-  [magenta]='\033[0;35m'
-  [cyan]='\033[0;36m'
+                                                                        [reset]='\033[0m'
+                                                                        [bold]='\033[1m'
+                                                                        [dim]='\033[2m'
+                                                                        [green]='\033[0;32m'
+                                                                        [yellow]='\033[1;33m'
+                                                                        [red]='\033[0;31m'
+                                                                        [blue]='\033[0;34m'
+                                                                        [magenta]='\033[0;35m'
+                                                                        [cyan]='\033[0;36m'
 )
 
 # Status icons for visual feedback
 declare -A -r ICONS=(
-  [success]="✅"
-  [failure]="❌"
-  [warning]="⚠️"
-  [info]="ℹ️"
-  [active]="▶"
-  [rocket]="🚀"
-  [doctor]="🏥"
-  [container]="🐳"
-  [brain]="🧠"
-  [heart]="💜"
-  [sparkles]="✨"
-  [tools]="🛠️"
-  [clock]="⏱️"
+                                                                        [success]="✅"
+                                                                        [failure]="❌"
+                                                                        [warning]="⚠️"
+                                                                        [info]="ℹ️"
+                                                                        [active]="▶"
+                                                                        [rocket]="🚀"
+                                                                        [doctor]="🏥"
+                                                                        [container]="🐳"
+                                                                        [brain]="🧠"
+                                                                        [heart]="💜"
+                                                                        [sparkles]="✨"
+                                                                        [tools]="🛠️"
+                                                                        [clock]="⏱️"
 )
 
 # Tool requirements: tool_name=package_name:package_type
 readonly -A REQUIRED_TOOLS=(
-  [code]="visual-studio-code:cask"
-  [docker]="docker:cask"
-  [gh]="gh:formula"
+                                                                        [code]="visual-studio-code:cask"
+                                                                        [docker]="docker:cask"
+                                                                        [gh]="gh:formula"
 )
 
 readonly -A OPTIONAL_TOOLS=(
-  [git]="git:formula"
-  [jq]="jq:formula"
-  [npm]="nodejs:formula"  # For devcontainer CLI
-  [mise]="mise:formula"   # Our tool manager
+                                                                        [git]="git:formula"
+                                                                        [jq]="jq:formula"
+                                                                        [npm]="nodejs:formula" # For devcontainer CLI
+                                                                        [mise]="mise:formula" # Our tool manager
 )
 
 # Runtime configuration
 declare -A CONFIG=(
-  [rebuild]=false
-  [use_devcontainer_cli]=false
-  [force_vscode]=false
-  [doctor]=false
-  [verbose]=false
-  [update]=false
-  [dry_run]=false
+                                                                        [rebuild]=false
+                                                                        [use_devcontainer_cli]=false
+                                                                        [force_vscode]=false
+                                                                        [doctor]=false
+                                                                        [verbose]=false
+                                                                        [update]=false
+                                                                        [dry_run]=false
 )
 
 # Runtime state
 declare -A STATE=(
-  [os_type]=""
-  [os_name]=""
-  [arch]=""
-  [container_id]=""
-  [container_state]=""
-  [container_image]=""
-  [missing_deps]=""
-  [missing_casks]=""
-  [devcontainer_image]=""
+                                                                        [os_type]=""
+                                                                        [os_name]=""
+                                                                        [arch]=""
+                                                                        [container_id]=""
+                                                                        [container_state]=""
+                                                                        [container_image]=""
+                                                                        [missing_deps]=""
+                                                                        [missing_casks]=""
+                                                                        [devcontainer_image]=""
 )
 
 #######################################
@@ -113,9 +113,9 @@ declare -A STATE=(
 print_banner() {
   echo -e "${COLORS[blue]}${COLORS[bold]}"
   echo "╔══════════════════════════════════════════════════════════╗"
-  echo "║       ${ICONS[brain]} $BRAINCRAFTIO_BANNER ${ICONS[brain]}        ║"
+  echo "║       ${ICONS[brain]} ${BRAINCRAFTIO_BANNER} ${ICONS[brain]}        ║"
   echo "║                                                          ║"
-  echo "║         $BRAINCRAFTIO_TAGLINE          ║"
+  echo "║         ${BRAINCRAFTIO_TAGLINE}          ║"
   echo "╚══════════════════════════════════════════════════════════╝"
   echo -e "${COLORS[reset]}"
 }
@@ -126,28 +126,32 @@ log() {
   shift
   local message="$*"
 
-  case "$level" in
+  case "${level}" in
     info)
-      echo -e "${ICONS[info]} $message"
+      echo -e "${ICONS[info]} ${message}"
       ;;
     success)
-      echo -e "${COLORS[green]}${ICONS[success]} $message${COLORS[reset]}"
+      echo -e "${COLORS[green]}${ICONS[success]} ${message}${COLORS[reset]}"
       ;;
     warn)
-      echo -e "${COLORS[yellow]}${ICONS[warning]} $message${COLORS[reset]}"
+      echo -e "${COLORS[yellow]}${ICONS[warning]} ${message}${COLORS[reset]}"
       ;;
     error)
-      echo -e "${COLORS[red]}${ICONS[failure]} $message${COLORS[reset]}" >&2
+      echo -e "${COLORS[red]}${ICONS[failure]} ${message}${COLORS[reset]}" >&2
       ;;
     header)
-      echo -e "${COLORS[blue]}${COLORS[bold]}$message${COLORS[reset]}"
+      echo -e "${COLORS[blue]}${COLORS[bold]}${message}${COLORS[reset]}"
       ;;
     verbose)
-      [[ "${CONFIG[verbose]}" == "true" ]] && echo -e "${COLORS[dim]}[DEBUG] $message${COLORS[reset]}"
+      [[ "${CONFIG[verbose]}" == "true" ]] && echo -e "${COLORS[dim]}[DEBUG] ${message}${COLORS[reset]}"
       ;;
     ai)
       # Special formatting for AI-related messages
-      echo -e "${COLORS[magenta]}${ICONS[sparkles]} $message${COLORS[reset]}"
+      echo -e "${COLORS[magenta]}${ICONS[sparkles]} ${message}${COLORS[reset]}"
+      ;;
+    *)
+      # Default case - treat as info
+      echo -e "${ICONS[info]} ${message}"
       ;;
   esac
 }
@@ -158,14 +162,14 @@ die() {
   shift
   log error "$@"
   echo
-  log info "For help, run: $SCRIPT_NAME --help"
-  log info "For diagnostics, run: $SCRIPT_NAME --doctor"
-  exit "$exit_code"
+  log info "For help, run: ${SCRIPT_NAME} --help"
+  log info "For diagnostics, run: ${SCRIPT_NAME} --doctor"
+  exit "${exit_code}"
 }
 
 # Check if command exists
 has_command() {
-  command -v "$1" &>/dev/null
+  command -v "$1" &> /dev/null
 }
 
 # Get command version with caching
@@ -173,14 +177,14 @@ get_version() {
   local cmd="$1"
   local version=""
 
-  case "$cmd" in
-    git)      version=$(git --version 2>/dev/null | awk '{print $3}') ;;
-    gh)       version=$(gh --version 2>/dev/null | head -1 | awk '{print $3}') ;;
-    code)     version=$(code --version 2>/dev/null | head -n 1) ;;
-    docker)   version=$(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',') ;;
-    jq)       version=$(jq --version 2>/dev/null | sed 's/jq-//') ;;
-    npm)      version=$(npm --version 2>/dev/null) ;;
-    mise)     version=$(mise --version 2>/dev/null | awk '{print $2}') ;;
+  case "${cmd}" in
+    git)      version=$(git --version 2> /dev/null | awk '{print $3}') ;;
+    gh)       version=$(gh --version 2> /dev/null | head -1 | awk '{print $3}') ;;
+    code)     version=$(code --version 2> /dev/null | head -n 1) ;;
+    docker)   version=$(docker --version 2> /dev/null | awk '{print $3}' | tr -d ',') ;;
+    jq)       version=$(jq --version 2> /dev/null | sed 's/jq-//') ;;
+    npm)      version=$(npm --version 2> /dev/null) ;;
+    mise)     version=$(mise --version 2> /dev/null | awk '{print $2}') ;;
     *)        version="unknown" ;;
   esac
 
@@ -193,15 +197,15 @@ prompt_yes_no() {
   local default="${2:-n}"
 
   local yn_prompt="y/N"
-  [[ "$default" == "y" ]] && yn_prompt="Y/n"
+  [[ "${default}" == "y" ]] && yn_prompt="Y/n"
 
-  read -rp "$prompt ($yn_prompt) " -n 1
+  read -rp "${prompt} (${yn_prompt}) " -n 1
   echo
 
-  if [[ -z "$REPLY" ]]; then
-    [[ "$default" == "y" ]]
+  if [[ -z "${REPLY}" ]]; then
+    [[ "${default}" == "y" ]]
   else
-    [[ "$REPLY" =~ ^[Yy]$ ]]
+    [[ "${REPLY}" =~ ^[Yy]$ ]]
   fi
 }
 
@@ -211,14 +215,14 @@ prompt_yes_no() {
 
 # Detect DevContainer image from configuration
 detect_devcontainer_image() {
-  local devcontainer_json="$SCRIPT_DIR/.devcontainer/devcontainer.json"
+  local devcontainer_json="${SCRIPT_DIR}/.devcontainer/devcontainer.json"
   local detected_image=""
 
   log verbose "Detecting DevContainer image configuration..."
 
-  if [[ ! -f "$devcontainer_json" ]]; then
+  if [[ ! -f "${devcontainer_json}" ]]; then
     log verbose "No devcontainer.json found, using default"
-    STATE[devcontainer_image]="$DEFAULT_IMAGE"
+    STATE[devcontainer_image]="${DEFAULT_IMAGE}"
     return 0
   fi
 
@@ -226,40 +230,40 @@ detect_devcontainer_image() {
   if has_command jq; then
     # Strip comments for jq parsing (devcontainer.json supports comments)
     local json_content
-    json_content=$(sed 's|//.*||g' "$devcontainer_json" | grep -v '^\s*//')
+    json_content=$(sed 's|//.*||g' "${devcontainer_json}" | grep -v '^\s*//')
 
     # First check for direct image reference
-    detected_image=$(echo "$json_content" | jq -r '.image // empty' 2>/dev/null || true)
+    detected_image=$(echo "${json_content}" | jq -r '.image // empty' 2> /dev/null || true)
 
-    if [[ -n "$detected_image" ]]; then
-      STATE[devcontainer_image]="$detected_image"
+    if [[ -n "${detected_image}" ]]; then
+      STATE[devcontainer_image]="${detected_image}"
       log verbose "Detected image from devcontainer.json: ${STATE[devcontainer_image]}"
       return 0
     fi
 
     # Check for build configuration
     local dockerfile_path
-    dockerfile_path=$(echo "$json_content" | jq -r '.build.dockerfile // .dockerFile // empty' 2>/dev/null || true)
+    dockerfile_path=$(echo "${json_content}" | jq -r '.build.dockerfile // .dockerFile // empty' 2> /dev/null || true)
 
-    if [[ -n "$dockerfile_path" ]]; then
+    if [[ -n "${dockerfile_path}" ]]; then
       # Get build context (default to devcontainer directory)
       local build_context
-      build_context=$(echo "$json_content" | jq -r '.build.context // "."' 2>/dev/null || echo ".")
+      build_context=$(echo "${json_content}" | jq -r '.build.context // "."' 2> /dev/null || echo ".")
 
       # Resolve dockerfile path relative to devcontainer.json location
       local dockerfile_full_path
-      if [[ "$build_context" == ".." ]]; then
-        dockerfile_full_path="$SCRIPT_DIR/.devcontainer/$dockerfile_path"
+      if [[ "${build_context}" == ".." ]]; then
+        dockerfile_full_path="${SCRIPT_DIR}/.devcontainer/${dockerfile_path}"
       else
-        dockerfile_full_path="$SCRIPT_DIR/.devcontainer/$build_context/$dockerfile_path"
+        dockerfile_full_path="${SCRIPT_DIR}/.devcontainer/${build_context}/${dockerfile_path}"
       fi
 
-      if [[ -f "$dockerfile_full_path" ]]; then
+      if [[ -f "${dockerfile_full_path}" ]]; then
         # Extract FROM instruction from Dockerfile
-        detected_image=$(grep -m1 "^FROM " "$dockerfile_full_path" 2>/dev/null | sed 's/^FROM //;s/ AS .*//' || true)
+        detected_image=$(grep -m1 "^FROM " "${dockerfile_full_path}" 2> /dev/null | sed 's/^FROM //;s/ AS .*//' || true)
 
-        if [[ -n "$detected_image" ]]; then
-          STATE[devcontainer_image]="$detected_image"
+        if [[ -n "${detected_image}" ]]; then
+          STATE[devcontainer_image]="${detected_image}"
           log verbose "Detected image from Dockerfile: ${STATE[devcontainer_image]}"
           return 0
         fi
@@ -270,18 +274,18 @@ detect_devcontainer_image() {
     log verbose "jq not found, using basic parsing"
 
     # Look for simple "image": "value" pattern
-    detected_image=$(grep -E '^\s*"image":\s*"[^"]+"\s*,?\s*$' "$devcontainer_json" 2>/dev/null |
+    detected_image=$(grep -E '^\s*"image":\s*"[^"]+"\s*,?\s*$' "${devcontainer_json}" 2> /dev/null |
                     sed 's/.*"image":\s*"\([^"]*\)".*/\1/' | head -1 || true)
 
-    if [[ -n "$detected_image" ]]; then
-      STATE[devcontainer_image]="$detected_image"
+    if [[ -n "${detected_image}" ]]; then
+      STATE[devcontainer_image]="${detected_image}"
       log verbose "Detected image from devcontainer.json: ${STATE[devcontainer_image]}"
       return 0
     fi
   fi
 
   # Use default if detection fails
-  STATE[devcontainer_image]="$DEFAULT_IMAGE"
+  STATE[devcontainer_image]="${DEFAULT_IMAGE}"
   log verbose "Using default image: ${STATE[devcontainer_image]}"
   return 0
 }
@@ -293,13 +297,13 @@ detect_devcontainer_image() {
 detect_system() {
   STATE[arch]=$(uname -m)
 
-  case "$OSTYPE" in
+  case "${OSTYPE}" in
     darwin*)
       STATE[os_type]="macos"
-      STATE[os_name]="macOS $(sw_vers -productVersion 2>/dev/null || echo 'unknown')"
+      STATE[os_name]="macOS $(sw_vers -productVersion 2> /dev/null || echo 'unknown')"
       ;;
     linux-gnu*)
-      if grep -q Microsoft /proc/version 2>/dev/null; then
+      if grep -q Microsoft /proc/version 2> /dev/null; then
         STATE[os_type]="wsl"
         STATE[os_name]="WSL"
       else
@@ -312,7 +316,7 @@ detect_system() {
         fi
       fi
       ;;
-    msys|cygwin)
+    msys | cygwin)
       STATE[os_type]="windows"
       STATE[os_name]="Windows"
       ;;
@@ -333,40 +337,40 @@ detect_system() {
 get_container_info() {
   local container_id
   container_id=$(docker ps -a \
-    --filter "label=devcontainer.local_folder=$SCRIPT_DIR" \
-    --format "{{.ID}}" 2>/dev/null | head -n 1)
+    --filter "label=devcontainer.local_folder=${SCRIPT_DIR}" \
+    --format "{{.ID}}" 2> /dev/null | head -n 1)
 
-  if [[ -z "$container_id" ]]; then
+  if [[ -z "${container_id}" ]]; then
     STATE[container_id]=""
     STATE[container_state]="none"
     return 1
   fi
 
-  STATE[container_id]="$container_id"
+  STATE[container_id]="${container_id}"
 
   # Get container state
-  if docker ps --format "{{.ID}}" 2>/dev/null | grep -q "^$container_id"; then
+  if docker ps --format "{{.ID}}" 2> /dev/null | grep -q "^${container_id}"; then
     STATE[container_state]="running"
   else
     STATE[container_state]="stopped"
   fi
 
   # Get container image
-  STATE[container_image]=$(docker inspect "$container_id" \
-    --format '{{.Config.Image}}' 2>/dev/null || echo "unknown")
+  STATE[container_image]=$(docker inspect "${container_id}" \
+    --format '{{.Config.Image}}' 2> /dev/null || echo "unknown")
 
   return 0
 }
 
 # Check if Docker daemon is running
 is_docker_running() {
-  docker system info &>/dev/null
+  docker system info &> /dev/null
 }
 
 # Check if image exists locally
 has_docker_image() {
   local image="${1:-${STATE[devcontainer_image]}}"
-  docker images --format "{{.ID}}" "$image" 2>/dev/null | grep -q .
+  docker images --format "{{.ID}}" "${image}" 2> /dev/null | grep -q .
 }
 
 # Pull Docker image with retry logic
@@ -375,22 +379,22 @@ pull_docker_image() {
   local max_retries=3
   local retry=0
 
-  log info "Pulling DevContainer image: $image"
+  log info "Pulling DevContainer image: ${image}"
 
   while ((retry < max_retries)); do
-    if docker pull "$image"; then
+    if docker pull "${image}"; then
       log success "Image pulled successfully"
       return 0
     fi
 
     ((retry++))
     if ((retry < max_retries)); then
-      log warn "Pull failed, retrying ($retry/$max_retries)..."
+      log warn "Pull failed, retrying (${retry}/${max_retries})..."
       sleep 2
     fi
   done
 
-  log error "Failed to pull image after $max_retries attempts"
+  log error "Failed to pull image after ${max_retries} attempts"
   echo
   log warn "Possible causes:"
   log warn "  1. Not authenticated to ghcr.io"
@@ -418,23 +422,23 @@ check_dependency() {
   local package_name="${package_info%:*}"
   local package_type="${package_info#*:}"
 
-  if has_command "$tool"; then
+  if has_command "${tool}"; then
     local version
-    version=$(get_version "$tool")
-    log success "$tool $version"
+    version=$(get_version "${tool}")
+    log success "${tool} ${version}"
     return 0
   fi
 
-  if [[ "$required" == "true" ]]; then
-    log error "$tool not found (required)"
+  if [[ "${required}" == "true" ]]; then
+    log error "${tool} not found (required)"
 
-    if [[ "$package_type" == "cask" ]]; then
-      STATE[missing_casks]+=" $package_name"
+    if [[ "${package_type}" == "cask" ]]; then
+      STATE[missing_casks]+=" ${package_name}"
     else
-      STATE[missing_deps]+=" $package_name"
+      STATE[missing_deps]+=" ${package_name}"
     fi
   else
-    log warn "$tool not found (optional)"
+    log warn "${tool} not found (optional)"
   fi
 
   return 1
@@ -448,12 +452,12 @@ check_all_dependencies() {
 
   # Check required tools
   for tool in "${!REQUIRED_TOOLS[@]}"; do
-    check_dependency "$tool" "${REQUIRED_TOOLS[$tool]}" "true" || has_missing=true
+    check_dependency "${tool}" "${REQUIRED_TOOLS[${tool}]}" "true" || has_missing=true
   done
 
   # Check optional tools
   for tool in "${!OPTIONAL_TOOLS[@]}"; do
-    check_dependency "$tool" "${OPTIONAL_TOOLS[$tool]}" "false" || true
+    check_dependency "${tool}" "${OPTIONAL_TOOLS[${tool}]}" "false" || true
   done
 
   # Special check for mise
@@ -466,7 +470,7 @@ check_all_dependencies() {
     check_github_auth || has_missing=true
   fi
 
-  [[ "$has_missing" == "false" ]]
+  [[ "${has_missing}" == "false" ]]
 }
 
 # Install missing dependencies
@@ -501,7 +505,7 @@ handle_docker_installation() {
   log warn "Docker Desktop installed. Starting Docker..."
 
   if [[ "${STATE[os_type]}" == "macos" ]]; then
-    open -a Docker 2>/dev/null || true
+    open -a Docker 2> /dev/null || true
   fi
 
   log info "Waiting for Docker daemon (timeout: 60s)..."
@@ -537,17 +541,17 @@ check_github_auth() {
   local auth_output
   auth_output=$(gh auth status 2>&1 || true)
 
-  if echo "$auth_output" | grep -q "✓ Logged in to"; then
+  if echo "${auth_output}" | grep -q "✓ Logged in to"; then
     log success "GitHub CLI authenticated"
 
     # Check for issues
     local account_count
-    account_count=$(echo "$auth_output" | grep -c "✓ Logged in to" || echo 0)
+    account_count=$(echo "${auth_output}" | grep -c "✓ Logged in to" || echo 0)
     local has_failures
-    has_failures=$(echo "$auth_output" | grep -q "X Failed to log in to" && echo true || echo false)
+    has_failures=$(echo "${auth_output}" | grep -q "X Failed to log in to" && echo true || echo false)
 
-    if [[ "$account_count" -gt 1 ]] || [[ "$has_failures" == "true" ]]; then
-      display_github_accounts "$auth_output"
+    if [[ "${account_count}" -gt 1 ]] || [[ "${has_failures}" == "true" ]]; then
+      display_github_accounts "${auth_output}"
     fi
 
     return 0
@@ -568,23 +572,23 @@ display_github_accounts() {
   # Parse and display accounts
   local current_host=""
   while IFS= read -r line; do
-    if [[ "$line" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]+$ ]]; then
-      current_host="$line"
-    elif [[ "$line" =~ "Logged in to" ]] && [[ -n "$current_host" ]]; then
+    if [[ "${line}" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]+$ ]]; then
+      current_host="${line}"
+    elif [[ "${line}" =~ "Logged in to" ]] && [[ -n "${current_host}" ]]; then
       local account status_icon=""
-      account=$(echo "$line" | sed -n 's/.*account \([^ ]*\).*/\1/p')
+      account=$(echo "${line}" | sed -n 's/.*account \([^ ]*\).*/\1/p')
 
-      if echo "$line" | grep -q "✓"; then
-        if echo "$auth_output" | grep -A2 "$line" | grep -q "Active account: true"; then
+      if echo "${line}" | grep -q "✓"; then
+        if echo "${auth_output}" | grep -A2 "${line}" | grep -q "Active account: true"; then
           status_icon="${COLORS[green]}[active] ${ICONS[active]}${COLORS[reset]}"
         fi
       else
         status_icon="${COLORS[red]}[failed] ${ICONS[failure]}${COLORS[reset]}"
       fi
 
-      printf "    %-20s @ %-20s %b\n" "$account" "$current_host" "$status_icon"
+      printf "    %-20s @ %-20s %b\n" "${account}" "${current_host}" "${status_icon}"
     fi
-  done <<< "$auth_output"
+  done <<< "${auth_output}"
 }
 
 #######################################
@@ -602,7 +606,7 @@ run_doctor() {
 
   # Check for Homebrew on macOS
   if [[ "${STATE[os_type]}" == "macos" ]] && ! has_command brew; then
-    die "$EXIT_MISSING_DEPS" "Homebrew is required on macOS. Install from https://brew.sh"
+    die "${EXIT_MISSING_DEPS}" "Homebrew is required on macOS. Install from https://brew.sh"
   fi
 
   # Check dependencies
@@ -621,7 +625,7 @@ run_doctor() {
     display_doctor_summary
   fi
 
-  exit "$EXIT_SUCCESS"
+  exit "${EXIT_SUCCESS}"
 }
 
 # Check mise environment health
@@ -633,7 +637,7 @@ check_mise_health() {
     log success "mise $(get_version mise)"
 
     # Check mise doctor
-    if mise doctor >/dev/null 2>&1; then
+    if mise doctor > /dev/null 2>&1; then
       log success "mise doctor: Healthy"
     else
       log warn "mise doctor: Issues detected"
@@ -641,11 +645,11 @@ check_mise_health() {
     fi
 
     # Check if .mise.toml exists
-    if [[ -f "$SCRIPT_DIR/.mise.toml" ]]; then
+    if [[ -f "${SCRIPT_DIR}/.mise.toml" ]]; then
       log success ".mise.toml found"
 
       # Check if mise is trusted
-      if mise list >/dev/null 2>&1; then
+      if mise list > /dev/null 2>&1; then
         log success "mise configuration trusted"
       else
         log warn "mise configuration not trusted"
@@ -679,7 +683,7 @@ check_docker_health() {
   # Display Docker info
   local docker_version
   docker_version=$(get_version docker)
-  log info "  Version: $docker_version"
+  log info "  Version: ${docker_version}"
 
   # Check for DevContainer image
   echo
@@ -727,6 +731,9 @@ display_container_diagnostics() {
       stopped)
         log warn "  Status: Container is stopped"
         ;;
+      *)
+        log error "  Status: Unknown container state: ${STATE[container_state]}"
+        ;;
     esac
   else
     log info "No existing container found for this workspace"
@@ -742,9 +749,9 @@ display_doctor_summary() {
   local action_items=()
 
   # Check git credential helper
-  if ! git config --list 2>/dev/null | grep -q "credential.*helper=!gh auth git-credential"; then
+  if ! git config --list 2> /dev/null | grep -q "credential.*helper=!gh auth git-credential"; then
     has_issues=true
-    if git config --list 2>/dev/null | grep -q "credential.*helper=!/opt/homebrew/bin/gh"; then
+    if git config --list 2> /dev/null | grep -q "credential.*helper=!/opt/homebrew/bin/gh"; then
       action_items+=("fix_homebrew_path")
     else
       action_items+=("setup_git_credentials")
@@ -752,8 +759,8 @@ display_doctor_summary() {
   fi
 
   # Check if mise needs setup
-  if has_command mise && [[ -f "$SCRIPT_DIR/.mise.toml" ]]; then
-    if ! mise list >/dev/null 2>&1; then
+  if has_command mise && [[ -f "${SCRIPT_DIR}/.mise.toml" ]]; then
+    if ! mise list > /dev/null 2>&1; then
       has_issues=true
       action_items+=("trust_mise")
     fi
@@ -766,12 +773,12 @@ display_doctor_summary() {
   fi
 
   # Display action items
-  if [[ "$has_issues" == "true" ]]; then
+  if [[ "${has_issues}" == "true" ]]; then
     echo
     log warn "Actions needed:"
 
     for item in "${action_items[@]}"; do
-      case "$item" in
+      case "${item}" in
         setup_git_credentials)
           echo
           log warn "  Configure Git credentials:"
@@ -792,12 +799,15 @@ display_doctor_summary() {
           log warn "  Pull DevContainer image:"
           log header "    docker pull ${STATE[devcontainer_image]}"
           ;;
+        *)
+          log error "  Unknown action item: ${item}"
+          ;;
       esac
     done
   fi
 
   echo
-  log success "${ICONS[rocket]} Ready to launch: $SCRIPT_NAME"
+  log success "${ICONS[rocket]} Ready to launch: ${SCRIPT_NAME}"
   log ai "Perfect environment for AI-assisted development!"
 }
 
@@ -807,16 +817,16 @@ display_post_install_status() {
   log header "Installation complete! Current versions:"
 
   for tool in code docker gh git mise; do
-    if has_command "$tool"; then
+    if has_command "${tool}"; then
       local version
-      version=$(get_version "$tool")
-      log success "  $tool $version"
+      version=$(get_version "${tool}")
+      log success "  ${tool} ${version}"
     fi
   done
 
   echo
   log success "Ready to launch! Run:"
-  log header "  $SCRIPT_NAME"
+  log header "  ${SCRIPT_NAME}"
 }
 
 #######################################
@@ -840,8 +850,8 @@ ensure_vscode_extension() {
 
   # Check which extensions are missing
   for ext in "${required_extensions[@]}"; do
-    if ! code --list-extensions 2>/dev/null | grep -q "$ext"; then
-      missing_extensions+=("$ext")
+    if ! code --list-extensions 2> /dev/null | grep -q "${ext}"; then
+      missing_extensions+=("${ext}")
     fi
   done
 
@@ -850,13 +860,13 @@ ensure_vscode_extension() {
     log success "All required extensions already installed"
   else
     for ext in "${missing_extensions[@]}"; do
-      log info "Installing $ext extension..."
-      if code --install-extension "$ext" &>/dev/null; then
-        log success "  $ext installed"
+      log info "Installing ${ext} extension..."
+      if code --install-extension "${ext}" &> /dev/null; then
+        log success "  ${ext} installed"
       else
-        log error "  Failed to install $ext"
+        log error "  Failed to install ${ext}"
         log warn "  Try installing manually:"
-        log info "    code --install-extension $ext"
+        log info "    code --install-extension ${ext}"
         return 1
       fi
     done
@@ -868,16 +878,16 @@ ensure_vscode_extension() {
 # Launch VS Code with URI
 launch_vscode_with_uri() {
   local pwd_hex
-  pwd_hex=$(echo -n "$SCRIPT_DIR" | xxd -p | tr -d '\n')
+  pwd_hex=$(echo -n "${SCRIPT_DIR}" | xxd -p | tr -d '\n')
   local uri="vscode-remote://dev-container+${pwd_hex}/workspace"
 
   log success "Opening VS Code ${ICONS[rocket]}"
-  log verbose "URI: $uri"
+  log verbose "URI: ${uri}"
 
   if [[ "${CONFIG[dry_run]}" == "true" ]]; then
-    log info "[DRY RUN] Would execute: code --folder-uri \"$uri\""
+    log info "[DRY RUN] Would execute: code --folder-uri \"${uri}\""
   else
-    code --folder-uri "$uri"
+    code --folder-uri "${uri}"
   fi
 }
 
@@ -927,7 +937,7 @@ launch_with_devcontainer_cli() {
 display_launch_success() {
   echo
   log success "VS Code launching with devcontainer ${ICONS[rocket]}"
-  log success "Workspace: $WORKSPACE_FILE"
+  log success "Workspace: ${WORKSPACE_FILE}"
   log success "Working directory: /workspace"
   echo
   log ai "AI assistants (Claude, Copilot) will have full context!"
@@ -948,7 +958,7 @@ launch_workspace() {
   log header "Checking dependencies..."
   if ! check_all_dependencies; then
     echo
-    die "$EXIT_MISSING_DEPS" "Missing dependencies! Run: $SCRIPT_NAME --doctor"
+    die "${EXIT_MISSING_DEPS}" "Missing dependencies! Run: ${SCRIPT_NAME} --doctor"
   fi
 
   log success "All dependencies ready"
@@ -957,12 +967,12 @@ launch_workspace() {
   if has_command gh; then
     local auth_output
     auth_output=$(gh auth status 2>&1 || true)
-    if ! echo "$auth_output" | grep -q "✓ Logged in to"; then
+    if ! echo "${auth_output}" | grep -q "✓ Logged in to"; then
       echo
       log error "GitHub CLI not authenticated"
       log warn "  Run: gh auth login"
       log warn "  Then: gh auth setup-git"
-      die "$EXIT_AUTH_FAILURE" "Authentication required"
+      die "${EXIT_AUTH_FAILURE}" "Authentication required"
     fi
   fi
 
@@ -973,7 +983,7 @@ launch_workspace() {
   fi
 
   echo
-  log success "Working directory: $SCRIPT_DIR"
+  log success "Working directory: ${SCRIPT_DIR}"
 
   # Ensure VS Code extension
   ensure_vscode_extension
@@ -982,7 +992,7 @@ launch_workspace() {
   if [[ "${CONFIG[update]}" == "true" ]]; then
     echo
     log info "Force update requested"
-    pull_docker_image "${STATE[devcontainer_image]}" || die "$EXIT_IMAGE_PULL_FAILURE" "Cannot proceed without image"
+    pull_docker_image "${STATE[devcontainer_image]}" || die "${EXIT_IMAGE_PULL_FAILURE}" "Cannot proceed without image"
     # Update implies rebuild unless in doctor mode
     if [[ "${CONFIG[doctor]}" != "true" ]]; then
       CONFIG[rebuild]=true
@@ -991,15 +1001,15 @@ launch_workspace() {
   elif ! has_docker_image "${STATE[devcontainer_image]}"; then
     echo
     log info "DevContainer image not found"
-    pull_docker_image "${STATE[devcontainer_image]}" || die "$EXIT_IMAGE_PULL_FAILURE" "Cannot proceed without image"
+    pull_docker_image "${STATE[devcontainer_image]}" || die "${EXIT_IMAGE_PULL_FAILURE}" "Cannot proceed without image"
   fi
 
   # Handle rebuild
   if [[ "${CONFIG[rebuild]}" == "true" ]] && [[ -n "${STATE[container_id]}" ]]; then
     log info "Removing existing container..."
     if [[ "${CONFIG[dry_run]}" != "true" ]]; then
-      docker stop "${STATE[container_id]}" >/dev/null 2>&1 || true
-      docker rm "${STATE[container_id]}" >/dev/null 2>&1 || true
+      docker stop "${STATE[container_id]}" > /dev/null 2>&1 || true
+      docker rm "${STATE[container_id]}" > /dev/null 2>&1 || true
     else
       log info "[DRY RUN] Would remove container ${STATE[container_id]:0:12}"
     fi
@@ -1055,13 +1065,13 @@ launch_workspace() {
 show_help() {
   print_banner
   cat << EOF
-$SCRIPT_NAME v$SCRIPT_VERSION
+${SCRIPT_NAME} v${SCRIPT_VERSION}
 
 Launch VS Code with BrainCraft.io DevContainer and workspace configuration.
 Perfect environment for AI-assisted development with 100% dev/CI/AI parity.
 
 USAGE:
-  $SCRIPT_NAME [OPTIONS]
+  ${SCRIPT_NAME} [OPTIONS]
 
 OPTIONS:
   --doctor            Run comprehensive system health check
@@ -1075,11 +1085,11 @@ OPTIONS:
   --version           Show version information
 
 EXAMPLES:
-  $SCRIPT_NAME --doctor           # First time setup & diagnostics
-  $SCRIPT_NAME                    # Daily launch
-  $SCRIPT_NAME --rebuild          # Fresh container
-  $SCRIPT_NAME --update           # Update to latest image
-  $SCRIPT_NAME --doctor --update  # Update and check health
+  ${SCRIPT_NAME} --doctor           # First time setup & diagnostics
+  ${SCRIPT_NAME}                    # Daily launch
+  ${SCRIPT_NAME} --rebuild          # Fresh container
+  ${SCRIPT_NAME} --update           # Update to latest image
+  ${SCRIPT_NAME} --doctor --update  # Update and check health
 
 EXIT CODES:
   0 - Success
@@ -1129,19 +1139,19 @@ parse_arguments() {
         CONFIG[dry_run]=true
         CONFIG[verbose]=true  # Dry run implies verbose
         ;;
-      --help|-h)
+      --help | -h)
         show_help
         ;;
-      --version|-v)
-        echo "$SCRIPT_NAME v$SCRIPT_VERSION"
+      --version | -v)
+        echo "${SCRIPT_NAME} v${SCRIPT_VERSION}"
         echo "Part of BrainCraft.io - Building the future of AI-assisted development"
         exit 0
         ;;
       -*)
-        die "$EXIT_ERROR" "Unknown option: $1"
+        die "${EXIT_ERROR}" "Unknown option: $1"
         ;;
       *)
-        die "$EXIT_ERROR" "Unexpected argument: $1"
+        die "${EXIT_ERROR}" "Unexpected argument: $1"
         ;;
     esac
     shift
@@ -1159,7 +1169,7 @@ main() {
   # Disable colors if requested
   if [[ "${NO_COLOR:-}" == "true" ]]; then
     for color in "${!COLORS[@]}"; do
-      COLORS[$color]=""
+      COLORS[${color}]=""
     done
   fi
 

@@ -20,7 +20,7 @@ should_use_color() {
     local arg
     for arg in "$@"; do
         [[ "${arg}" == "--no-color" ]] && return 1
-    done
+  done
 
     # Respect NO_COLOR environment variable
     [[ -n "${NO_COLOR:-}" ]] && return 1
@@ -32,7 +32,7 @@ should_use_color() {
     # mise sets up the environment but may pipe output for task_output = "prefix"
     if [[ -n "${MISE_TASK_FORMAT_DEFAULT:-}" ]] && [[ "${COLORTERM:-}" == "truecolor" ]]; then
         return 0
-    fi
+  fi
 
     # Disable colors if not running in a terminal
     [[ ! -t 1 ]] && return 1
@@ -88,7 +88,7 @@ print_status() {
         error) echo -e "${CROSS} ${message}" >&2 ;;
         info) echo "ℹ️  ${message}" ;;
         *) echo "${message}" ;;
-    esac
+  esac
 }
 
 # Validate workspace configuration exists
@@ -97,17 +97,17 @@ validate_workspace_config() {
     local config_path="${WORKSPACE_CONFIG_PATH}"
     if [[ ! "${config_path}" = /* ]]; then
         config_path="${MISE_PROJECT_ROOT}/${config_path}"
-    fi
+  fi
 
     if [[ ! -f "${config_path}" ]]; then
         print_status error "workspace.json not found at ${config_path}"
         return 1
-    fi
+  fi
 
-    if ! jq empty "${config_path}" 2>/dev/null; then
+    if ! jq empty "${config_path}" 2> /dev/null; then
         print_status error "Invalid JSON in workspace.json"
         return 1
-    fi
+  fi
 
     # Update the global variable to use the resolved path
     WORKSPACE_CONFIG_PATH="${config_path}"
@@ -115,7 +115,7 @@ validate_workspace_config() {
 }
 
 # Safe error handling - enhanced version if errors.sh is loaded
-if declare -F handle_error_with_context >/dev/null 2>&1; then
+if declare -F handle_error_with_context > /dev/null 2>&1; then
     handle_error() {
         local exit_code="$1"
         local context="$2"
@@ -124,10 +124,10 @@ if declare -F handle_error_with_context >/dev/null 2>&1; then
             # Use enhanced version with context tracking
             handle_error_with_context "${exit_code}" "Failed: ${context}"
             return "${exit_code}"
-        fi
+    fi
 
         return 0
-    }
+  }
 else
     # Original simple version
     handle_error() {
@@ -137,8 +137,8 @@ else
         if [[ ${exit_code} -ne 0 ]]; then
             print_status error "Failed: ${context}"
             return "${exit_code}"
-        fi
+    fi
 
         return 0
-    }
+  }
 fi

@@ -29,8 +29,8 @@ validate_command_input() {
             echo "    mise run ${MISE_TASK_NAME:-exec} bash my-script.sh"
             echo ""
             return 1
-        fi
-    done
+    fi
+  done
 
     # Check for path traversal attempts
     if [[ "${cmd_name}" =~ \.\. ]]; then
@@ -42,7 +42,7 @@ validate_command_input() {
         echo "  Please use absolute paths or paths relative to the repository root."
         echo ""
         return 1
-    fi
+  fi
 
     return 0
 }
@@ -54,7 +54,7 @@ validate_git_command_input() {
     # First run general validation
     if ! validate_command_input "${git_cmd}" "git command"; then
         return 1
-    fi
+  fi
 
     # Git-specific validations
     # Prevent certain dangerous git operations
@@ -69,8 +69,8 @@ validate_git_command_input() {
             echo "  Proceeding with caution..."
             echo ""
             # Return 0 to allow but warn - can be changed to return 1 to block
-        fi
-    done
+    fi
+  done
 
     return 0
 }
@@ -88,29 +88,29 @@ validate_repository_path() {
         parent_dir=$(dirname "${repo_path}")
         if [[ -d "${parent_dir}" ]]; then
             repo_path="${parent_dir}"
-        else
+    else
             # Path doesn't exist and parent doesn't exist, allow it if it would be within workspace
             local abs_path
-            abs_path=$(cd "${workspace_root}" && realpath -m "${repo_path}" 2>/dev/null)
+            abs_path=$(cd "${workspace_root}" && realpath -m "${repo_path}" 2> /dev/null)
             if [[ -z "${abs_path}" ]]; then
                 print_status error "Invalid repository path: ${repo_path}"
                 return 1
-            fi
+      fi
 
             if [[ "${abs_path}" == "${workspace_root}"* ]]; then
                 return 0  # Allow non-existent paths within workspace
-            fi
-        fi
+      fi
     fi
+  fi
 
     # Resolve the absolute path
     local abs_path
-    abs_path=$(cd "${repo_path}" 2>/dev/null && pwd)
+    abs_path=$(cd "${repo_path}" 2> /dev/null && pwd)
 
     if [[ -z "${abs_path}" ]]; then
         print_status error "Invalid repository path: ${repo_path}"
         return 1
-    fi
+  fi
 
     # Ensure the path is within the workspace
     if [[ "${abs_path}" != "${workspace_root}"* ]]; then
@@ -122,7 +122,7 @@ validate_repository_path() {
         echo "  All repositories must be within the workspace root: ${workspace_root}"
         echo ""
         return 1
-    fi
+  fi
 
     return 0
 }

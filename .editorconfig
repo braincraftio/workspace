@@ -10,7 +10,7 @@ root = true
 charset = utf-8
 end_of_line = lf
 insert_final_newline = true
-trim_trailing_whitespace = true
+trim_trailing_whitespace = false
 indent_style = space
 indent_size = 2
 
@@ -28,37 +28,25 @@ indent_size = 4
 [Makefile]
 indent_style = tab
 
-# Shell scripts
+# Shell scripts (already inherit trim_trailing_whitespace = false from [*])
 [*.{sh,bash}]
 indent_size = 2
-# Shell scripts may have intentional trailing whitespace for line continuations
-trim_trailing_whitespace = false
 
 # YAML files
 [*.{yml,yaml}]
 indent_size = 2
-quote_type = double
 
-# JSON files
-[*.json]
+# JSON and JSONC files
+[*.{json,jsonc,json5}]
 indent_size = 2
-insert_final_newline = true
 
-# JSONC files (JSON with comments)
-[*.{jsonc,json5}]
-indent_size = 2
-insert_final_newline = true
-
-# Markdown files
+# Markdown files (already inherit trim_trailing_whitespace = false from [*])
 [*.{md,markdown}]
-# Markdown may have intentional trailing whitespace for line breaks
-trim_trailing_whitespace = false
-max_line_length = 0  # Let prettier handle wrapping
+max_line_length = 0
 
 # TypeScript/JavaScript files
 [*.{js,jsx,ts,tsx,mjs,cjs}]
 indent_size = 2
-quote_type = double
 
 # CSS/SCSS files
 [*.{css,scss,sass,less}]
@@ -84,6 +72,12 @@ indent_size = 2
 [.github/workflows/*.{yml,yaml}]
 indent_size = 2
 
-# Special files that should not have final newline
-[*.{pdf,png,jpg,jpeg,gif,ico,svg}]
+# Binary files that should not have final newline
+[*.{pdf,png,jpg,jpeg,gif,ico,webp,woff,woff2,ttf,otf,eot}]
 insert_final_newline = false
+trim_trailing_whitespace = false
+
+# Binary or generated files
+[*.{zip,tar,gz,bz2,7z,rar,exe,dll,so,dylib,bin,dat}]
+insert_final_newline = false
+trim_trailing_whitespace = false

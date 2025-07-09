@@ -7,6 +7,10 @@
 
 # OS Files
 .DS_Store
+
+# Cache files
+.lycheecache
+.ruff_cache
 Thumbs.db
 
 # Environment files

@@ -49,10 +49,10 @@ execute_across_repos() {
 
         if "${execute_func}" "workspace" "." "${args[@]}"; then
             success_count=$((success_count + 1))
-        else
+    else
             failed_repos+=("workspace")
-        fi
     fi
+  fi
 
     # Execute for each repository from workspace.json
     while IFS=: read -r name path; do
@@ -60,10 +60,10 @@ execute_across_repos() {
 
         if "${execute_func}" "${name}" "${path}" "${args[@]}"; then
             success_count=$((success_count + 1))
-        else
+    else
             failed_repos+=("${name}")
-        fi
-    done < <(list_repositories)
+    fi
+  done   < <(list_repositories)
 
     # Return results via global variables (bash doesn't have good return mechanisms)
     # These variables are used by scripts that source this library (git and exec tasks)
@@ -71,9 +71,9 @@ execute_across_repos() {
     # shellcheck disable=SC2034
     # SC2034: MISE_EXEC_STATE is used by git and exec tasks that source this library
     declare -gA MISE_EXEC_STATE=(
-        [total_repos]=${total_repos}
-        [success_count]=${success_count}
-    )
+                                                                                                            [total_repos]=${total_repos}
+                                                                                                            [success_count]=${success_count}
+  )
     # shellcheck disable=SC2034
     # SC2034: MISE_EXEC_FAILED_REPOS is used by git and exec tasks that source this library
     declare -ga MISE_EXEC_FAILED_REPOS=("${failed_repos[@]}")
@@ -100,9 +100,9 @@ validate_repo_exists() {
         if [[ "${quiet}" != "true" ]]; then
             echo ""
             print_status warning "[${repo_name}] Directory not found: ${repo_path}"
-        fi
-        return 1
     fi
+        return 1
+  fi
 
     return 0
 }
@@ -128,9 +128,9 @@ validate_git_repo() {
         if [[ "${quiet}" != "true" ]]; then
             echo ""
             print_status warning "[${repo_name}] Not a git repository"
-        fi
-        return 1
     fi
+        return 1
+  fi
 
     return 0
 }
@@ -146,7 +146,7 @@ show_available_repos() {
     echo "Available repositories:"
     while IFS=: read -r name path; do
         printf "  %-20s %s\n" "${name}" "${path}"
-    done < <(list_repositories)
+  done   < <(list_repositories)
 }
 
 #######################################

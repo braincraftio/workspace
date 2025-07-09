@@ -26,17 +26,17 @@ get_repo_info() {
     local branch remote_url
 
     # Get current branch
-    if ! branch=$(cd "${repo_path}" && git rev-parse --abbrev-ref HEAD 2>/dev/null); then
+    if ! branch=$(cd "${repo_path}" && git rev-parse --abbrev-ref HEAD 2> /dev/null); then
         branch="<no-branch>"
-    fi
+  fi
 
     # Get remote URL (prefer origin)
-    if ! remote_url=$(cd "${repo_path}" && git remote get-url origin 2>/dev/null); then
+    if ! remote_url=$(cd "${repo_path}" && git remote get-url origin 2> /dev/null); then
         # Try first available remote
-        if ! remote_url=$(cd "${repo_path}" && git remote get-url "$(git remote | head -n1)" 2>/dev/null); then
+        if ! remote_url=$(cd "${repo_path}" && git remote get-url "$(git remote | head -n1)" 2> /dev/null); then
             remote_url="<no-remote>"
-        fi
     fi
+  fi
 
     echo "${branch}:${remote_url}"
 }
@@ -53,11 +53,11 @@ make_absolute_path() {
 
     if [[ "${path}" = /* ]]; then
         echo "${path}"
-    elif [[ "${path}" = "." ]]; then
+  elif   [[ "${path}" = "." ]]; then
         echo "${MISE_PROJECT_ROOT}"
-    else
+  else
         echo "${MISE_PROJECT_ROOT}/${path}"
-    fi
+  fi
 }
 
 #######################################
@@ -89,7 +89,7 @@ format_repo_header() {
             echo "[${repo_name}]"
             ;;
 
-        pretty|*)
+        pretty | *)
             if [[ "${include_git_info}" == "true" ]] && [[ -d "${repo_path}/.git" ]]; then
                 local repo_info branch remote_url
                 repo_info=$(get_repo_info "${repo_path}")
@@ -98,13 +98,13 @@ format_repo_header() {
                 echo -e "${BLUE}[${repo_name}]${NC} ${GREEN}(${branch})${NC} → ${YELLOW}${abs_path}${NC}"
                 if [[ "${remote_url}" != "<no-remote>" ]]; then
                     echo -e "  ${GRAY}↳ ${remote_url}${NC}"
-                fi
-            else
+        fi
+      else
                 # Non-git or git info not requested
                 echo -e "${BLUE}[${repo_name}]${NC} → ${YELLOW}${abs_path}${NC}"
-            fi
+      fi
             ;;
-    esac
+  esac
 }
 
 #######################################
@@ -133,11 +133,11 @@ format_summary() {
         printf "Failed: %d" "${failed_count}"
         if [[ -n "${failed_repos}" ]]; then
             printf " (%s)" "${failed_repos}"
-        fi
-        printf "\n"
-    else
-        print_status success "All repositories processed successfully! 🎉"
     fi
+        printf "\n"
+  else
+        print_status success "All repositories processed successfully! 🎉"
+  fi
 }
 
 #######################################
@@ -152,4 +152,29 @@ format_operation_header() {
 
     echo "🔄 ${operation}"
     echo "================================================================================"
+}
+
+#######################################
+# Format linting summary
+# Arguments:
+#   $1 - title: Summary title
+#   $2 - total_files: Total files checked
+#   $3 - passed: Number of files that passed
+#   $4 - failed: Number of files that failed
+# Outputs:
+#   Formatted linting summary
+#######################################
+format_linting_summary() {
+    local title="$1"
+    local total_files="$2"
+    local passed="$3"
+    local failed="$4"
+
+    echo ""
+    echo "================================================================================"
+    echo "📊 ${title}"
+    echo "---------"
+    echo "Files checked: ${total_files}"
+    echo "Passed: ${passed}"
+    echo "Failed: ${failed}"
 }

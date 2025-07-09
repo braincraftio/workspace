@@ -21,10 +21,10 @@ list_repositories() {
 
     # Get the raw repository data
     local repos
-    repos=$(jq -r '.repositories[] | select(.clone != false) | "\(.name):\(.path // .name)"' "${WORKSPACE_CONFIG_PATH}" 2>/dev/null) || {
+    repos=$(jq -r '.repositories[] | select(.clone != false) | "\(.name):\(.path // .name)"' "${WORKSPACE_CONFIG_PATH}" 2> /dev/null) || {
         print_status error "Failed to list repositories"
         return 1
-    }
+  }
 
     # Validate each repository path before returning
     local validated_repos=""
@@ -36,10 +36,10 @@ list_repositories() {
         # Validate the repository path
         if validate_repository_path "${full_path}"; then
             validated_repos+="${name}:${full_path}"$'\n'
-        else
+    else
             print_status warning "Skipping repository '${name}' due to invalid path: ${path}"
-        fi
-    done <<< "${repos}"
+    fi
+  done   <<< "${repos}"
 
     # Return validated repositories
     echo -n "${validated_repos}"

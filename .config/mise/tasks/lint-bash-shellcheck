@@ -12,10 +12,10 @@
 #   mise run lint:bash:shellcheck --verbose          # Show files being checked
 #   mise run lint:bash:shellcheck path/to/script.sh  # Lint specific files
 #
-#MISE description="Run shellcheck on all bash scripts in the workspace"
+#MISE description="📝 Lint bash scripts with ShellCheck for style and errors"
 #MISE hide=true
 
-set -euo pipefail
+set -uo pipefail
 
 # shellcheck disable=SC1091
 # SC1091: MISE_PROJECT_ROOT is set at runtime by mise
@@ -35,8 +35,8 @@ find_bash_scripts() {
     while IFS= read -r -d '' file; do
         if file "${file}" | grep -qE "(shell script|bash)"; then
             scripts+=("${file}")
-        fi
-    done < <(find "${MISE_PROJECT_ROOT}" \
+    fi
+  done   < <(find "${MISE_PROJECT_ROOT}" \
         -type f \
         ! -path "*/node_modules/*" \
         ! -path "*/.git/*" \
@@ -44,19 +44,19 @@ find_bash_scripts() {
         ! -path "*/.npm-global/*" \
         ! -name "*.*" \
         -perm -u+x \
-        -print0 2>/dev/null)
+        -print0 2> /dev/null)
 
     # Add all .sh and .bash files
     while IFS= read -r -d '' file; do
         scripts+=("${file}")
-    done < <(find "${MISE_PROJECT_ROOT}" \
+  done   < <(find "${MISE_PROJECT_ROOT}" \
         -type f \
         \( -name "*.sh" -o -name "*.bash" \) \
         ! -path "*/node_modules/*" \
         ! -path "*/.git/*" \
         ! -path "*/tmp/*" \
         ! -path "*/.npm-global/*" \
-        -print0 2>/dev/null)
+        -print0 2> /dev/null)
 
     # Remove duplicates and sort
     printf '%s\n' "${scripts[@]}" | sort -u
@@ -70,11 +70,11 @@ main() {
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            -v|--verbose)
+            -v | --verbose)
                 verbose=true
                 shift
                 ;;
-            -h|--help)
+            -h | --help)
                 echo "Usage: mise run lint:bash:shellcheck [OPTIONS] [FILES...]"
                 echo ""
                 echo "Options:"
@@ -88,24 +88,24 @@ main() {
                 files_to_check+=("$1")
                 shift
                 ;;
-        esac
-    done
+    esac
+  done
 
     # Find scripts if none specified
     if [[ ${#files_to_check[@]} -eq 0 ]]; then
         mapfile -t files_to_check < <(find_bash_scripts)
-    fi
+  fi
 
     # Check if shellcheck is available
-    if ! command -v shellcheck >/dev/null 2>&1; then
+    if ! command -v shellcheck > /dev/null 2>&1; then
         print_status error "shellcheck not found. Install with: mise install shellcheck"
         exit 1
-    fi
+  fi
 
     # Check if config exists
     if [[ ! -f "${SHELLCHECK_CONFIG}" ]]; then
         print_status warning "No .shellcheckrc found, using defaults"
-    fi
+  fi
 
     format_operation_header "Running shellcheck on ${#files_to_check[@]} files"
 
@@ -115,37 +115,43 @@ main() {
     for file in "${files_to_check[@]}"; do
         if [[ ! -f "${file}" ]]; then
             continue
-        fi
+    fi
+
+        # Store the relative path for display
+        local relative_path="${file#"${MISE_PROJECT_ROOT}/"}"
 
         if [[ "${verbose}" == "true" ]]; then
-            printf "Checking: %s ... " "${file#"${MISE_PROJECT_ROOT}/"}"
-        fi
+            printf "Checking: %s ... " "${relative_path}"
+    fi
 
         if shellcheck --rcfile="${SHELLCHECK_CONFIG}" "${file}"; then
             ((passed++))
             if [[ "${verbose}" == "true" ]]; then
                 print_status success "OK"
-            fi
-        else
+      fi
+    else
             ((failed++))
             if [[ "${verbose}" == "true" ]]; then
                 print_status error "FAILED"
-            fi
-        fi
-    done
+      else
+                # In non-verbose mode, still show which file failed
+                echo -e "\n${RED}▶ Checking: ${relative_path}${NC}"
+      fi
+    fi
+  done
 
     echo
-    format_summary "Linting Results" \
-        "Files checked: ${#files_to_check[@]}" \
-        "Passed: ${passed}" \
-        "Failed: ${failed}"
+    format_linting_summary "Linting Results" \
+        "${#files_to_check[@]}" \
+        "${passed}" \
+        "${failed}"
 
     if [[ ${failed} -gt 0 ]]; then
         print_status error "Linting failed with ${failed} errors"
         exit 1
-    else
+  else
         print_status success "All files passed linting"
-    fi
+  fi
 }
 
 # Run main function

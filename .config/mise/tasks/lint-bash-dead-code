@@ -19,7 +19,7 @@
 #   0 - No dead code found
 #   1 - Dead code detected
 #
-#MISE description="Find unused functions (dead code) in bash scripts"
+#MISE description="🔎 Find unused functions in bash scripts"
 #MISE alias=["dead", "unused"]
 #MISE hide=true
 
@@ -36,11 +36,11 @@ readonly NC='\033[0m'
 if [[ $# -eq 0 ]]; then
     # Default to checking all mise config files
     TARGET="."
-    mapfile -t FILES < <(find "${TARGET}" -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2>/dev/null | grep -v "\.git")
+    mapfile -t FILES < <(find "${TARGET}" -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2> /dev/null | grep -v "\.git")
 elif [[ $# -eq 1 ]] && [[ -d "$1" ]]; then
     # Single directory specified
     TARGET="$1"
-    mapfile -t FILES < <(find "${TARGET}" -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2>/dev/null | grep -v "\.git")
+    mapfile -t FILES < <(find "${TARGET}" -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2> /dev/null | grep -v "\.git")
 else
     # One or more files specified
     FILES=("$@")
@@ -57,7 +57,7 @@ echo -e "Checking ${#FILES[@]} files for unused functions...\n"
 # When checking specific files, we need to search across ALL potential files that might use them
 if [[ ${#FILES[@]} -lt 5 ]]; then
     # For small file sets, search across all mise files for references
-    mapfile -t SEARCH_FILES < <(find .config/mise -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2>/dev/null | grep -v "\.git" || true)
+    mapfile -t SEARCH_FILES < <(find .config/mise -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2> /dev/null | grep -v "\.git" || true)
 else
     # For large file sets, only search within the provided files
     SEARCH_FILES=("${FILES[@]}")
@@ -72,17 +72,17 @@ DEAD_CODE_FOUND=false
 for file in "${FILES[@]}"; do
     if [[ ! -f "${file}" ]]; then
         continue
-    fi
+  fi
 
     # Extract function names (excluding sourcing guards and variable assignments)
-    mapfile -t FUNCTIONS < <(grep -E "^[a-zA-Z_][a-zA-Z0-9_]*\(\)" "${file}" 2>/dev/null | \
-                            grep -v "^declare\|^source" | \
-                            sed 's/().*//' | \
+    mapfile -t FUNCTIONS < <(grep -E "^[a-zA-Z_][a-zA-Z0-9_]*\(\)" "${file}" 2> /dev/null |
+                            grep -v "^declare\|^source" |
+                            sed 's/().*//' |
                             sort -u)
 
     if [[ ${#FUNCTIONS[@]} -eq 0 ]]; then
         continue
-    fi
+  fi
 
     echo -e "${BLUE}Checking ${file}:${NC}"
     FILE_HAS_DEAD_CODE=false
@@ -92,9 +92,11 @@ for file in "${FILES[@]}"; do
 
         # Count occurrences across all files
         # Exclude comments and the function definition line itself
-        count=$(grep -w "${func}" "${SEARCH_FILES[@]}" 2>/dev/null | \
-                grep -v "^[[:space:]]*#" | \
-                grep -v "${func}()" | \
+        # shellcheck disable=SC2126
+        # SC2126: We need multiple grep filters here, can't use simple grep -c
+        count=$(grep -w "${func}" "${SEARCH_FILES[@]}" 2> /dev/null |
+                grep -v "^[[:space:]]*#" |
+                grep -v "${func}()" |
                 wc -l)
 
         if [[ ${count} -eq 0 ]]; then
@@ -102,15 +104,15 @@ for file in "${FILES[@]}"; do
             DEAD_FUNCTIONS=$((DEAD_FUNCTIONS + 1))
             FILE_HAS_DEAD_CODE=true
             DEAD_CODE_FOUND=true
-        elif [[ "${MISE_DEBUG:-}" == "1" ]]; then
+    elif     [[ "${MISE_DEBUG:-}" == "1" ]]; then
             # In debug mode, show all functions
             echo -e "  ${GREEN}✓ USED:${NC} ${func}() - ${count} references"
-        fi
-    done
+    fi
+  done
 
     if [[ "${FILE_HAS_DEAD_CODE}" == "false" ]] && [[ ${#FUNCTIONS[@]} -gt 0 ]]; then
         echo -e "  ${GREEN}✓ All ${#FUNCTIONS[@]} functions are used${NC}"
-    fi
+  fi
     echo
 done
 

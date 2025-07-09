@@ -1,4 +1,5 @@
 {
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
   "name": "BrainCraft.io Workspace",
   "image": "ghcr.io/braincraftio/containers:devcontainer-latest",
   //"dockerFile": "../containers/devcontainer/Dockerfile",

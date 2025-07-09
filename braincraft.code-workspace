@@ -1,4 +1,5 @@
 {
+  "$schema": "file:///workspace/.github/schemas/vscode-workspace.json",
   "folders": [
     {
       "name": "📋 Workspace",

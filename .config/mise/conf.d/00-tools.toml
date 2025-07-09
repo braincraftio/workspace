@@ -2,43 +2,50 @@
 # Last reviewed: 2025-07-05
 [tools]
 # Primary languages - Specific versions for consistency
-go = "1.24.4"        # Latest stable (keeping current version)
-node = "24"          # Latest LTS (keeping current version)
-python = "3.13.5"    # Latest stable (keeping current version)
-rust = "latest"      # Keep latest for Rust's stability guarantees
+go = "1.24.5"
+node = "24"       # Latest LTS (keeping current version)
+python = "3.13.5" # Latest stable (keeping current version)
+rust = "latest"   # Keep latest for Rust's stability guarantees
 
 # Package managers
-pnpm = "latest"      # Faster npm alternative
-poetry = "latest"    # Python dependency management
-uv = "latest"        # Ultra-fast Python package installer
-pipx = "latest"      # Python app isolation
+pnpm = "latest"   # Faster npm alternative
+poetry = "latest" # Python dependency management
+uv = "latest"     # Ultra-fast Python package installer
+pipx = "latest"   # Python app isolation
 
 # Development tools
 pre-commit = "latest" # Git hooks framework
-jq = "latest"        # JSON processor
-gh = "latest"        # GitHub CLI
+jq = "latest"         # JSON processor
+gh = "latest"         # GitHub CLI
 
 # Linters and code quality
-ruff = "latest"      # Fast Python linter
-shellcheck = "latest" # Shell script analysis
-yamllint = "latest"  # YAML linter
+ruff = "latest"              # Fast Python linter
+shellcheck = "latest"        # Shell script analysis
+yamllint = "latest"          # YAML linter
 markdownlint-cli2 = "latest" # Markdown linter
-actionlint = "latest" # GitHub Actions linter
-golangci-lint = "2.2.1" # Go linters aggregator (keeping current version)
-lychee = "latest"    # Link checker
+actionlint = "latest"        # GitHub Actions linter
+golangci-lint = "2.2.1"      # Go linters aggregator (keeping current version)
+hadolint = "latest"          # Dockerfile linter
+lychee = "latest"            # Link checker
 
 # Formatters
-shfmt = "latest"     # Shell formatter
-"pipx:black" = "latest"            # Python formatter
-biome = "latest"     # Modern JS/TS/JSON/JSONC formatter and linter
+shfmt = "latest"                   # Shell formatter
+biome = "latest"                   # Modern JS/TS/JSON/JSONC formatter and linter
 "pipx:check-jsonschema" = "latest" # JSON Schema validator
+"cargo:taplo-cli" = "latest"       # TOML formatter and linter
+"cargo:jsonschema-cli" = "latest"  # Sourcemeta JSON Schema validator
 
 # Security tools via pipx
-"pipx:detect-secrets" = "latest"  # Secret detection for pre-commit
-"pipx:bandit" = "latest"          # Python security linter
+"pipx:detect-secrets" = "latest" # Secret detection for pre-commit  # pragma: allowlist secret
+"pipx:bandit" = "latest"         # Python security linter
 
-# Python type checking
-"pipx:mypy" = "latest"            # Static type checker
+# Python type checking and code quality
+"pipx:mypy" = "latest" # Static type checker
+
+# Go tools
+"go:mvdan.cc/gofumpt" = "latest"                 # Stricter gofmt
+"go:golang.org/x/tools/cmd/goimports" = "latest" # Go import organizer
+"go:github.com/reteps/dockerfmt" = "0.3.7"
 
 # MCP servers via pipx
 "pipx:mcp-server-fetch" = "latest"
@@ -49,6 +56,19 @@ biome = "latest"     # Modern JS/TS/JSON/JSONC formatter and linter
 "npm:@google/gemini-cli" = "latest"
 "npm:@openai/codex" = "latest"
 "npm:@playwright/test" = "latest"
-"npm:prettier" = "latest"     # Universal code formatter - NEW
-"npm:jsonc-parser" = "latest" # JSON with comments parser - NEW
-"npm:glob" = "latest"         # File pattern matching - NEW
+"npm:prettier" = "latest"                         # Universal code formatter
+"npm:eslint" = "latest"                           # JavaScript linter
+"npm:@typescript-eslint/parser" = "latest"        # TypeScript parser for ESLint
+"npm:@typescript-eslint/eslint-plugin" = "latest" # TypeScript ESLint rules
+"npm:jsonc-parser" = "latest"                     # JSON with comments parser
+"npm:glob" = "latest"                             # File pattern matching
+"npm:htmlhint" = "latest"                         # HTML linter
+"npm:stylelint" = "latest"                        # CSS/SCSS linter
+"npm:stylelint-config-standard" = "latest"        # Standard config for stylelint
+"npm:npm-check-updates" = "latest"                # Updates package.json dependencies
+"npm:ajv" = "latest"                              # Another JSON Validator
+"npm:ajv-formats" = "latest"                      # Format validation for AJV
+"npm:strip-json-comments" = "latest"              # Strip comments from JSON
+
+# Pre-commit hooks utilities
+"pipx:pre-commit-hooks" = "latest" # Collection of pre-commit utilities

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+#MISE description="📁 Execute git commands across all repositories • g"
+#MISE alias=["g"]
 # shellcheck shell=bash
 #
 # git - Execute git commands across all workspace repositories
@@ -9,6 +11,7 @@
 #
 # Usage:
 #   mise run git [COMMAND] [ARGS...]
+#   mise run git --list-child-repos      # List all child repository paths
 #
 # Environment Variables:
 #   GIT_TASK_QUIET="${GIT_TASK_QUIET:-false}"    - Suppress decorative output
@@ -18,7 +21,7 @@
 #   0 - All repositories processed successfully
 #   1 - One or more repositories failed
 #
-#MISE description="Execute git commands across all repositories dynamically"
+#MISE description="📁 Execute git commands across all repositories"
 #MISE alias=["g"]
 
 set -uo pipefail
@@ -31,7 +34,7 @@ export MISE_TASK_NAME="git"
 source "${MISE_PROJECT_ROOT}/.config/mise/lib/common.sh" "$@"
 
 # Initialize standardized error handling after sourcing
-init_task_error_handling 2>/dev/null || true
+init_task_error_handling 2> /dev/null || true
 
 # shellcheck disable=SC1091
 # SC1091: MISE_PROJECT_ROOT is set at runtime by mise, path cannot be resolved statically
@@ -57,7 +60,7 @@ execute_git_in_repo() {
     # Special handling for pull command
     if [[ "${git_cmd[0]}" == "pull" ]]; then
         # Check if current branch has upstream tracking
-        if ! (cd "${repo_path}" && git rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1); then
+        if ! (cd "${repo_path}" && git rev-parse --abbrev-ref --symbolic-full-name '@{u}' > /dev/null 2>&1); then
             # Get current branch name
             local branch
             branch=$(cd "${repo_path}" && git rev-parse --abbrev-ref HEAD)
@@ -71,10 +74,10 @@ execute_git_in_repo() {
                 format_repo_header "${repo_name}" "${repo_path}" "${format}" "true"
                 print_status warning "Branch '${branch}' has no upstream tracking"
                 print_status info "Skipping pull for safety. To set upstream: git push -u origin ${branch}"
-            fi
+      fi
             return 0
-        fi
     fi
+  fi
 
     # Use the generic executor with git-specific validation
     execute_in_repo_generic "${repo_name}" "${repo_path}" "validate_git_repo" git "${git_cmd[@]}"
@@ -87,7 +90,8 @@ show_usage() {
   mise run git pull             # Pull latest changes for all repos
   mise run git fetch            # Fetch updates for all repos
   mise run git branch           # List branches for all repos
-  mise run git log --oneline -5 # Show recent commits for all repos"
+  mise run git log --oneline -5 # Show recent commits for all repos
+  mise run git --list-child-repos # List all child repository paths"
 
     local env_vars="  GIT_TASK_QUIET=true     # Suppress headers and summary
   GIT_TASK_FORMAT=simple  # Use simple output format"
@@ -99,6 +103,32 @@ show_usage() {
 main() {
     if [[ $# -eq 0 ]]; then
         show_usage
+        return 0
+  fi
+
+    # Special handling for --list-child-repos flag
+    if [[ "$1" == "--list-child-repos" ]]; then
+        # Set quiet mode to avoid task output prefix
+        export MISE_TASK_OUTPUT=interleave
+        
+        # Find all child repositories (directories containing .git, excluding the root .git)
+        local child_repos=()
+        while IFS= read -r -d '' gitdir; do
+            # Skip the root .git directory
+            if [[ "${gitdir}" != "${MISE_PROJECT_ROOT}/.git" ]]; then
+                # Get the parent directory of the .git directory
+                local parent_dir
+                parent_dir=$(dirname "${gitdir}")
+                # Convert to relative path from workspace root
+                local rel_path="${parent_dir#"${MISE_PROJECT_ROOT}"/}"
+                child_repos+=("${rel_path}")
+            fi
+        done < <(find "${MISE_PROJECT_ROOT}" -name ".git" -type d -print0 2>/dev/null)
+        
+        # Output child repos, one per line
+        if [[ ${#child_repos[@]} -gt 0 ]]; then
+            printf '%s\n' "${child_repos[@]}" | sort
+        fi
         return 0
     fi
 
@@ -117,7 +147,7 @@ main() {
 
         if [[ "${CONFIG[quiet]}" != "true" ]]; then
             format_operation_header "Cloning all workspace repositories..."
-        fi
+    fi
 
         local total=0
         local success=0
@@ -129,7 +159,7 @@ main() {
         if [[ ! -f "${workspace_json}" ]]; then
             handle_error 1 "Workspace configuration not found: ${workspace_json}"
             return 1
-        fi
+    fi
 
         # Parse repositories from workspace.json
         while IFS='|' read -r name url path; do
@@ -144,38 +174,38 @@ main() {
                     print_status warning "Repository already exists"
                     success=$((success + 1))
                     continue
-                else
+        else
                     print_status error "Directory exists but is not a git repository"
                     failed_repos+=("${name}")
                     continue
-                fi
-            fi
+        fi
+      fi
 
             # Validate URL exists
             if [[ -z "${url}" || "${url}" == "null" ]]; then
                 print_status error "Missing repository URL in workspace.json"
                 failed_repos+=("${name}")
                 continue
-            fi
+      fi
 
             # Clone the repository
             if git clone "${url}" "${path}"; then
                 print_status success "Successfully cloned"
                 success=$((success + 1))
-            else
+      else
                 print_status error "Failed to clone"
                 failed_repos+=("${name}")
-            fi
-        done < <(jq -r '.repositories[] | "\(.name)|\(.url)|\(.path)"' "${workspace_json}")
+      fi
+    done     < <(jq -r '.repositories[] | "\(.name)|\(.url)|\(.path)"' "${workspace_json}")
 
         # Show summary
         if [[ "${CONFIG[quiet]}" != "true" ]]; then
             format_summary "${total}" "${success}" "${failed_repos[*]}"
-        fi
+    fi
 
         [[ ${success} -eq ${total} ]] || return 1
         return 0
-    fi
+  fi
 
     # For all other git commands, run across existing repos
     run_task_across_repos "git" execute_git_in_repo "validate_git_command_input" "auto" "$@"

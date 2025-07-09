@@ -1,26 +1,3 @@
-# BrainCraft.io Workspace Configuration
-# Minimal root that loads modular components
-
-# Mise automatically discovers and loads configuration from these locations:
-#
-# Configuration Files (.config/mise/conf.d/):
-# - 00-env.toml       Environment variables and paths
-# - 00-tools.toml     Tool versions (go, node, python, etc.)
-# - 00-vars.toml      Task variables (build flags, test settings)
-#
-# Executable Tasks (.config/mise/tasks/):
-# - doctor-workspace      Health check for workspace (`mr dr`)
-# - git                  Repository operations wrapper
-# - exec                 Execute commands across repos
-# - lint-bash-shellcheck Shellcheck wrapper
-# - lint-bash-dead-code  Dead code finder
-#
-# Shared Libraries (.config/mise/lib/):
-# - common.sh        Reusable bash functions
-# - workspace.sh     Repository operations from workspace.json
-
-
-# Settings
 [settings]
 status.show_env = true
 yes = true
@@ -31,239 +8,642 @@ activate_aggressive = true
 task_output = "prefix"
 auto_install = true
 task_run_auto_install = true
-trusted_config_paths = ["/workspace/", "/workspace/actions/", "/workspace/dot-github/", "/workspace/containers", "/workspace/style-system" ]
+trusted_config_paths = [
+  "/workspace/",
+  "/workspace/actions/",
+  "/workspace/dot-github/",
+  "/workspace/containers",
+  "/workspace/style-system",
+]
 color = true
 jobs = 4
 
-go_download_mirror = "https://dl.google.com/go"
-go_repo = "https://github.com/golang/go"
+[env]
+_.path = [ "./node_modules/.bin", "./.config/bin" ]
 
-# Task aliases
-[alias]
-i = "install"
-b = "build"
-t = "test"
-# l = "lint"  # Removed - conflicts with lint task
-f = "format"
-g = "git"
-x = "exec"
-d = "doctor"
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🚀 WORKSPACE ONBOARDING & DEPENDENCIES
+# ═══════════════════════════════════════════════════════════════════════════════
 
-# Core tasks
 [tasks.setup]
-description = "Initial workspace setup and configuration"
-depends = ["setup:tools", "setup:repos", "setup:hooks", "git:setup"]
-alias = ["s", "init"]
-
-[tasks."setup:tools"]
-description = "Install all required tools"
-run = "mise install"
-
-[tasks."setup:repos"]
-description = "Clone all child repositories"
-run = "mise run git:clone"
+description = "🚀 Onboards a developer by installing all tools and project dependencies. • s"
+alias = [ "s" ]
+depends = [ "setup:install", "tools:git:setup", "setup:hooks" ]
 
 [tasks."setup:hooks"]
-description = "Install git hooks (pre-commit)"
+description = "🎣 Installs git pre-commit hooks using the pre-commit framework."
 run = "pre-commit install --install-hooks"
 
-[tasks."git:setup"]
-description = "Configure Git user and credential helper"
-run = "mise run git-setup"
+[tasks."setup:install"]
+description = "📦 Installs all tools and project dependencies. • i"
+alias = [ "i" ]
+depends = [ "setup:install:mise", "setup:install:npm", "setup:install:repos" ]
 
-[tasks."doctor:workspace"]
-description = "Enterprise-grade workspace health check with actionable fixes"
-run = "mise run doctor-workspace"
-alias = ["dr", "doctor"]
+[tasks."setup:install:mise"]
+description = "📦 Installs all mise-managed tools from .config/mise/conf.d/."
+run = "mise install"
 
-# Linting tasks
-[tasks.lint]
-description = "Run all linters across the polyglot workspace"
-depends = ["lint:bash", "lint:markdown"]
+[tasks."setup:install:npm"]
+description = "📦 Installs npm dependencies from package.json."
+run = "npm install"
 
-[tasks."lint:bash"]
-description = "Run all bash linters and quality checks"
-depends = ["lint:bash:shellcheck", "lint:bash:dead-code"]
+[tasks."setup:install:repos"]
+description = "📦 Installs dependencies for all child repositories."
+run = "echo '🚧 UNDER CONSTRUCTION: Future child repo setup with standard .mise.toml interface'"
 
-[tasks."lint:bash:shellcheck"]
-description = "Lint bash scripts with shellcheck for style and errors"
-run = "mise run lint-bash-shellcheck"
-alias = ["shellcheck"]
+[tasks."setup:update"]
+description = "📤 Upgrades all mise tools and project dependencies to latest versions. • u"
+alias = [ "u" ]
+depends = [ "setup:update:mise", "setup:update:npm" ]
 
-[tasks."lint:bash:dead-code"]
-description = "Find unused functions in bash scripts"
-run = "mise run lint-bash-dead-code"
-alias = ["dead", "unused"]
+[tasks."setup:update:mise"]
+description = "📤 Upgrades all mise-managed tools to their latest versions."
+run = "mise upgrade --bump"
 
-[tasks."lint:markdown"]
-description = "Run all markdown linters and link checkers"
-depends = ["lint:markdown:format", "lint:markdown:links"]
+[tasks."setup:update:npm"]
+description = "📤 Upgrades npm dependencies to their latest versions."
+run = "npm-check-updates -u && npm install"
 
-[tasks."lint:markdown:format"]
-description = "Lint markdown files with markdownlint"
-run = "markdownlint-cli2 '**/*.md' '#node_modules' '#.git'"
-alias = ["mdlint"]
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🎬 LOCAL DEVELOPMENT & PRE-COMMIT WORKFLOWS
+# ═══════════════════════════════════════════════════════════════════════════════
 
-# Markdown link checking - unified task
-[tasks."lint:markdown:links"]
-description = "Check markdown links across repositories"
+[tasks.dev]
+description = "🎬 Starts all services for local development. • d"
+alias = [ "d" ]
+run = "echo '🚧 UNDER CONSTRUCTION: This task will run docker-compose up, etc.'"
+
+[tasks.pre-commit]
+description = "💎 Runs all fast, non-mutating checks to validate code before committing • pc"
+alias = [ "pc" ]
+depends = [ "lint", "test", "validate", "security" ]
+
+[tasks."pre-commit:all"]
+description = "💎 Runs pre-commit checks on all files • pca"
+alias = ["pca"]
+depends = ["lint", "test", "validate", "security"]
+
+[tasks."pre-commit:smart"]
+description = "💎 Runs pre-commit checks intelligently based on staged files"
 run = '''
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Default configuration
-OFFLINE="--offline"
-TARGETS=()
-
-# Check for --online flag
-if [[ "${1:-}" == "--online" ]]; then
-  OFFLINE=""
-  shift
+# If no staged files provided, get them
+if [[ -z "${STAGED_FILES:-}" ]]; then
+  STAGED_FILES=$(git diff --cached --name-only --diff-filter=d)
 fi
 
-# Use remaining args as targets if provided
-if [[ $# -gt 0 ]]; then
-  TARGETS=("$@")
-else
-  # Default: check markdown files in workspace and child repos only
-  TARGETS=(
-    "*.md"
-    ".github/**/*.md"
-    ".config/**/*.md"
-    "actions/**/*.md"
-    "containers/**/*.md"
-    "style-system/**/*.md"
-    "dot-github/**/*.md"
-  )
+if [[ -z "$STAGED_FILES" ]]; then
+  echo "No staged files to check"
+  exit 0
 fi
 
-# Build command
-CMD="lychee --no-progress $OFFLINE"
-[[ -f "lychee.toml" ]] && CMD="$CMD --config lychee.toml"
+echo "🔍 Checking $(echo "$STAGED_FILES" | wc -l) staged files..."
 
-# Add exclusions
-CMD="$CMD --exclude-path '.npm-global' --exclude-path 'node_modules' --exclude-path '.git'"
+# Determine which linters to run based on staged files
+has_python=$(echo "$STAGED_FILES" | grep -E '\.py$' || true)
+has_js=$(echo "$STAGED_FILES" | grep -E '\.(js|jsx|ts|tsx|mjs|cjs)$' || true)
+has_shell=$(echo "$STAGED_FILES" | grep -E '\.(sh|bash)$' || true)
+has_yaml=$(echo "$STAGED_FILES" | grep -E '\.(yml|yaml)$' || true)
+has_toml=$(echo "$STAGED_FILES" | grep -E '\.toml$' || true)
+has_markdown=$(echo "$STAGED_FILES" | grep -E '\.(md|markdown)$' || true)
+has_docker=$(echo "$STAGED_FILES" | grep -E '(Dockerfile|\.dockerfile)' || true)
 
-echo "🔗 Checking markdown links..."
-exec $CMD "${TARGETS[@]}"
-'''
-alias = ["mdlinks"]
+# Run only relevant linters on staged files only
+# NOTE: We can't use the global lint tasks because they check ALL files
+# Instead we need to run linters directly on staged files
 
-[tasks."lint:markdown:report"]
-description = "Generate broken links report for all repositories"
-run = '''
-#!/usr/bin/env bash
-set -euo pipefail
+if [[ -n "$has_python" ]]; then
+  echo "📐 Running Python linters on staged files..."
+  python_files=$(echo "$STAGED_FILES" | grep -E '\.py$')
+  ruff check $python_files
+  mypy $python_files || true
+  bandit -c .bandit -r $python_files || true
+fi
 
-mkdir -p .reports
+if [[ -n "$has_js" ]]; then
+  echo "📐 Running JavaScript linters on staged files..."
+  js_files=$(echo "$STAGED_FILES" | grep -E '\.(js|jsx|ts|tsx|mjs|cjs)$')
+  eslint $js_files || true
+  biome lint $js_files || true
+fi
 
-# Check each repository
-for repo in . actions containers style-system dot-github; do
-  if [[ -d "$repo" ]]; then
-    echo "📊 Checking $repo..."
-    if [[ "$repo" == "." ]]; then
-      # For workspace root, check specific files
-      lychee --offline --format markdown --output ".reports/broken-links-workspace.md" \
-        --exclude-path '.npm-global' --exclude-path 'node_modules' \
-        "*.md" ".github/**/*.md" ".config/**/*.md" 2>/dev/null || true
-    else
-      # For child repos, check all markdown
-      lychee --offline --format markdown --output ".reports/broken-links-${repo//\//-}.md" \
-        --exclude-path 'node_modules' \
-        "$repo/**/*.md" 2>/dev/null || true
+if [[ -n "$has_shell" ]]; then
+  echo "📐 Running Shell linters on staged files..."
+  shell_files=$(echo "$STAGED_FILES" | grep -E '\.(sh|bash)$' | grep -v "^.github/bin/")
+  # Also check executable files without extension
+  for file in $STAGED_FILES; do
+    if [[ -x "$file" ]] && head -n1 "$file" 2>/dev/null | grep -qE '^#!/.*sh'; then
+      shell_files="$shell_files $file"
     fi
+  done
+  if [[ -n "$shell_files" ]]; then
+    shellcheck $shell_files || true
   fi
-done
+fi
 
-# Consolidate reports
-echo "📋 Consolidating reports..."
-cat .reports/broken-links-*.md > .reports/broken-links-all.md 2>/dev/null || echo "No broken links found!"
-echo "✅ Report saved to: .reports/broken-links-all.md"
+if [[ -n "$has_yaml" ]]; then
+  echo "📐 Running YAML linters on staged files..."
+  yaml_files=$(echo "$STAGED_FILES" | grep -E '\.(yml|yaml)$')
+  yamllint -c .yamllint.yaml $yaml_files || true
+fi
+
+if [[ -n "$has_toml" ]]; then
+  echo "📐 Running TOML linters on staged files..."
+  toml_files=$(echo "$STAGED_FILES" | grep -E '\.toml$')
+  taplo lint --cache-path=.taplo-cache $toml_files || true
+fi
+
+if [[ -n "$has_markdown" ]]; then
+  echo "📐 Running Markdown linters on staged files..."
+  markdown_files=$(echo "$STAGED_FILES" | grep -E '\.(md|markdown)$')
+  markdownlint-cli2 $markdown_files || true
+  lychee --no-progress --include-verbatim --offline --config lychee.toml $markdown_files || true
+fi
+
+if [[ -n "$has_docker" ]]; then
+  echo "📐 Running Docker linters on staged files..."
+  docker_files=$(echo "$STAGED_FILES" | grep -E '(Dockerfile|\.dockerfile)')
+  for file in $docker_files; do
+    hadolint "$file" || true
+  done
+fi
+
+# Always run security checks on staged files
+echo "🔒 Running security checks..."
+mise run security:git:check:child-repos
+mise run validate:security:secrets
+
+echo "✅ Pre-commit checks completed"
 '''
-alias = ["mdreport"]
 
-# Git tasks
-[tasks."git:status"]
-description = "Show git status across all repositories"
-run = "mise run git status --porcelain"
-alias = ["gs"]
+[tasks."pre-commit:hook"]
+description = "🎣 Git pre-commit hook entry point"
+run = "pre-commit run"
+hide = true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🌐 GLOBAL VERBS (WORKSPACE-WIDE ACTIONS)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[tasks.lint]
+description = "🔍 Lints all code, configs, and docs across all domains. • l"
+alias = [ "l" ]
+depends = [ "python:lint", "js:lint", "go:lint", "rust:lint", "docker:lint", "config:lint", "markdown:lint", "actions:lint", "bash:lint", "web:lint" ]
+
+[tasks.format]
+description = "✨ Formats all code, configs, and docs across all domains (mutates files). • f"
+alias = [ "f" ]
+depends = [ "python:format", "js:format", "go:format", "rust:format", "docker:format", "config:format", "markdown:format", "bash:format", "web:format", "tools:whitespace:fix" ]
+
+[tasks.test]
+description = "🧪 Runs all tests across all domains. • t"
+alias = [ "t" ]
+depends = [ "python:test", "js:test" ]
+
+[tasks.security]
+description = "🔒 Runs all security scans across all domains. • sec"
+alias = [ "sec" ]
+depends = [ "security:audit:deps", "python:lint:security", "tools:secrets:scan", "security:git:integrity" ]  # pragma: allowlist secret
+
+[tasks."security:audit:deps"]
+description = "🔒 Checks for known vulnerabilities in project dependencies."
+run = "npm audit"
+
+[tasks.build]
+description = "🔨 Builds all projects and artifacts. • b"
+alias = [ "b" ]
+depends = [ "docker:build" ]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🐍 PYTHON DOMAIN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[tasks."python:lint"]
+description = "🐍 Lints Python code for style, types, and security. • pyl"
+alias = [ "pyl" ]
+depends = [ "python:lint:style", "python:lint:types", "python:lint:security" ]
+
+[tasks."python:lint:style"]
+description = "🎨 Checks Python style and quality with Ruff."
+run = "ruff check ."
+
+[tasks."python:lint:types"]
+description = "🔤 Checks Python static types with MyPy. • mypy"
+alias = [ "mypy" ]
+run = '''
+#!/usr/bin/env bash
+set -uo pipefail
+if ! find . -name "*.py" \
+  -not -path "./.git/*" \
+  -not -path "./node_modules/*" \
+  -not -path "./.npm-global/*" \
+  -not -path "./.venv/*" \
+  -not -path "./venv/*" \
+  -not -path "./__pycache__/*" \
+  -not -path "./.pytest_cache/*" \
+  -not -path "./.mypy_cache/*" \
+  -not -path "./.ruff_cache/*" \
+  -not -path "./actions/*" \
+  -not -path "./containers/*" \
+  -not -path "./dot-github/*" \
+  -not -path "./style-system/*" \
+  -print -quit | grep -q .; then
+  echo "ℹ️  No Python files found - MyPy check skipped"
+  exit 0
+fi
+mypy --config-file mypy.ini .
+'''
+
+[tasks."python:lint:security"]
+description = "🔒 Checks Python for security vulnerabilities with Bandit."
+run = "bandit -c .bandit -r ."
+
+[tasks."python:format"]
+description = "✨ Formats Python code with Ruff (style only). • pyf"
+alias = [ "pyf" ]
+run = "ruff format ."
+
+[tasks."python:fix"]
+description = "🔧 Fixes Python code issues, including import sorting, with Ruff."
+run = "ruff check --fix . && ruff format ."
+
+[tasks."python:test"]
+description = "🧪 Runs Python tests (placeholder)."
+run = "echo '🚧 UNDER CONSTRUCTION: python:test'"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 📜 JAVASCRIPT DOMAIN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[tasks."js:lint"]
+description = "📜 Lints JS/TS code for quality and style. • jsl"
+alias = [ "jsl" ]
+depends = [ "js:lint:quality", "js:lint:style" ]
+
+[tasks."js:lint:quality"]
+description = "✨ Checks JS/TS for code quality and best practices with ESLint."
+run = "eslint ."
+
+[tasks."js:lint:style"]
+description = "🎯 Checks JS/TS for syntax and style with Biome."
+run = "biome lint ."
+
+[tasks."js:format"]
+description = "✨ Formats JS/TS/JSON code with Biome. • jsf"
+alias = [ "jsf" ]
+run = "biome format --write ."
+
+[tasks."js:fix"]
+description = "🔧 Fixes JS/TS code issues with ESLint."
+run = "eslint --fix ."
+
+[tasks."js:test"]
+description = "🧪 Runs JS/TS tests (placeholder)."
+run = "echo '🚧 UNDER CONSTRUCTION: js:test'"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🐚 BASH DOMAIN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[tasks."bash:lint"]
+description = "🐚 Lints shell scripts for syntax errors and dead code."
+depends = [ "bash:lint:syntax", "bash:lint:quality" ]
+
+[tasks."bash:lint:syntax"]
+description = "📝 Checks shell script syntax and style with ShellCheck."
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/lint-bash-shellcheck"
+
+[tasks."bash:lint:quality"]
+description = "🔎 Finds unused functions in shell scripts."
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/lint-bash-dead-code"
+
+[tasks."bash:format"]
+description = "✨ Formats shell scripts with shfmt."
+run = "shfmt -w -i 2 -ci -sr -kp ."
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🐳 DOCKER DOMAIN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[tasks."docker:lint"]
+description = "🐳 Lints Dockerfiles and validates docker-compose files."
+depends = [ "docker:lint:hadolint", "docker:validate:compose" ]
+
+[tasks."docker:lint:hadolint"]
+description = "🐳 Lints Dockerfiles with hadolint (via tools:docker-script)."
+run = "mise run tools:docker-script --lint"
+
+[tasks."docker:validate:compose"]
+description = "🐳 Validates Docker Compose file syntax."
+run = "mise run validate:compose"
+
+[tasks."docker:format"]
+description = "✨ Formats Dockerfiles with dockerfmt (via tools:docker-script)."
+run = "mise run tools:docker-script --format"
+
+[tasks."docker:build"]
+description = "🔨 Builds Docker images (placeholder)."
+run = "echo '🚧 UNDER CONSTRUCTION: docker:build'"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🔧 CONFIG, DOCS, & ACTIONS DOMAINS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[tasks."config:lint"]
+description = "🔧 Lints all configuration files (YAML, TOML, JSON Schemas, mise)."
+depends = [ "config:lint:yaml", "config:lint:toml", "config:lint:schemas", "config:validate:mise" ]
+
+[tasks."config:lint:yaml"]
+description = "🔧 Validates YAML file syntax with yamllint."
+run = "yamllint -c .yamllint.yaml ."
+
+[tasks."config:lint:toml"]
+description = "🔧 Validates TOML file syntax with taplo."
+run = "taplo lint --cache-path=.taplo-cache"
+
+[tasks."config:lint:schemas"]
+description = "📦 Validates JSON/JSONC files against their `$schema` definitions (via tools:json-schema-validator)."
+run = "mise run tools:json-schema-validator"
+
+[tasks."config:validate:mise"]
+description = "🔧 Validates the .mise.toml configuration files."
+run = "mise config ls >/dev/null"
+
+[tasks."config:format"]
+description = "✨ Formats all configuration files (YAML, TOML)."
+depends = [ "config:format:yaml", "config:format:toml" ]
+
+[tasks."config:format:yaml"]
+description = "🔧 Formats YAML files with Prettier."
+run = "prettier --write '**/*.{yml,yaml}'"
+
+[tasks."config:format:toml"]
+description = "🔧 Formats TOML files with taplo."
+run = "taplo fmt --cache-path=.taplo-cache"
+
+[tasks."markdown:lint"]
+description = "📝 Checks Markdown style and for broken links."
+depends = [ "markdown:lint:style", "markdown:lint:links" ]
+
+[tasks."markdown:lint:style"]
+description = "🎨 Checks Markdown style with markdownlint."
+run = "markdownlint-cli2 '**/*.md' '#node_modules' '#.git'"
+
+[tasks."markdown:lint:links"]
+description = "🔗 Checks for broken links in Markdown files with lychee."
+run = "lychee --no-progress --include-verbatim --offline --config lychee.toml **/*.md .github/**/*.md"
+
+[tasks."markdown:format"]
+description = "✨ Formats Markdown files with Prettier."
+run = "prettier --write '**/*.md'"
+
+[tasks."markdown:fix"]
+description = "🔧 Fixes Markdown style issues with markdownlint."
+run = "markdownlint-cli2 --fix '**/*.md' '#node_modules' '#.git'"
+
+[tasks."actions:lint"]
+description = "🎬 Lints GitHub Actions workflows with actionlint."
+run = "actionlint"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🌐 WEB DOMAIN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[tasks."web:lint"]
+description = "🌐 Lints HTML/CSS files for style and syntax • wl"
+alias = ["wl"]
+depends = ["web:lint:html", "web:lint:css"]
+
+[tasks."web:lint:html"]
+description = "📄 Lints HTML files with htmlhint"
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/web --lint-html"
+
+[tasks."web:lint:css"]
+description = "🎨 Lints CSS/SCSS files with stylelint"
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/web --lint-css"
+
+[tasks."web:format"]
+description = "✨ Formats HTML/CSS files with Prettier • wf"
+alias = ["wf"]
+depends = ["web:format:html", "web:format:css"]
+
+[tasks."web:format:html"]
+description = "📄 Formats HTML files with Prettier"
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/web --format-html"
+
+[tasks."web:format:css"]
+description = "🎨 Formats CSS/SCSS files with Prettier"
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/web --format-css"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🐹 GO & RUST DOMAINS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[tasks."go:lint"]
+description = "🐹 Lints Go code with golangci-lint (via tools:go-script)."
+run = "mise run tools:go-script --lint"
+
+[tasks."go:format"]
+description = "✨ Formats Go code with goimports and gofumpt (via tools:go-script)."
+run = "mise run tools:go-script --format"
+
+[tasks."rust:lint"]
+description = "🦀 Lints Rust code with cargo clippy (via tools:rust-script)."
+run = "mise run tools:rust-script --lint"
+
+[tasks."rust:format"]
+description = "✨ Formats Rust code with rustfmt (via tools:rust-script)."
+run = "mise run tools:rust-script --format"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 📁 GIT DOMAIN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[tasks.git]
+description = "📁 Execute git commands across all repositories • g"
+alias = ["g"]
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/git"
 
 [tasks."git:clone"]
-description = "Clone all child repositories"
-run = "mise run git clone"
-alias = ["gc", "clone"]
+description = "📂 Clone all child repositories if not present • gc"
+alias = ["gc"]
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/git clone"
 
 [tasks."git:pull"]
-description = "Pull latest changes for all repositories"
-run = "mise run git pull"
-alias = ["gp", "pull"]
+description = "📥 Pull latest changes for all repositories • gp"
+alias = ["gp"]
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/git pull"
 
 [tasks."git:fetch"]
-description = "Fetch updates for all repositories"
-run = "mise run git fetch"
-alias = ["gf", "fetch"]
+description = "🔄 Fetch updates for all repositories • gf"
+alias = ["gf"]
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/git fetch"
+
+[tasks."git:status"]
+description = "📊 Show git status across all repositories • gs"
+alias = ["gs"]
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/git status --porcelain"
 
 [tasks."git:branch"]
-description = "Show branches for all repositories"
-run = "mise run git branch"
+description = "🌿 Show branches for all repositories • gb"
 alias = ["gb"]
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/git branch -a"
 
 [tasks."git:log"]
-description = "Show recent commits for all repositories"
-run = "mise run git log --oneline -5"
+description = "📜 Show recent commits for all repositories • gl"
 alias = ["gl"]
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/git log --oneline -8"
 
-# Pre-commit tasks
-[tasks."pre-commit:install"]
-description = "Install pre-commit hooks for the workspace"
-run = "pre-commit install --install-hooks"
-alias = ["pci"]
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🛠️ WORKSPACE TOOLS & UTILITIES
+# ═══════════════════════════════════════════════════════════════════════════════
 
-[tasks."pre-commit:run"]
-description = "Run pre-commit checks on all files"
-run = "pre-commit run --all-files"
-alias = ["pc", "precommit"]
+[tasks."tools:doctor"]
+description = "🏥 Diagnoses workspace environment issues. • doctor"
+alias = [ "doctor" ]
+run = "mise run doctor-workspace"
 
-[tasks."pre-commit:run:staged"]
-description = "Run pre-commit checks on staged files only"
-run = "pre-commit run"
-alias = ["pcs"]
+[tasks."tools:git"]
+description = "📁 A utility for performing git operations across multiple repositories."
+run = "mise run git"
 
-[tasks."pre-commit:update"]
-description = "Update pre-commit hooks to latest versions"
-run = "pre-commit autoupdate"
-alias = ["pcu"]
+[tasks."tools:git:setup"]
+description = "🔧 Configures local Git user and credential helper."
+run = "mise run git-setup"
 
-[tasks."pre-commit:clean"]
-description = "Clean pre-commit cache"
-run = "pre-commit clean && pre-commit gc"
-alias = ["pcc"]
+[tasks."security:git:integrity"]
+description = "🔒 Checks repository integrity for merge conflicts, large files, and child repos."
+depends = [ "security:git:check:merge-conflicts", "security:git:check:large-files", "security:git:check:child-repos" ]
 
-# Formatting tasks
-[tasks.format]
-description = "Format all code (runs pre-commit formatters)"
-run = "pre-commit run --all-files prettier shfmt biome-format-json black || true"
-alias = ["fmt"]
+[tasks."security:git:check:merge-conflicts"]
+description = "💥 Checks for lingering merge conflict markers."
+run = "! git grep -n -E '<<<<<<<|=======|>>>>>>>' -- './:(exclude)package-lock.json'"
 
-[tasks."format:fix"]
-description = "Auto-fix all code issues"
-run = "pre-commit run --all-files"
-alias = ["fix"]
+[tasks."security:git:check:large-files"]
+description = "🐘 Checks for new files larger than 1MB."
+run = "check-added-large-files --maxkb=1000"
 
-# Validation tasks
-[tasks."validate:mise"]
-description = "Validate mise configuration files"
+[tasks."security:git:check:child-repos"]
+description = "🚫 Prevents accidentally staging files from child repositories."
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/check-child-repos"
+
+[tasks.exec]
+description = "⚡ Execute commands across all repositories"
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/exec"
+
+[tasks."tools:exec"]
+description = "⚡ A utility for executing arbitrary shell commands across multiple repositories."
+run = "mise run exec"
+
+[tasks."tools:tasks"]
+description = "📋 A meta-utility for listing tasks. • tasks"
+alias = [ "tasks" ]
+run = "mise run task-list"
+
+[tasks."task-namespaces"]
+description = "📂 List only top-level task namespaces • tn"
+alias = ["tn"]
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/task-list --namespaces"
+hide = true
+
+[tasks."tools:secrets:scan"]  # pragma: allowlist secret
+description = "🔑 Scans for hardcoded secrets with detect-secrets."  # pragma: allowlist secret
+run = "detect-secrets-hook --baseline .secrets.baseline"
+
+[tasks."tools:whitespace:fix"]
+description = "🧹 Fixes trailing whitespace and ensures final newlines (via format-whitespace-fix script)."
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/format-whitespace-fix"
+
+# Hidden tasks that are wrappers around scripts to keep the main interface clean
+[tasks."tools:docker-script"]
+hide = true
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/docker"
+
+[tasks."tools:go-script"]
+hide = true
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/go"
+
+[tasks."tools:rust-script"]
+hide = true
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/rust"
+
+[tasks."tools:json-schema-validator"]
+hide = true
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/json-schema"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ✅ VALIDATION DOMAIN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[tasks.validate]
+description = "✅ Runs all validation and quality checks • v, val"
+alias = ["v", "val"]
+depends = ["validate:schemas", "validate:links", "validate:security", "validate:compose"]
+
+[tasks."validate:schemas"]
+description = "📋 Validates JSON/JSONC files against their schemas"
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/json-schema"
+
+[tasks."validate:links"]
+description = "🔗 Validates all links in documentation"
+depends = ["validate:links:offline"]
+
+[tasks."validate:links:offline"]
+description = "🔗 Checks markdown links (offline mode)"
+run = '''
+lychee --no-progress --include-verbatim --offline --config lychee.toml \
+  **/*.md .github/**/*.md actions/**/*.md containers/**/*.md \
+  style-system/**/*.md dot-github/**/*.md
+'''
+
+[tasks."validate:links:online"]
+description = "🌐 Checks markdown links (online mode - slower)"
+run = '''
+lychee --no-progress --include-verbatim --config lychee.toml \
+  **/*.md .github/**/*.md actions/**/*.md containers/**/*.md \
+  style-system/**/*.md dot-github/**/*.md
+'''
+
+[tasks."validate:security"]
+description = "🔒 Validates repository security integrity"
+depends = ["validate:security:secrets", "validate:security:dependencies"]
+
+[tasks."validate:security:secrets"]  # pragma: allowlist secret
+description = "🔐 Scans for accidentally committed secrets"  # pragma: allowlist secret
+run = "detect-secrets-hook --baseline .secrets.baseline"
+
+[tasks."validate:security:dependencies"]
+description = "📦 Checks for known vulnerabilities in dependencies"
 run = '''
 #!/usr/bin/env bash
-set -euo pipefail
-
-# Check that mise can read all config files
-if mise config ls >/dev/null 2>&1; then
-  echo "✅ All mise configuration files are valid"
-  exit 0
-else
-  echo "❌ Error reading mise configuration files"
-  exit 1
+echo "🔍 Checking npm dependencies..."
+if [[ -f package-lock.json ]]; then
+  npm audit
+fi
+if command -v pip-audit &> /dev/null && [[ -f requirements.txt || -f pyproject.toml ]]; then
+  echo "🔍 Checking Python dependencies..."
+  pip-audit
 fi
 '''
-alias = ["validate-mise"]
+
+[tasks."validate:compose"]
+description = "🐳 Validates Docker Compose file syntax"
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/validate-compose"
+
+[tasks."validate:dead-code"]
+description = "💀 Finds dead code across all languages"
+depends = ["validate:dead-code:bash", "validate:dead-code:python", "validate:dead-code:javascript"]
+
+[tasks."validate:dead-code:bash"]
+description = "💀 Finds dead code in Bash scripts"
+run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/lint-bash-dead-code"
+
+[tasks."validate:dead-code:python"]
+description = "💀 Finds dead code in Python (placeholder)"
+run = "echo '😧 UNDER CONSTRUCTION: Python dead code detection'"
+
+[tasks."validate:dead-code:javascript"]
+description = "💀 Finds dead code in JavaScript (placeholder)"
+run = "echo '😧 UNDER CONSTRUCTION: JavaScript dead code detection'"

@@ -60,25 +60,25 @@ setup_task_config() {
     # Set quiet configuration
     if [[ -n "${!quiet_var+x}" ]]; then
         CONFIG["quiet"]="${!quiet_var}"
-    else
+  else
         CONFIG["quiet"]="${MISE_TASK_QUIET_DEFAULT:-false}"
-    fi
+  fi
 
     # Set format configuration
     if [[ -n "${!format_var+x}" ]]; then
         CONFIG["format"]="${!format_var}"
-    else
+  else
         CONFIG["format"]="${MISE_TASK_FORMAT_DEFAULT:-pretty}"
-    fi
+  fi
 
     # Add parallel support if applicable
     if [[ -n "${!parallel_var+x}" ]]; then
         CONFIG["parallel"]="${!parallel_var}"
-    elif [[ -n "${MISE_TASK_PARALLEL_DEFAULT+x}" ]]; then
+  elif   [[ -n "${MISE_TASK_PARALLEL_DEFAULT+x}" ]]; then
         CONFIG["parallel"]="${MISE_TASK_PARALLEL_DEFAULT}"
-    else
+  else
         CONFIG["parallel"]="false"
-    fi
+  fi
 }
 
 #######################################
@@ -103,13 +103,13 @@ show_task_usage() {
         echo "Examples:"
         echo "${examples}"
         echo
-    fi
+  fi
 
     if [[ -n "${env_vars}" ]]; then
         echo "Environment Variables:"
         echo "${env_vars}"
         echo
-    fi
+  fi
 
     show_available_repos
 }
@@ -138,22 +138,22 @@ execute_task_parallel() {
         {
             if "${execute_func}" "workspace" "." "${args[@]}"; then
                 echo "success" > "${temp_dir}/workspace.status"
-            else
+      else
                 echo "failed" > "${temp_dir}/workspace.status"
-            fi
-        } &
-    fi
+      fi
+    } &
+  fi
 
     # Execute in all child repositories
     while IFS=: read -r name path; do
         {
             if "${execute_func}" "${name}" "${path}" "${args[@]}"; then
                 echo "success" > "${temp_dir}/${name}.status"
-            else
+      else
                 echo "failed" > "${temp_dir}/${name}.status"
-            fi
-        } &
-    done < <(list_repositories)
+      fi
+    } &
+  done   < <(list_repositories)
 
     # Wait for all background jobs
     wait
@@ -171,18 +171,18 @@ execute_task_parallel() {
             if grep -q "failed" "${status_file}"; then
                 failed=$((failed + 1))
                 failed_repos+=("${repo_name}")
-            fi
-        fi
-    done
+      fi
+    fi
+  done
 
     # Cleanup
     rm -rf "${temp_dir}"
 
     # Update global state for summary
     declare -gA MISE_EXEC_STATE=(
-        [total_repos]=${total}
-        [success_count]=$((total - failed))
-    )
+                                                                                                            [total_repos]=${total}
+                                                                                                            [success_count]=$((total - failed))
+  )
     declare -ga MISE_EXEC_FAILED_REPOS=("${failed_repos[@]}")
 
     if [[ "${CONFIG[quiet]}" != "true" ]]; then
@@ -194,8 +194,8 @@ execute_task_parallel() {
         printf "Successful: %d\n" "$((total - failed))"
         if [[ ${failed} -gt 0 ]]; then
             printf "Failed: %d (%s)\n" "${failed}" "${failed_repos[*]}"
-        fi
     fi
+  fi
 
     [[ ${failed} -eq 0 ]] || exit_code=1
     return ${exit_code}
@@ -227,56 +227,58 @@ run_task_across_repos() {
     setup_task_config "${task_name}"
 
     # Validate command if validation function provided
-    if [[ -n "${validate_func}" ]] && declare -F "${validate_func}" >/dev/null 2>&1; then
+    if [[ -n "${validate_func}" ]] && declare -F "${validate_func}" > /dev/null 2>&1; then
         if ! "${validate_func}" "${cmd_args[*]}"; then
             return 1
-        fi
     fi
+  fi
 
     # Auto-detect workspace inclusion for git tasks
     if [[ "${include_workspace}" == "auto" ]]; then
         if [[ "${task_name}" == "git" ]] && [[ -d ".git" ]]; then
             include_workspace="true"
-        else
+    else
             include_workspace="false"
-        fi
     fi
+  fi
 
     # Show operation header
     if [[ "${CONFIG[quiet]}" != "true" ]]; then
         local cmd_display="${cmd_args[*]}"
         if [[ "${task_name}" == "git" ]]; then
             format_operation_header "Running 'git ${cmd_display}' across all repositories..."
-        else
+    else
             format_operation_header "Running '${cmd_display}' across all repositories..."
-        fi
     fi
+  fi
 
     # Check if parallel execution is requested
     if [[ "${CONFIG[parallel]:-false}" == "true" ]]; then
         if [[ "${CONFIG[quiet]}" != "true" ]]; then
             echo "🚀 Parallel execution enabled"
-        fi
+    fi
         execute_task_parallel "${execute_func}" "${include_workspace}" "${cmd_args[@]}"
         local exit_code=$?
-    else
+  else
         # Store the original execute function in a different variable to avoid naming conflict
         local original_execute_func="${execute_func}"
 
         # Create a wrapper function that passes the command
         execute_wrapper() {
+            # shellcheck disable=SC2317
+            # SC2317: This function is passed as a callback to execute_across_repos
             "${original_execute_func}" "$1" "$2" "${cmd_args[@]}"
-        }
+    }
 
         # Execute sequentially - don't pass cmd_args here, they're already in the closure
         execute_across_repos execute_wrapper "${include_workspace}" "${CONFIG[quiet]}"
         local exit_code=$?
-    fi
+  fi
 
     # Show summary
     if [[ "${CONFIG[quiet]}" != "true" ]]; then
         format_summary "${MISE_EXEC_STATE[total_repos]}" "${MISE_EXEC_STATE[success_count]}" "${MISE_EXEC_FAILED_REPOS[*]}"
-    fi
+  fi
 
     return ${exit_code}
 }
@@ -299,18 +301,18 @@ execute_in_repo_generic() {
     local cmd=("$@")
 
     # Validate repository if function provided
-    if [[ -n "${validate_repo_func}" ]] && declare -F "${validate_repo_func}" >/dev/null 2>&1; then
+    if [[ -n "${validate_repo_func}" ]] && declare -F "${validate_repo_func}" > /dev/null 2>&1; then
         "${validate_repo_func}" "${repo_name}" "${repo_path}" "${CONFIG[quiet]}" || {
             handle_error $? "Repository validation failed for ${repo_name}"
             return 1
-        }
-    else
+    }
+  else
         # Default: just check directory exists
         validate_repo_exists "${repo_name}" "${repo_path}" "${CONFIG[quiet]}" || {
             handle_error $? "Repository validation failed for ${repo_name}"
             return 1
-        }
-    fi
+    }
+  fi
 
     # Print header
     if [[ "${CONFIG[quiet]}" != "true" ]]; then
@@ -319,9 +321,9 @@ execute_in_repo_generic() {
         local include_git="false"
         if [[ -d "${repo_path}/.git" ]]; then
             include_git="true"
-        fi
-        format_repo_header "${repo_name}" "${repo_path}" "${CONFIG[format]}" "${include_git}"
     fi
+        format_repo_header "${repo_name}" "${repo_path}" "${CONFIG[format]}" "${include_git}"
+  fi
 
     # Execute command
     local exit_code=0
@@ -329,8 +331,8 @@ execute_in_repo_generic() {
         exit_code=$?
         if [[ "${CONFIG[quiet]}" != "true" ]]; then
             print_status error "Command failed with exit code: ${exit_code}"
-        fi
     fi
+  fi
 
     return ${exit_code}
 }
