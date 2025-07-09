@@ -10,7 +10,7 @@
   },
   // Use 'forwardPorts' to make a list of ports inside the container available locally
   "forwardPorts": [],
-  "onCreateCommand": "mise run setup",
+  "onCreateCommand": "mise trust --all && mise install && mise run setup",
   "postCreateCommand": "",
   "postStartCommand": "mise run doctor --quick || true",
   "postAttachCommand": "mise tasks",
@@ -74,7 +74,8 @@
   "remoteEnv": {
     "MISE_YES": "1",
     "DOCKER_BUILDKIT": "1",
-    "COMPOSE_DOCKER_CLI_BUILD": "1"
+    "COMPOSE_DOCKER_CLI_BUILD": "1",
+    "PATH": "/home/ubuntu/.local/share/mise/shims:/home/ubuntu/.local/bin:${PATH}"
   },
   // Run as non-root user
   "remoteUser": "ubuntu",
