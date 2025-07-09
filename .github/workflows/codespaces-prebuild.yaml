@@ -76,7 +76,7 @@ jobs:
           # REGIONS CONFIGURATION:
           # - Single region for initial testing to minimize costs
           # - WestUs2 chosen as primary US West Coast presence
-          # - Add more regions as needed: "WestUs2,EastUs,WestEurope,SoutheastAsia"
+          # - Add more regions as needed: WestUs2,EastUs,WestEurope,SoutheastAsia
           regions: WestUs2
 
           # SKU CONFIGURATION:

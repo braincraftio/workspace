@@ -20,15 +20,22 @@
 
 ## Executive Summary
 
-The BrainCraft.io workspace represents a next-generation development environment architected specifically for AI-assisted software development. It achieves perfect parity between local development, CI/CD pipelines, and LLM-assisted coding contexts through a sophisticated integration of DevContainers, mise task orchestration, and intelligent automation.
+The BrainCraft.io workspace represents a next-generation development environment architected
+specifically for AI-assisted software development. It achieves perfect parity between local
+development, CI/CD pipelines, and LLM-assisted coding contexts through a sophisticated integration
+of DevContainers, mise task orchestration, and intelligent automation.
 
 ### Key Innovations
 
-1. **Zero-Configuration Philosophy**: One command (`./launch-workspace`) handles all setup, dependencies, and lifecycle management
-2. **AI-Optimized Architecture**: Every design decision considers LLM context windows, pattern recognition, and automation capabilities
-3. **Performance-First Design**: Persistent volumes, intelligent caching, and platform-specific optimizations deliver near-native performance
+1. **Zero-Configuration Philosophy**: One command (`./launch-workspace`) handles all setup,
+   dependencies, and lifecycle management
+2. **AI-Optimized Architecture**: Every design decision considers LLM context windows, pattern
+   recognition, and automation capabilities
+3. **Performance-First Design**: Persistent volumes, intelligent caching, and platform-specific
+   optimizations deliver near-native performance
 4. **Security by Default**: Non-root execution, secret isolation, and automated compliance scanning
-5. **Community-Driven Evolution**: Public-first development with patterns designed for contribution and extension
+5. **Community-Driven Evolution**: Public-first development with patterns designed for contribution
+   and extension
 
 ### Success Metrics
 
@@ -48,7 +55,7 @@ flowchart TD
         A[launch-workspace] --> B{Parse Arguments}
         B --> C[Load Configuration]
     end
-    
+
     subgraph "Dependency Validation"
         C --> D{Check Dependencies}
         D -->|Missing| E[Doctor Mode]
@@ -57,7 +64,7 @@ flowchart TD
         G -->|Failed| H[Auth Diagnostics]
         G -->|Success| I[Continue]
     end
-    
+
     subgraph "Container Management"
         I --> J{Detect Image}
         J --> K[Parse devcontainer.json]
@@ -72,7 +79,7 @@ flowchart TD
         Q --> R
         R --> N
     end
-    
+
     subgraph "Launch Strategy"
         N --> T{DevContainer CLI?}
         S --> T
@@ -81,7 +88,7 @@ flowchart TD
         U --> W[Open VS Code]
         V --> W
     end
-    
+
     subgraph "Post-Launch"
         W --> X[Load Workspace]
         X --> Y[Execute postCreateCommand]
@@ -95,7 +102,7 @@ flowchart TD
 
 ### Architectural Layers
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    User Interface Layer                      │
 │  VS Code │ Terminal │ Claude Code │ GitHub Copilot │ Browsers│
@@ -118,18 +125,18 @@ flowchart TD
 
 ### Component Inventory
 
-| Component | Type | Location | Version | Purpose |
-|-----------|------|----------|---------|---------|
-| `launch-workspace` | Bash Script | `/workspace/launch-workspace` | v1.0.0 | Container lifecycle orchestration |
-| `devcontainer.json` | JSONC Config | `/workspace/.devcontainer/devcontainer.json` | - | Container specification |
-| `Dockerfile` | Container Def | `/workspace/.devcontainer/Dockerfile` | - | Base image definition |
-| `braincraft.code-workspace` | VS Code Config | `/workspace/braincraft.code-workspace` | - | Multi-root workspace |
-| `.mise.toml` | TOML Config | `/workspace/.mise.toml` | - | Tool versions & tasks |
-| `settings.json` | JSON Config | `/workspace/.vscode/settings.json` | - | Editor configuration |
+| Component                   | Type           | Location                                     | Version | Purpose                           |
+| --------------------------- | -------------- | -------------------------------------------- | ------- | --------------------------------- |
+| `launch-workspace`          | Bash Script    | `/workspace/launch-workspace`                | v1.0.0  | Container lifecycle orchestration |
+| `devcontainer.json`         | JSONC Config   | `/workspace/.devcontainer/devcontainer.json` | -       | Container specification           |
+| `Dockerfile`                | Container Def  | `/workspace/.devcontainer/Dockerfile`        | -       | Base image definition             |
+| `braincraft.code-workspace` | VS Code Config | `/workspace/braincraft.code-workspace`       | -       | Multi-root workspace              |
+| `.mise.toml`                | TOML Config    | `/workspace/.mise.toml`                      | -       | Tool versions & tasks             |
+| `settings.json`             | JSON Config    | `/workspace/.vscode/settings.json`           | -       | Editor configuration              |
 
 ### Repository Structure
 
-```
+```text
 /workspace/                          # Meta-repository root (github.com/braincraftio/workspace)
 ├── .devcontainer/                   # Container configuration
 │   ├── devcontainer.json           # Primary container spec
@@ -188,7 +195,7 @@ flowchart TD
   },
   "workspaceFolder": "/workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
-  
+
   // Persistent volume strategy
   "mounts": [
     // Language-specific caches
@@ -201,16 +208,16 @@ flowchart TD
     "source=braincraftio-cargo-target,target=/home/ubuntu/.cargo/target,type=volume",
     "source=braincraftio-pip-cache,target=/home/ubuntu/.cache/pip,type=volume",
     "source=braincraftio-poetry-cache,target=/home/ubuntu/.cache/pypoetry,type=volume",
-    
+
     // Tool caches
     "source=braincraftio-mise-cache,target=/home/ubuntu/.local/share/mise,type=volume",
     "source=braincraftio-runner-config,target=/opt/actions-runner/.runner,type=volume",
     "source=braincraftio-docker-cache,target=/var/lib/docker,type=volume",
-    
+
     // Security
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
-  
+
   "containerEnv": {
     "WORKSPACE_ROOT": "/workspace",
     "DOCKER_BUILDKIT": "1",
@@ -222,7 +229,7 @@ flowchart TD
     "GITHUB_ACTIONS": "false",
     "CI": "false"
   },
-  
+
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "moby": true,
@@ -232,11 +239,11 @@ flowchart TD
       "installDirectlyFromGitHubRelease": true
     }
   },
-  
+
   "postCreateCommand": ".devcontainer/scripts/post-create.sh",
   "postAttachCommand": ".devcontainer/scripts/post-attach.sh",
   "postStartCommand": "git config --global --add safe.directory '*'",
-  
+
   "customizations": {
     "vscode": {
       "settings": {
@@ -261,7 +268,7 @@ flowchart TD
       ]
     }
   },
-  
+
   "remoteUser": "ubuntu",
   "updateRemoteUserUID": true,
   "userEnvProbe": "loginInteractiveShell"
@@ -319,16 +326,16 @@ ENTRYPOINT ["/bin/bash", "-l"]
 
 ### Volume Strategy & Performance
 
-| Volume | Mount Point | Purpose | Performance Impact |
-|--------|-------------|---------|-------------------|
-| `gomodcache` | `/go/pkg/mod` | Go module storage | 10x faster `go mod download` |
-| `gocache` | `~/.cache/go-build` | Go build artifacts | 5x faster builds |
-| `npm` | `.npm-global` | Global npm packages | 3x faster global installs |
-| `pnpm` | `.pnpm-store` | pnpm content store | 4x faster installs, deduped |
-| `node-modules` | `.node-modules-volumes` | Symlink targets | Instant project switching |
-| `cargo-registry` | `~/.cargo/registry` | Rust crates | 4x faster cargo builds |
-| `mise-cache` | `~/.local/share/mise` | Tool installations | Instant tool switching |
-| `docker-cache` | `/var/lib/docker` | Docker layer cache | 10x faster image builds |
+| Volume           | Mount Point             | Purpose             | Performance Impact           |
+| ---------------- | ----------------------- | ------------------- | ---------------------------- |
+| `gomodcache`     | `/go/pkg/mod`           | Go module storage   | 10x faster `go mod download` |
+| `gocache`        | `~/.cache/go-build`     | Go build artifacts  | 5x faster builds             |
+| `npm`            | `.npm-global`           | Global npm packages | 3x faster global installs    |
+| `pnpm`           | `.pnpm-store`           | pnpm content store  | 4x faster installs, deduped  |
+| `node-modules`   | `.node-modules-volumes` | Symlink targets     | Instant project switching    |
+| `cargo-registry` | `~/.cargo/registry`     | Rust crates         | 4x faster cargo builds       |
+| `mise-cache`     | `~/.local/share/mise`   | Tool installations  | Instant tool switching       |
+| `docker-cache`   | `/var/lib/docker`       | Docker layer cache  | 10x faster image builds      |
 
 ### Post-Create Script Implementation
 
@@ -420,29 +427,29 @@ readonly NC=$'\033[0m'  # No Color
 ```bash
 detect_devcontainer_image() {
     local devcontainer_json="${SCRIPT_DIR}/.devcontainer/devcontainer.json"
-    
+
     if [[ ! -f "$devcontainer_json" ]]; then
         log_error "devcontainer.json not found"
         return 1
     fi
-    
+
     # Remove JSON comments for parsing
     local json_content
     json_content=$(sed 's|//.*||g' "$devcontainer_json" | tr -d '\n')
-    
+
     # Try explicit image first
     local image
     image=$(echo "$json_content" | jq -r '.image // empty' 2>/dev/null)
-    
+
     if [[ -n "$image" ]]; then
         STATE[devcontainer_image]="$image"
         return 0
     fi
-    
+
     # Try build.dockerfile
     local dockerfile
     dockerfile=$(echo "$json_content" | jq -r '.build.dockerfile // .dockerFile // empty' 2>/dev/null)
-    
+
     if [[ -n "$dockerfile" ]]; then
         # Parse FROM instruction
         local context="${SCRIPT_DIR}/.devcontainer"
@@ -452,7 +459,7 @@ detect_devcontainer_image() {
             return 0
         fi
     fi
-    
+
     # Default fallback
     STATE[devcontainer_image]="ghcr.io/braincraftio/devcontainer:latest"
     log_warning "Using default image: ${STATE[devcontainer_image]}"
@@ -466,7 +473,7 @@ check_container_state() {
     local container_info
     container_info=$(docker ps -a --filter "label=devcontainer.local_folder=${SCRIPT_DIR}" \
                      --format "{{.ID}}:{{.State}}:{{.Image}}" 2>/dev/null | head -1)
-    
+
     if [[ -n "$container_info" ]]; then
         IFS=':' read -r id state image <<< "$container_info"
         STATE[container_id]="$id"
@@ -484,7 +491,7 @@ handle_container_lifecycle() {
         pull_docker_image "${STATE[devcontainer_image]}"
         CONFIG[rebuild]=true
     fi
-    
+
     # Rebuild logic
     if [[ "${CONFIG[rebuild]}" == "true" ]] && [[ -n "${STATE[container_id]}" ]]; then
         log_info "Removing existing container..."
@@ -500,16 +507,16 @@ handle_container_lifecycle() {
 ```bash
 launch_with_devcontainer_cli() {
     log_info "Launching with DevContainer CLI..."
-    
+
     # Install CLI if needed
     if ! command -v devcontainer >/dev/null 2>&1; then
         log_info "Installing @devcontainers/cli..."
         npm install -g @devcontainers/cli
     fi
-    
+
     # Launch command
     local cmd="devcontainer open --workspace-folder \"${SCRIPT_DIR}\""
-    
+
     if [[ "${CONFIG[dry_run]}" == "true" ]]; then
         log_dry_run "$cmd"
     else
@@ -519,14 +526,14 @@ launch_with_devcontainer_cli() {
 
 launch_with_vscode_uri() {
     log_info "Launching with VS Code URI..."
-    
+
     # Encode path as hex for URI
     local path_hex
     path_hex=$(echo -n "${SCRIPT_DIR}" | xxd -p -c 256)
-    
+
     # Construct URI
     local uri="vscode-remote://dev-container+${path_hex}/workspace"
-    
+
     # Platform-specific launch
     case "$OSTYPE" in
         darwin*)
@@ -553,37 +560,37 @@ launch_with_vscode_uri() {
 run_doctor_mode() {
     echo "${BOLD}${BLUE}🏥 BrainCraft.io Workspace Health Check${NC}"
     echo "================================================"
-    
+
     # System information
     check_system_info
-    
+
     # Dependencies
     check_dependencies
-    
+
     # Authentication
     check_github_auth
-    
+
     # Container state
     check_container_health
-    
+
     # Mise environment
     check_mise_health
-    
+
     # Network connectivity
     check_network_connectivity
-    
+
     # Volume integrity
     check_volume_integrity
-    
+
     generate_health_report
 }
 
 check_mise_health() {
     echo -e "\n${BOLD}Mise Environment:${NC}"
-    
+
     if command -v mise >/dev/null 2>&1; then
         echo -e "  ${GREEN}✓${NC} mise:          $(mise version)"
-        
+
         # Check mise doctor
         if mise doctor >/dev/null 2>&1; then
             echo -e "  ${GREEN}✓${NC} mise doctor:   Healthy"
@@ -1040,17 +1047,17 @@ graph LR
         W[workspace]
         W --> O[.github]
     end
-    
+
     subgraph "Infrastructure Layer"
         A[actions]
         C[containers]
         A --> C
     end
-    
+
     subgraph "Application Layer"
         SS[style-system]
     end
-    
+
     subgraph "Dependencies"
         O --> A
         O --> C
@@ -1138,7 +1145,7 @@ depends = ["lint:all", "test:unit", "security:secrets"]
 
 ### Defense in Depth
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    Security Layers                           │
 ├─────────────────────────────────────────────────────────────┤
@@ -1209,13 +1216,13 @@ export DOCKER_REGISTRY_TOKEN="..."
 
 ### Benchmark Results
 
-| Operation | Without Optimization | With Optimization | Improvement |
-|-----------|---------------------|-------------------|-------------|
-| Initial container build | 15 minutes | 3 minutes | 5x |
-| Container restart | 45 seconds | 5 seconds | 9x |
-| Go module download | 2 minutes | 12 seconds | 10x |
-| npm install (large project) | 3 minutes | 30 seconds | 6x |
-| Full workspace setup | 20 minutes | 4 minutes | 5x |
+| Operation                   | Without Optimization | With Optimization | Improvement |
+| --------------------------- | -------------------- | ----------------- | ----------- |
+| Initial container build     | 15 minutes           | 3 minutes         | 5x          |
+| Container restart           | 45 seconds           | 5 seconds         | 9x          |
+| Go module download          | 2 minutes            | 12 seconds        | 10x         |
+| npm install (large project) | 3 minutes            | 30 seconds        | 6x          |
+| Full workspace setup        | 20 minutes           | 4 minutes         | 5x          |
 
 ### Performance Optimizations
 
@@ -1282,15 +1289,15 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/braincraftio/devcontainer:latest
-      
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup workspace
         run: |
           mise trust --yes
           mise install
-          
+
       - name: Run CI tasks
         run: |
           mise run lint:all
@@ -1337,6 +1344,7 @@ mise run runner:start
 # ensuring perfect parity between local and CI
 ```
 
+
 ## Extension & Customization
 
 ### Adding New Repositories
@@ -1344,36 +1352,52 @@ mise run runner:start
 Follow this checklist when adding a new repository to the BrainCraft.io workspace:
 
 #### 1. Create the Repository
+
+
 ```bash
+
+
 # Create public repository with professional description
+
 gh repo create braincraftio/REPO-NAME --public --description "Your Professional Description"
 
 # Clone to workspace
+
 git clone https://github.com/braincraftio/REPO-NAME.git
 ```
 
+
 #### 2. Update VS Code Workspace Configuration
+
+
 Add to `/workspace/braincraft.code-workspace` in the `folders` array:
+
 ```json
+
 {
-  "name": "🎨 Your Project Name",  // Use appropriate emoji
+  "name": "🎨 Your Project Name", // Use appropriate emoji
   "path": "REPO-NAME"
 }
 ```
 
 #### 3. Update mise.toml Git Operations
+
 Add the repository to all git operations in `/workspace/mise.toml`:
 
 **a) Add to git:clone task:**
+
 ```toml
+
 [tasks."git:clone"]
 depends = [
   # ... existing repos ...
+
   "git:clone:REPO-NAME",
 ]
 
 # Add individual clone task
 [tasks."git:clone:REPO-NAME"]
+
 hide = true
 run = '''
     if [[ ! -d "REPO-NAME" ]]; then
@@ -1385,15 +1409,19 @@ run = '''
 '''
 ```
 
+
 **b) Add to git:pull task:**
+
 ```toml
 [tasks."git:pull"]
+
 depends = [
   # ... existing repos ...
   "git:pull:REPO-NAME",
 ]
 
 # Add individual pull task
+
 [tasks."git:pull:REPO-NAME"]
 hide = true
 run = '''
@@ -1404,10 +1432,13 @@ run = '''
         echo "⚠ REPO-NAME not found"
     fi
 '''
+
 ```
 
 **c) Add to git:status task:**
+
 ```toml
+
 [tasks."git:status"]
 depends = [
   # ... existing repos ...
@@ -1415,6 +1446,7 @@ depends = [
 ]
 
 # Add individual status task
+
 [tasks."git:status:REPO-NAME"]
 hide = true
 run = '''
@@ -1429,6 +1461,7 @@ run = '''
 ```
 
 #### 4. Update mise.toml Build/Test/Lint Tasks
+
 Add to the main orchestration tasks:
 
 ```toml
@@ -1461,48 +1494,67 @@ depends = [
   "test:REPO-NAME",
 ]
 
+
 [tasks."test:REPO-NAME"]
 hide = true
 run = "mise -C REPO-NAME run test || echo 'No test task defined for REPO-NAME yet'"
 
 # Add to lint task
+
 [tasks.lint]
+
 depends = [
   # ... existing repos ...
   "lint:REPO-NAME",
+
 ]
 
 [tasks."lint:REPO-NAME"]
 hide = true
+
+
 run = "mise -C REPO-NAME run lint || echo 'No lint task defined for REPO-NAME yet'"
+
 
 # Add to clean task
 [tasks.clean]
 depends = [
+
   # ... existing repos ...
   "clean:REPO-NAME",
 ]
 
+
 [tasks."clean:REPO-NAME"]
 hide = true
+
+
 run = "mise -C REPO-NAME run clean || echo 'No clean task defined for REPO-NAME yet'"
+
 ```
 
 #### 5. Add Project-Specific Development Tasks (Optional)
+
 ```toml
 [tasks."dev:REPO-NAME"]
 description = "Start REPO-NAME development server"
+
 dir = "REPO-NAME"
 run = "npm run dev"  # Or appropriate dev command
 ```
 
+
 #### 6. Update Repository Lists in WORKSPACE.md
+
 Update the clone list in any setup documentation sections to include the new repository.
 
 #### Example: Adding style-system Repository
+
 Here's how we added the style-system repository:
 
-1. Created repository: `gh repo create braincraftio/style-system --public --description "BrainCraft.io Multi Brand Style System"`
+
+1. Created repository:
+   `gh repo create braincraftio/style-system --public --description "BrainCraft.io Multi Brand Style System"`
 2. Cloned: `git clone https://github.com/braincraftio/style-system.git`
 3. Added to workspace config with emoji 🎨
 4. Added to all git operations (clone, pull, status)
@@ -1512,13 +1564,15 @@ Here's how we added the style-system repository:
 ### Adding New Tools
 
 1. **Via mise**:
+
 ```toml
 [tools]
 terraform = "1.5.0"
 aws-cli = "latest"
 ```
 
-2. **Via DevContainer features**:
+1. **Via DevContainer features**:
+
 ```json
 "features": {
   "ghcr.io/devcontainers/features/terraform:1": {},
@@ -1544,7 +1598,7 @@ echo "Running custom workflow..."
 
 ### Diagnostic Decision Tree
 
-```
+```text
 Problem
 ├── Container won't start
 │   ├── Check Docker daemon: docker ps
@@ -1660,15 +1714,15 @@ echo "✅ Migration complete!"
 
 ### Key Architectural Decisions
 
-| Decision | Rationale | Alternatives Considered |
-|----------|-----------|------------------------|
-| mise for tool management | Cross-platform, fast, extensible | asdf, nvm, pyenv separately |
-| Ubuntu base image | Best tool compatibility | Alpine (too minimal), Debian (larger) |
-| DevContainers | VS Code integration, standards-based | Docker Compose, Vagrant |
-| Persistent volumes | Performance, state preservation | Bind mounts (slower on macOS) |
-| Non-root user | Security best practice | Root with restrictions |
-| Multi-repo workspace | Logical separation, CI parity | Monorepo (too rigid) |
-| Public-first development | Community, transparency | Private with public mirror |
+| Decision                 | Rationale                            | Alternatives Considered               |
+| ------------------------ | ------------------------------------ | ------------------------------------- |
+| mise for tool management | Cross-platform, fast, extensible     | asdf, nvm, pyenv separately           |
+| Ubuntu base image        | Best tool compatibility              | Alpine (too minimal), Debian (larger) |
+| DevContainers            | VS Code integration, standards-based | Docker Compose, Vagrant               |
+| Persistent volumes       | Performance, state preservation      | Bind mounts (slower on macOS)         |
+| Non-root user            | Security best practice               | Root with restrictions                |
+| Multi-repo workspace     | Logical separation, CI parity        | Monorepo (too rigid)                  |
+| Public-first development | Community, transparency              | Private with public mirror            |
 
 ### Future Considerations
 
@@ -1680,7 +1734,10 @@ echo "✅ Migration complete!"
 
 ## Conclusion
 
-The BrainCraft.io workspace represents a convergence of best practices in developer experience, AI-assisted development, and community-driven innovation. By maintaining strict parity between local development, CI/CD, and AI coding contexts, we enable a new paradigm of software development where human creativity and AI capabilities work in perfect harmony.
+The BrainCraft.io workspace represents a convergence of best practices in developer experience,
+AI-assisted development, and community-driven innovation. By maintaining strict parity between local
+development, CI/CD, and AI coding contexts, we enable a new paradigm of software development where
+human creativity and AI capabilities work in perfect harmony.
 
-This architecture will continue to evolve based on community feedback and technological advances, always maintaining our core principles of simplicity, performance, and developer joy.
-
+This architecture will continue to evolve based on community feedback and technological advances,
+always maintaining our core principles of simplicity, performance, and developer joy.

@@ -25,18 +25,26 @@ Click "Reopen in Container" when VS Code prompts.
 ### 3. Wait for Setup (2-3 minutes)
 
 Watch the terminal for:
+
+
 - "✅ Development environment ready!"
 - "💡 Run 'mise tasks' to see available commands"
 
 ### 4. Fix Authentication (if needed)
 
+
 **On your HOST machine** (not in container):
+
 ```bash
 gh auth login        # Choose "Login with web browser"
+
+
 gh auth setup-git    # Configure git credential helper
 ```
 
+
 **Fix gitconfig** if you see absolute paths:
+
 ```ini
 # BAD:  helper = /opt/homebrew/bin/gh auth git-credential
 # GOOD: helper = !gh auth git-credential
@@ -78,13 +86,13 @@ mise run check:before-commit    # Runs all validations
 
 ### Common Development Tasks
 
-| Task | Command | What it does |
-|------|---------|--------------|
-| See all commands | `mise tasks` | List everything available |
-| Run specific linter | `mise run lint:python` | Lint just Python code |
-| Run specific tests | `mise run test:unit` | Unit tests only |
-| Check git status | `mise run git:status` | Status across all repos |
-| Update tools | `mise install` | Update all tool versions |
+| Task                | Command                | What it does              |
+| ------------------- | ---------------------- | ------------------------- |
+| See all commands    | `mise tasks`           | List everything available |
+| Run specific linter | `mise run lint:python` | Lint just Python code     |
+| Run specific tests  | `mise run test:unit`   | Unit tests only           |
+| Check git status    | `mise run git:status`  | Status across all repos   |
+| Update tools        | `mise install`         | Update all tool versions  |
 
 ### Weekly Maintenance
 
@@ -201,15 +209,15 @@ mise run security:scan        # Security check
 
 ### Essential Tasks
 
-| Need | Command | Alias |
-|------|---------|-------|
-| Setup everything | `mise run setup` | `mise run s` |
-| Health check | `mise run doctor` | `mise run d` |
-| Run all lints | `mise run lint:all` | `mise run l` |
-| Run all tests | `mise run test:all` | `mise run t` |
-| Git status all | `mise run git:status` | `mise run gs` |
-| Git pull all | `mise run git:pull` | `mise run gp` |
-| Clean artifacts | `mise run clean` | `mise run c` |
+| Need             | Command               | Alias         |
+| ---------------- | --------------------- | ------------- |
+| Setup everything | `mise run setup`      | `mise run s`  |
+| Health check     | `mise run doctor`     | `mise run d`  |
+| Run all lints    | `mise run lint:all`   | `mise run l`  |
+| Run all tests    | `mise run test:all`   | `mise run t`  |
+| Git status all   | `mise run git:status` | `mise run gs` |
+| Git pull all     | `mise run git:pull`   | `mise run gp` |
+| Clean artifacts  | `mise run clean`      | `mise run c`  |
 
 ### Development Tasks
 
@@ -250,13 +258,15 @@ docker ps -a | grep braincraftio
 docker rm -f <container-id>
 ```
 
-## 📚 Getting Help
+<hello@braincraft.io>
+
+## 📚 Getting Help<hello@braincraft.io>
 
 1. **Check doctor first**: `./launch-workspace --doctor`
-2. **Read task help**: `mise tasks --verbose`
+2. **Read task hel<hello@braincraft.io>verbose`
 3. **Architecture details**: [WORKSPACE.md](WORKSPACE.md)
 4. **GitHub Discussions**: [Ask questions](https://github.com/braincraftio/workspace/discussions)
-5. **Emergency**: hello@braincraft.io
+5. **Emergency**: <hello@braincraft.io>
 
 ## 🎉 Pro Tips
 
@@ -268,6 +278,6 @@ docker rm -f <container-id>
 
 ---
 
-**Remember**: This guide is for daily use. For understanding how things work, see [WORKSPACE.md](WORKSPACE.md).
-**Philosophy**: If you need to do something more than once, there's probably a mise task for it. Check `mise tasks`!
-
+**Remember**: This guide is for daily use. For understanding how things work, see
+[WORKSPACE.md](WORKSPACE.md). **Philosophy**: If you need to do something more than once, there's
+probably a mise task for it. Check `mise tasks`!
