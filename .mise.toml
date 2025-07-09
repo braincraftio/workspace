@@ -74,14 +74,19 @@ alias = [ "d" ]
 run = "echo '🚧 UNDER CONSTRUCTION: This task will run docker-compose up, etc.'"
 
 [tasks.pre-commit]
-description = "💎 Runs all fast, non-mutating checks to validate code before committing • pc"
+description = "💎 Runs pre-commit checks on all files • pc"
 alias = [ "pc" ]
-depends = [ "lint", "test", "validate", "security" ]
+run = "pre-commit run --all-files"
+
+[tasks."pre-commit:staged"]
+description = "💎 Runs pre-commit checks on staged files only • pcs"
+alias = [ "pcs" ]
+run = "pre-commit run"
 
 [tasks."pre-commit:all"]
 description = "💎 Runs pre-commit checks on all files • pca"
-alias = ["pca"]
-depends = ["lint", "test", "validate", "security"]
+alias = [ "pca" ]
+depends = [ "lint", "test", "validate", "security" ]
 
 [tasks."pre-commit:smart"]
 description = "💎 Runs pre-commit checks intelligently based on staged files"
@@ -158,8 +163,8 @@ fi
 if [[ -n "$has_markdown" ]]; then
   echo "📐 Running Markdown linters on staged files..."
   markdown_files=$(echo "$STAGED_FILES" | grep -E '\.(md|markdown)$')
-  markdownlint-cli2 $markdown_files || true
-  lychee --no-progress --include-verbatim --offline --config lychee.toml $markdown_files || true
+  markdownlint-cli2 $markdown_files
+  lychee --no-progress --include-verbatim --offline --config lychee.toml $markdown_files
 fi
 
 if [[ -n "$has_docker" ]]; then
@@ -175,7 +180,6 @@ echo "🔒 Running security checks..."
 mise run security:git:check:child-repos
 mise run validate:security:secrets
 
-echo "✅ Pre-commit checks completed"
 '''
 
 [tasks."pre-commit:hook"]
@@ -205,7 +209,7 @@ depends = [ "python:test", "js:test" ]
 [tasks.security]
 description = "🔒 Runs all security scans across all domains. • sec"
 alias = [ "sec" ]
-depends = [ "security:audit:deps", "python:lint:security", "tools:secrets:scan", "security:git:integrity" ]  # pragma: allowlist secret
+depends = [ "security:audit:deps", "python:lint:security", "tools:secrets:scan", "security:git:integrity" ] # pragma: allowlist secret
 
 [tasks."security:audit:deps"]
 description = "🔒 Checks for known vulnerabilities in project dependencies."
@@ -460,8 +464,8 @@ run = "actionlint"
 
 [tasks."web:lint"]
 description = "🌐 Lints HTML/CSS files for style and syntax • wl"
-alias = ["wl"]
-depends = ["web:lint:html", "web:lint:css"]
+alias = [ "wl" ]
+depends = [ "web:lint:html", "web:lint:css" ]
 
 [tasks."web:lint:html"]
 description = "📄 Lints HTML files with htmlhint"
@@ -473,8 +477,8 @@ run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/web --lint-css"
 
 [tasks."web:format"]
 description = "✨ Formats HTML/CSS files with Prettier • wf"
-alias = ["wf"]
-depends = ["web:format:html", "web:format:css"]
+alias = [ "wf" ]
+depends = [ "web:format:html", "web:format:css" ]
 
 [tasks."web:format:html"]
 description = "📄 Formats HTML files with Prettier"
@@ -510,37 +514,37 @@ run = "mise run tools:rust-script --format"
 
 [tasks.git]
 description = "📁 Execute git commands across all repositories • g"
-alias = ["g"]
+alias = [ "g" ]
 run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/git"
 
 [tasks."git:clone"]
 description = "📂 Clone all child repositories if not present • gc"
-alias = ["gc"]
+alias = [ "gc" ]
 run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/git clone"
 
 [tasks."git:pull"]
 description = "📥 Pull latest changes for all repositories • gp"
-alias = ["gp"]
+alias = [ "gp" ]
 run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/git pull"
 
 [tasks."git:fetch"]
 description = "🔄 Fetch updates for all repositories • gf"
-alias = ["gf"]
+alias = [ "gf" ]
 run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/git fetch"
 
 [tasks."git:status"]
 description = "📊 Show git status across all repositories • gs"
-alias = ["gs"]
+alias = [ "gs" ]
 run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/git status --porcelain"
 
 [tasks."git:branch"]
 description = "🌿 Show branches for all repositories • gb"
-alias = ["gb"]
+alias = [ "gb" ]
 run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/git branch -a"
 
 [tasks."git:log"]
 description = "📜 Show recent commits for all repositories • gl"
-alias = ["gl"]
+alias = [ "gl" ]
 run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/git log --oneline -8"
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -591,12 +595,12 @@ run = "mise run task-list"
 
 [tasks."task-namespaces"]
 description = "📂 List only top-level task namespaces • tn"
-alias = ["tn"]
+alias = [ "tn" ]
 run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/task-list --namespaces"
 hide = true
 
-[tasks."tools:secrets:scan"]  # pragma: allowlist secret
-description = "🔑 Scans for hardcoded secrets with detect-secrets."  # pragma: allowlist secret
+[tasks."tools:secrets:scan"] # pragma: allowlist secret
+description = "🔑 Scans for hardcoded secrets with detect-secrets." # pragma: allowlist secret
 run = "detect-secrets-hook --baseline .secrets.baseline"
 
 [tasks."tools:whitespace:fix"]
@@ -626,8 +630,8 @@ run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/json-schema"
 
 [tasks.validate]
 description = "✅ Runs all validation and quality checks • v, val"
-alias = ["v", "val"]
-depends = ["validate:schemas", "validate:links", "validate:security", "validate:compose"]
+alias = [ "v", "val" ]
+depends = [ "validate:schemas", "validate:links", "validate:security", "validate:compose" ]
 
 [tasks."validate:schemas"]
 description = "📋 Validates JSON/JSONC files against their schemas"
@@ -635,7 +639,7 @@ run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/json-schema"
 
 [tasks."validate:links"]
 description = "🔗 Validates all links in documentation"
-depends = ["validate:links:offline"]
+depends = [ "validate:links:offline" ]
 
 [tasks."validate:links:offline"]
 description = "🔗 Checks markdown links (offline mode)"
@@ -655,10 +659,10 @@ lychee --no-progress --include-verbatim --config lychee.toml \
 
 [tasks."validate:security"]
 description = "🔒 Validates repository security integrity"
-depends = ["validate:security:secrets", "validate:security:dependencies"]
+depends = [ "validate:security:secrets", "validate:security:dependencies" ]
 
-[tasks."validate:security:secrets"]  # pragma: allowlist secret
-description = "🔐 Scans for accidentally committed secrets"  # pragma: allowlist secret
+[tasks."validate:security:secrets"] # pragma: allowlist secret
+description = "🔐 Scans for accidentally committed secrets" # pragma: allowlist secret
 run = "detect-secrets-hook --baseline .secrets.baseline"
 
 [tasks."validate:security:dependencies"]
@@ -681,7 +685,7 @@ run = "${MISE_PROJECT_ROOT}/.config/mise/tasks/validate-compose"
 
 [tasks."validate:dead-code"]
 description = "💀 Finds dead code across all languages"
-depends = ["validate:dead-code:bash", "validate:dead-code:python", "validate:dead-code:javascript"]
+depends = [ "validate:dead-code:bash", "validate:dead-code:python", "validate:dead-code:javascript" ]
 
 [tasks."validate:dead-code:bash"]
 description = "💀 Finds dead code in Bash scripts"

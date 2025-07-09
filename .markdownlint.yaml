@@ -151,6 +151,9 @@ MD044:
     - HTML
     - CSS
     - SQL
+    - .github # Directory name
+    - github # When referring to lowercase contexts
+    - json # When referring to file extensions
   code_blocks: false
   html_elements: false
 

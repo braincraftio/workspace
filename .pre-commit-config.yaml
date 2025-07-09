@@ -10,18 +10,162 @@ fail_fast: true
 repos:
   - repo: local
     hooks:
-      # This single hook runs all linters, tests, and security scans
-      # via `mise run pre-commit` (alias `pc`).
-      # It is a non-mutating quality gate.
-      - id: mise-pre-commit-checks
-        name: Run mise pre-commit checks
-        entry: bash -l -c 'mise run pre-commit:smart'
+      # Python linting
+      - id: python-style
+        name: Python style (Ruff)
+        entry: mise run python:lint:style
         language: system
         pass_filenames: false
-        always_run: false
-        verbose: true
-        # Run when any source file is modified
-        files: '\.(py|js|jsx|ts|tsx|sh|bash|yml|yaml|toml|json|md|markdown)$'
+        files: '\.py$'
+
+      - id: python-types
+        name: Python types (MyPy)
+        entry: mise run python:lint:types
+        language: system
+        pass_filenames: false
+        files: '\.py$'
+
+      - id: python-security
+        name: Python security (Bandit)
+        entry: mise run python:lint:security
+        language: system
+        pass_filenames: false
+        files: '\.py$'
+
+      # JavaScript linting
+      - id: js-quality
+        name: JavaScript quality (ESLint)
+        entry: mise run js:lint:quality
+        language: system
+        pass_filenames: false
+        files: '\.(js|jsx|ts|tsx|mjs|cjs)$'
+
+      - id: js-style
+        name: JavaScript style (Biome)
+        entry: mise run js:lint:style
+        language: system
+        pass_filenames: false
+        files: '\.(js|jsx|ts|tsx|mjs|cjs)$'
+
+      # Shell script linting
+      - id: shell-syntax
+        name: Shell syntax (ShellCheck)
+        entry: mise run bash:lint:syntax
+        language: system
+        pass_filenames: false
+        files: '\.(sh|bash)$'
+
+      # Config file linting
+      - id: yaml-lint
+        name: YAML syntax (yamllint)
+        entry: mise run config:lint:yaml
+        language: system
+        pass_filenames: false
+        files: '\.(yml|yaml)$'
+
+      - id: toml-lint
+        name: TOML syntax (taplo)
+        entry: mise run config:lint:toml
+        language: system
+        pass_filenames: false
+        files: '\.toml$'
+
+      - id: json-schemas
+        name: JSON schema validation
+        entry: mise run config:lint:schemas
+        language: system
+        pass_filenames: false
+        files: '\.(json|jsonc)$'
+
+      # Documentation linting
+      - id: markdown-style
+        name: Markdown style (markdownlint)
+        entry: mise run markdown:lint:style
+        language: system
+        pass_filenames: false
+        files: '\.(md|markdown)$'
+
+      - id: markdown-links
+        name: Markdown links (lychee)
+        entry: mise run markdown:lint:links
+        language: system
+        pass_filenames: false
+        files: '\.(md|markdown)$'
+
+      # GitHub Actions linting
+      - id: actions-lint
+        name: GitHub Actions (actionlint)
+        entry: mise run actions:lint
+        language: system
+        pass_filenames: false
+        files: '^\.github/workflows/.*\.(yml|yaml)$'
+
+      # Docker linting
+      - id: docker-lint
+        name: Dockerfile (hadolint)
+        entry: mise run docker:lint:hadolint
+        language: system
+        pass_filenames: false
+        files: '(Dockerfile|\.dockerfile)$'
+
+      # Web linting
+      - id: html-lint
+        name: HTML syntax (htmlhint)
+        entry: mise run web:lint:html
+        language: system
+        pass_filenames: false
+        files: '\.html$'
+
+      - id: css-lint
+        name: CSS syntax (stylelint)
+        entry: mise run web:lint:css
+        language: system
+        pass_filenames: false
+        files: '\.(css|scss|sass)$'
+
+      # Security checks
+      - id: secrets-scan
+        name: Secrets detection
+        entry: mise run validate:security:secrets
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: merge-conflicts
+        name: Merge conflict markers
+        entry: mise run security:git:check:merge-conflicts
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: large-files
+        name: Large file detection
+        entry: mise run security:git:check:large-files
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: child-repos
+        name: Child repository check
+        entry: mise run security:git:check:child-repos
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # Tests
+      - id: python-tests
+        name: Python tests
+        entry: mise run python:test
+        language: system
+        pass_filenames: false
+        files: '\.py$'
+
+      - id: js-tests
+        name: JavaScript tests
+        entry: mise run js:test
+        language: system
+        pass_filenames: false
+        files: '\.(js|jsx|ts|tsx|mjs|cjs)$'
 
 # Files to always exclude
 exclude: |
