@@ -1,0 +1,29 @@
+# Markdownlint ignore file for BrainCraft.io workspace
+
+# Child repositories (have their own configs)
+actions/
+containers/
+dot-github/
+style-system/
+
+# Dependencies
+node_modules/
+.npm-global/
+vendor/
+
+# Generated documentation
+.reports/
+coverage/
+docs/generated/
+
+# Cache and temp files
+.cache/
+tmp/
+.tmp/
+
+# Third-party files
+CHANGELOG.md
+LICENSE.md
+
+# Git
+.git/

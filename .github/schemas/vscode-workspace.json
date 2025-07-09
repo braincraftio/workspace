@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VS Code Workspace",
+  "description": "Schema for VS Code multi-root workspace files",
+  "type": "object",
+  "properties": {
+    "folders": {
+      "type": "array",
+      "description": "List of folders in the workspace",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name for the folder"
+          },
+          "path": {
+            "type": "string",
+            "description": "Path to the folder relative to the workspace file"
+          }
+        },
+        "required": ["path"]
+      }
+    },
+    "settings": {
+      "type": "object",
+      "description": "Workspace-specific settings",
+      "additionalProperties": true
+    },
+    "launch": {
+      "type": "object",
+      "description": "Workspace-specific launch configurations",
+      "additionalProperties": true
+    },
+    "extensions": {
+      "type": "object",
+      "description": "Workspace extension recommendations",
+      "properties": {
+        "recommendations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of extensions that should be recommended for users of this workspace"
+        },
+        "unwantedRecommendations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of extensions that should not be recommended for users of this workspace"
+        }
+      }
+    },
+    "tasks": {
+      "type": "object",
+      "description": "Workspace-specific task configurations",
+      "additionalProperties": true
+    }
+  },
+  "required": ["folders"],
+  "additionalProperties": false
+}

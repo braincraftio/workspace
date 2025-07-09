@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VS Code Settings",
+  "description": "Schema for VS Code workspace and user settings files",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "git.ignoreLimitWarning": {
+      "type": "boolean",
+      "description": "Ignores the warning when there are too many changes in a repository",
+      "default": false
+    },
+    "cSpell.customDictionaries": {
+      "type": "object",
+      "description": "Custom spell check dictionaries",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Dictionary name"
+          },
+          "path": {
+            "type": "string",
+            "description": "Path to dictionary file"
+          },
+          "addWords": {
+            "type": "boolean",
+            "description": "Whether words can be added to this dictionary"
+          },
+          "scope": {
+            "type": "string",
+            "enum": ["user", "workspace", "folder"],
+            "description": "Scope of the dictionary"
+          }
+        },
+        "required": ["name", "path"]
+      }
+    },
+    "files.associations": {
+      "type": "object",
+      "description": "Configure file associations to languages",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "editor.formatOnSave": {
+      "type": "boolean",
+      "description": "Format a file on save"
+    },
+    "editor.defaultFormatter": {
+      "type": "string",
+      "description": "Default formatter for all files"
+    },
+    "[javascript]": {
+      "type": "object",
+      "properties": {
+        "editor.defaultFormatter": {
+          "type": "string"
+        }
+      }
+    },
+    "[typescript]": {
+      "type": "object",
+      "properties": {
+        "editor.defaultFormatter": {
+          "type": "string"
+        }
+      }
+    },
+    "[json]": {
+      "type": "object",
+      "properties": {
+        "editor.defaultFormatter": {
+          "type": "string"
+        }
+      }
+    },
+    "[jsonc]": {
+      "type": "object",
+      "properties": {
+        "editor.defaultFormatter": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}
