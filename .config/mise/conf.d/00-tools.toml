@@ -46,6 +46,7 @@ biome = "latest"                   # Modern JS/TS/JSON/JSONC formatter and linte
 "go:mvdan.cc/gofumpt" = "latest"                 # Stricter gofmt
 "go:golang.org/x/tools/cmd/goimports" = "latest" # Go import organizer
 "go:github.com/reteps/dockerfmt" = "0.3.7"
+"go:github.com/rest-sh/restish" = "latest"       # REST API CLI client
 
 # MCP servers via pipx
 "pipx:mcp-server-fetch" = "latest"
