@@ -29,8 +29,8 @@ while IFS= read -r line; do
         # Skip the command line and "Finished in" output
         if [[ "${repo_name}" != "$"* ]] && [[ "${repo_name}" != "Finished in"* ]]; then
             child_repos+=("${repo_name}")
-        fi
     fi
+  fi
 done < <(mise run git --list-child-repos 2>&1)
 
 # If no child repos found, nothing to check
@@ -39,7 +39,10 @@ if [[ ${#child_repos[@]} -eq 0 ]]; then
 fi
 
 # Build regex pattern for all child repos
-regex_pattern="^($(IFS='|'; echo "${child_repos[*]}"))/"
+regex_pattern="^($(
+                   IFS='|'
+                            echo "${child_repos[*]}"
+))/"
 
 # Check if any staged files are in child repositories
 staged_child_files=$(git ls-files --cached | grep -E "${regex_pattern}" || true)
@@ -51,7 +54,7 @@ if [[ -n "${staged_child_files}" ]]; then
     # Use printf to avoid SC2001
     while IFS= read -r file; do
         echo "  - ${file}"
-    done <<< "${staged_child_files}"
+  done   <<< "${staged_child_files}"
     echo ""
     echo "Child repositories should be managed independently."
     echo "To unstage these files, run:"

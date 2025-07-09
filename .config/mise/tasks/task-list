@@ -10,14 +10,14 @@ source "${MISE_PROJECT_ROOT}/.config/mise/lib/common.sh"
 
 # Configuration defaults
 declare -A CONFIG=(
-                                      [show_aliases]="false"
-                                      [show_source]="false"
-                                      [show_hidden]="false"
-                                      [json_output]="false"
-                                      [raw_output]="false"
-                                      [namespaces_only]="false"
-                                      [sort_by]="name"
-                                      [sort_order]="asc"
+                                        [show_aliases]="false"
+                                        [show_source]="false"
+                                        [show_hidden]="false"
+                                        [json_output]="false"
+                                        [raw_output]="false"
+                                        [namespaces_only]="false"
+                                        [sort_by]="name"
+                                        [sort_order]="asc"
 )
 
 # Namespace filters

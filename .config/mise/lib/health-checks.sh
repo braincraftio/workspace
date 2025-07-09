@@ -32,8 +32,8 @@ declare -g -A CHECK_CATEGORIES=()  # Track category per check name
 
 # Global counters - using namespaced associative array
 declare -gA MISE_HEALTH_CHECK_STATE=(
-                                                                                                        [total]=0
-                                                                                                        [passed]=0
+                                                                                                          [total]=0
+                                                                                                          [passed]=0
 )
 
 #######################################

@@ -10,29 +10,29 @@ readonly _MISE_ERRORS_SOURCED=1
 
 # Error codes - using standard Unix conventions
 declare -grA MISE_ERROR_CODES=(
-                                                                                                        [SUCCESS]=0
-                                                                                                        [GENERAL]=1
-                                                                                                        [MISUSE]=2 # Command line usage error
-                                                                                                        [EXEC_ERROR]=126 # Command invoked cannot execute
-                                                                                                        [NOT_FOUND]=127 # Command not found
+                                                                                                          [SUCCESS]=0
+                                                                                                          [GENERAL]=1
+                                                                                                          [MISUSE]=2 # Command line usage error
+                                                                                                          [EXEC_ERROR]=126 # Command invoked cannot execute
+                                                                                                          [NOT_FOUND]=127 # Command not found
     # Custom application error codes (64-113 are available for custom use)
-                                                                                                        [CONFIG_ERROR]=64 # Configuration file error
-                                                                                                        [VALIDATION_ERROR]=65 # Input validation failed
-                                                                                                        [DEPENDENCY_ERROR]=66 # Missing dependency
-                                                                                                        [PERMISSION_ERROR]=67 # Permission denied
-                                                                                                        [NETWORK_ERROR]=68 # Network operation failed
-                                                                                                        [TIMEOUT_ERROR]=69 # Operation timed out
-                                                                                                        [STATE_ERROR]=70 # Invalid state
+                                                                                                          [CONFIG_ERROR]=64 # Configuration file error
+                                                                                                          [VALIDATION_ERROR]=65 # Input validation failed
+                                                                                                          [DEPENDENCY_ERROR]=66 # Missing dependency
+                                                                                                          [PERMISSION_ERROR]=67 # Permission denied
+                                                                                                          [NETWORK_ERROR]=68 # Network operation failed
+                                                                                                          [TIMEOUT_ERROR]=69 # Operation timed out
+                                                                                                          [STATE_ERROR]=70 # Invalid state
 )
 
 # Error context tracking - using associative array like CONFIG pattern
 declare -gA MISE_ERROR_CONTEXT=(
-                                                                                                        [task]="${MISE_TASK_NAME:-unknown}"
-                                                                                                        [file]=""
-                                                                                                        [function]=""
-                                                                                                        [line]=""
-                                                                                                        [command]=""
-                                                                                                        [message]=""
+                                                                                                          [task]="${MISE_TASK_NAME:-unknown}"
+                                                                                                          [file]=""
+                                                                                                          [function]=""
+                                                                                                          [line]=""
+                                                                                                          [command]=""
+                                                                                                          [message]=""
 )
 
 # Enhanced handle_error that works with existing print_status

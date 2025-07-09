@@ -1,14 +1,19 @@
 # BrainCraft.io Workspace
 
-A development environment for multi-repository projects, built around VSCode Workspaces on DevContainers and Mise dependency management, environment configuration, and task orchestration.
+A development environment for multi-repository projects, built around VSCode Workspaces on
+DevContainers and Mise dependency management, environment configuration, and task orchestration.
 
 ## Overview
 
-The BrainCraft.io Workspace provides a meta-repository that orchestrates multiple independent Git repositories through a unified development environment. It delivers consistent tooling, automated workflows, and seamless integration between local development, CI/CD pipelines, and AI-assisted coding.
+The BrainCraft.io Workspace provides a meta-repository that orchestrates multiple independent Git
+repositories through a unified development environment. It delivers consistent tooling, automated
+workflows, and seamless integration between local development, CI/CD pipelines, and AI-assisted
+coding.
 
 ## Features
 
-- **One-Command Setup**: Launch a fully configured development environment with `./launch-workspace`or use it even easier with CodeSpaces built into GitHub!
+- **One-Command Setup**: Launch a fully configured development environment with
+  `./launch-workspace`or use it even easier with CodeSpaces built into GitHub!
 - **Multi-Repository Management**: Orchestrate multiple repos without submodules
 - **Consistent Tooling**: All developers use identical tool versions via mise
 - **Performance Optimized**: Persistent volumes and caching for near-native speed
@@ -104,24 +109,25 @@ mise run tl python   # Filter tasks by domain
 
 The workspace uses mise for task orchestration with hierarchical naming:
 
-```
+```text
 <action>:<domain>:<detail>
 ```
 
 Examples:
+
 - `lint:python:style` - Python style checking
 - `format:javascript` - JavaScript formatting
 - `validate:security` - Security validation
 
 ### Common Task Patterns
 
-| Pattern | Description | Example |
-|---------|-------------|---------|
-| `lint:*` | Code quality checks | `mise run lint:python` |
-| `format:*` | Code formatting | `mise run format:go` |
-| `test:*` | Test execution | `mise run test:unit` |
-| `validate:*` | Validation checks | `mise run validate:schemas` |
-| `security:*` | Security scanning | `mise run security:secrets` |
+| Pattern      | Description         | Example                     |
+| ------------ | ------------------- | --------------------------- |
+| `lint:*`     | Code quality checks | `mise run lint:python`      |
+| `format:*`   | Code formatting     | `mise run format:go`        |
+| `test:*`     | Test execution      | `mise run test:unit`        |
+| `validate:*` | Validation checks   | `mise run validate:schemas` |
+| `security:*` | Security scanning   | `mise run security:secrets` |
 
 ## Tool Management
 
@@ -204,17 +210,18 @@ gh auth switch <username>      # Switch user if needed
 
 Copyright 2024-2025 BrainCraft Innovations, LLC. Licensed under Apache 2.0.
 
-See [LICENSE](LICENSE) for details.
+See [LICENSE](https://github.com/braincraftio/.github/blob/main/LICENSE) for details.
 
 ## Acknowledgments
 
 Built with:
+
 - [mise](https://mise.jdx.dev) - Polyglot tool version manager
-- [VS Code DevContainers](https://code.visualstudio.com/docs/devcontainers/containers) - Development containers
+- [VS Code DevContainers](https://code.visualstudio.com/docs/devcontainers/containers) - Development
+  containers
 - [GitHub Actions](https://github.com/features/actions) - CI/CD automation
 
 ---
 
-**Ready to start?** → [Quick Start](#quick-start)
-**Need speed?** → [WARPSPEED.md](WARPSPEED.md)
+**Ready to start?** → [Quick Start](#quick-start) **Need speed?** → [WARPSPEED.md](WARPSPEED.md)
 **Want details?** → [WORKSPACE.md](WORKSPACE.md)

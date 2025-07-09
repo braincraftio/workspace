@@ -55,10 +55,10 @@ declare -r workspace_json_path="${MISE_PROJECT_ROOT}/.github/config/workspace.js
 
 # Configuration
 declare -A CONFIG=(
-                                                                                                        ["verbose"]="${WORKSPACE_DOCTOR_VERBOSE:-false}"
-                                                                                                        ["quick"]="${WORKSPACE_DOCTOR_QUICK:-false}"
-                                                                                                        ["fix"]="${WORKSPACE_DOCTOR_FIX:-false}"
-                                                                                                        ["bundle"]="${WORKSPACE_DOCTOR_BUNDLE:-false}"
+                                                                                                          ["verbose"]="${WORKSPACE_DOCTOR_VERBOSE:-false}"
+                                                                                                          ["quick"]="${WORKSPACE_DOCTOR_QUICK:-false}"
+                                                                                                          ["fix"]="${WORKSPACE_DOCTOR_FIX:-false}"
+                                                                                                          ["bundle"]="${WORKSPACE_DOCTOR_BUNDLE:-false}"
 )
 
 # Show help information

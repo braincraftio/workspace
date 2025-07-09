@@ -39,70 +39,70 @@ readonly EXIT_IMAGE_PULL_FAILURE=4
 
 # ANSI color codes for beautiful output
 declare -A -r COLORS=(
-                                                                        [reset]='\033[0m'
-                                                                        [bold]='\033[1m'
-                                                                        [dim]='\033[2m'
-                                                                        [green]='\033[0;32m'
-                                                                        [yellow]='\033[1;33m'
-                                                                        [red]='\033[0;31m'
-                                                                        [blue]='\033[0;34m'
-                                                                        [magenta]='\033[0;35m'
-                                                                        [cyan]='\033[0;36m'
+                                                                          [reset]='\033[0m'
+                                                                          [bold]='\033[1m'
+                                                                          [dim]='\033[2m'
+                                                                          [green]='\033[0;32m'
+                                                                          [yellow]='\033[1;33m'
+                                                                          [red]='\033[0;31m'
+                                                                          [blue]='\033[0;34m'
+                                                                          [magenta]='\033[0;35m'
+                                                                          [cyan]='\033[0;36m'
 )
 
 # Status icons for visual feedback
 declare -A -r ICONS=(
-                                                                        [success]="✅"
-                                                                        [failure]="❌"
-                                                                        [warning]="⚠️"
-                                                                        [info]="ℹ️"
-                                                                        [active]="▶"
-                                                                        [rocket]="🚀"
-                                                                        [doctor]="🏥"
-                                                                        [container]="🐳"
-                                                                        [brain]="🧠"
-                                                                        [heart]="💜"
-                                                                        [sparkles]="✨"
-                                                                        [tools]="🛠️"
-                                                                        [clock]="⏱️"
+                                                                          [success]="✅"
+                                                                          [failure]="❌"
+                                                                          [warning]="⚠️"
+                                                                          [info]="ℹ️"
+                                                                          [active]="▶"
+                                                                          [rocket]="🚀"
+                                                                          [doctor]="🏥"
+                                                                          [container]="🐳"
+                                                                          [brain]="🧠"
+                                                                          [heart]="💜"
+                                                                          [sparkles]="✨"
+                                                                          [tools]="🛠️"
+                                                                          [clock]="⏱️"
 )
 
 # Tool requirements: tool_name=package_name:package_type
 readonly -A REQUIRED_TOOLS=(
-                                                                        [code]="visual-studio-code:cask"
-                                                                        [docker]="docker:cask"
-                                                                        [gh]="gh:formula"
+                                                                          [code]="visual-studio-code:cask"
+                                                                          [docker]="docker:cask"
+                                                                          [gh]="gh:formula"
 )
 
 readonly -A OPTIONAL_TOOLS=(
-                                                                        [git]="git:formula"
-                                                                        [jq]="jq:formula"
-                                                                        [npm]="nodejs:formula" # For devcontainer CLI
-                                                                        [mise]="mise:formula" # Our tool manager
+                                                                          [git]="git:formula"
+                                                                          [jq]="jq:formula"
+                                                                          [npm]="nodejs:formula" # For devcontainer CLI
+                                                                          [mise]="mise:formula" # Our tool manager
 )
 
 # Runtime configuration
 declare -A CONFIG=(
-                                                                        [rebuild]=false
-                                                                        [use_devcontainer_cli]=false
-                                                                        [force_vscode]=false
-                                                                        [doctor]=false
-                                                                        [verbose]=false
-                                                                        [update]=false
-                                                                        [dry_run]=false
+                                                                          [rebuild]=false
+                                                                          [use_devcontainer_cli]=false
+                                                                          [force_vscode]=false
+                                                                          [doctor]=false
+                                                                          [verbose]=false
+                                                                          [update]=false
+                                                                          [dry_run]=false
 )
 
 # Runtime state
 declare -A STATE=(
-                                                                        [os_type]=""
-                                                                        [os_name]=""
-                                                                        [arch]=""
-                                                                        [container_id]=""
-                                                                        [container_state]=""
-                                                                        [container_image]=""
-                                                                        [missing_deps]=""
-                                                                        [missing_casks]=""
-                                                                        [devcontainer_image]=""
+                                                                          [os_type]=""
+                                                                          [os_name]=""
+                                                                          [arch]=""
+                                                                          [container_id]=""
+                                                                          [container_state]=""
+                                                                          [container_image]=""
+                                                                          [missing_deps]=""
+                                                                          [missing_casks]=""
+                                                                          [devcontainer_image]=""
 )
 
 #######################################

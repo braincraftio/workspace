@@ -110,7 +110,7 @@ main() {
     if [[ "$1" == "--list-child-repos" ]]; then
         # Set quiet mode to avoid task output prefix
         export MISE_TASK_OUTPUT=interleave
-        
+
         # Find all child repositories (directories containing .git, excluding the root .git)
         local child_repos=()
         while IFS= read -r -d '' gitdir; do
@@ -122,15 +122,15 @@ main() {
                 # Convert to relative path from workspace root
                 local rel_path="${parent_dir#"${MISE_PROJECT_ROOT}"/}"
                 child_repos+=("${rel_path}")
-            fi
-        done < <(find "${MISE_PROJECT_ROOT}" -name ".git" -type d -print0 2>/dev/null)
-        
+      fi
+    done     < <(find "${MISE_PROJECT_ROOT}" -name ".git" -type d -print0 2> /dev/null)
+
         # Output child repos, one per line
         if [[ ${#child_repos[@]} -gt 0 ]]; then
             printf '%s\n' "${child_repos[@]}" | sort
-        fi
-        return 0
     fi
+        return 0
+  fi
 
     # Special handling for clone command
     if [[ "$1" == "clone" ]]; then

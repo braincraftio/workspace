@@ -71,8 +71,8 @@ execute_across_repos() {
     # shellcheck disable=SC2034
     # SC2034: MISE_EXEC_STATE is used by git and exec tasks that source this library
     declare -gA MISE_EXEC_STATE=(
-                                                                                                            [total_repos]=${total_repos}
-                                                                                                            [success_count]=${success_count}
+                                                                                                              [total_repos]=${total_repos}
+                                                                                                              [success_count]=${success_count}
   )
     # shellcheck disable=SC2034
     # SC2034: MISE_EXEC_FAILED_REPOS is used by git and exec tasks that source this library

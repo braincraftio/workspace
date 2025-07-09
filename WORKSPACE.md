@@ -125,14 +125,14 @@ flowchart TD
 
 ### Component Inventory
 
-| Component                   | Type           | Location                                     | Version | Purpose                           |
-| --------------------------- | -------------- | -------------------------------------------- | ------- | --------------------------------- |
-| `launch-workspace`          | Bash Script    | `/workspace/launch-workspace`                | v1.0.0  | Container lifecycle orchestration |
-| `devcontainer.json`         | JSONC Config   | `/workspace/.devcontainer/devcontainer.json` | -       | Container specification           |
+| Component                   | Type           | Location                                        | Version | Purpose                           |
+| --------------------------- | -------------- | ----------------------------------------------- | ------- | --------------------------------- |
+| `launch-workspace`          | Bash Script    | `/workspace/launch-workspace`                   | v1.0.0  | Container lifecycle orchestration |
+| `devcontainer.json`         | JSONC Config   | `/workspace/.devcontainer/devcontainer.json`    | -       | Container specification           |
 | `Dockerfile`                | Container Def  | `/workspace/containers/devcontainer/Dockerfile` | -       | Base image definition             |
-| `braincraft.code-workspace` | VS Code Config | `/workspace/braincraft.code-workspace`       | -       | Multi-root workspace              |
-| `.mise.toml`                | TOML Config    | `/workspace/.mise.toml`                      | -       | Tool versions & tasks             |
-| `settings.json`             | JSON Config    | `/workspace/.vscode/settings.json`           | -       | Editor configuration              |
+| `braincraft.code-workspace` | VS Code Config | `/workspace/braincraft.code-workspace`          | -       | Multi-root workspace              |
+| `.mise.toml`                | TOML Config    | `/workspace/.mise.toml`                         | -       | Tool versions & tasks             |
+| `settings.json`             | JSON Config    | `/workspace/.vscode/settings.json`              | -       | Editor configuration              |
 
 ### Repository Structure
 
@@ -352,11 +352,13 @@ The workspace uses a streamlined post-create process:
 ```
 
 This single command:
+
 1. Trusts the mise configuration automatically
 2. Installs all tools defined in `.config/mise/conf.d/00-tools.toml`
 3. Sets up the environment based on `.config/mise/conf.d/00-env.toml`
 
 The initial repository clone and setup are handled by user-initiated tasks:
+
 ```bash
 mise run git:clone    # Clone all child repositories
 mise run install      # Install dependencies across all projects
@@ -702,7 +704,7 @@ for repo in "${repos[@]}"; do
     if [[ "$repo_name" == "$dir_name" ]]; then
         dir_name="$repo_name"
     fi
-    
+
     if [[ ! -d "$dir_name/.git" ]]; then
         echo "  Cloning $repo_name into $dir_name..."
         git clone "https://github.com/braincraftio/$repo_name.git" "$dir_name"
@@ -1337,7 +1339,6 @@ mise run runner:start
 # ensuring perfect parity between local and CI
 ```
 
-
 ## Extension & Customization
 
 ### Adding New Repositories
@@ -1345,7 +1346,6 @@ mise run runner:start
 Follow this checklist when adding a new repository to the BrainCraft.io workspace:
 
 #### 1. Create the Repository
-
 
 ```bash
 
@@ -1359,14 +1359,11 @@ gh repo create braincraftio/REPO-NAME --public --description "Your Professional 
 git clone https://github.com/braincraftio/REPO-NAME.git
 ```
 
-
 #### 2. Update VS Code Workspace Configuration
-
 
 Add to `/workspace/braincraft.code-workspace` in the `folders` array:
 
 ```json
-
 {
   "name": "🎨 Your Project Name", // Use appropriate emoji
   "path": "REPO-NAME"
@@ -1392,7 +1389,9 @@ Add the repository to `.github/config/workspace.json`:
 }
 ```
 
-The git task script (`.config/mise/tasks/git`) automatically reads this configuration for all git operations:
+The git task script (`.config/mise/tasks/git`) automatically reads this configuration for all git
+operations:
+
 - `mise run git:clone` - Clones all repositories defined in workspace.json
 - `mise run git:pull` - Updates all repositories
 - `mise run git:status` - Shows status across all repositories
@@ -1481,7 +1480,6 @@ dir = "REPO-NAME"
 run = "npm run dev"  # Or appropriate dev command
 ```
 
-
 #### 6. Update Repository Lists in WORKSPACE.md
 
 Update the clone list in any setup documentation sections to include the new repository.
@@ -1489,7 +1487,6 @@ Update the clone list in any setup documentation sections to include the new rep
 #### Example: Adding style-system Repository
 
 Here's how we added the style-system repository:
-
 
 1. Created repository:
    `gh repo create braincraftio/style-system --public --description "BrainCraft.io Multi Brand Style System"`
@@ -1654,7 +1651,7 @@ echo "✅ Migration complete!"
 - **Issues**: [GitHub Issues](https://github.com/braincraftio/workspace/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/braincraftio/workspace/discussions)
 - **Security**: [Security Policy](https://github.com/braincraftio/.github/blob/main/SECURITY.md)
-- **Email**: hello@braincraft.io
+- **Email**: <hello@braincraft.io>
 
 ## Technical Decision Log
 

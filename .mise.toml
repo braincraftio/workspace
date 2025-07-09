@@ -348,8 +348,41 @@ description = "✨ Formats Dockerfiles with dockerfmt (via tools:docker-script).
 run = "mise run tools:docker-script --format"
 
 [tasks."docker:build"]
-description = "🔨 Builds Docker images (placeholder)."
-run = "echo '🚧 UNDER CONSTRUCTION: docker:build'"
+description = "🔨 Builds Docker images."
+depends = [ "docker:build:devcontainer" ]
+
+[tasks."docker:build:devcontainer"]
+description = "🐳 Build the devcontainer image locally"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Build the devcontainer from the containers repository
+if [[ ! -f containers/devcontainer/Dockerfile ]]; then
+  echo "❌ Error: containers/devcontainer/Dockerfile not found"
+  echo "💡 Run 'mise run git:clone' first to clone child repositories"
+  exit 1
+fi
+
+echo "🐳 Building devcontainer image..."
+echo "   Context: containers/devcontainer"
+echo "   Dockerfile: containers/devcontainer/Dockerfile"
+echo ""
+
+# Build with progress=plain for better debugging
+docker build \
+  --progress=plain \
+  --tag ghcr.io/braincraftio/containers:devcontainer-latest \
+  --file containers/devcontainer/Dockerfile \
+  containers/devcontainer
+
+echo ""
+echo "✅ Devcontainer image built successfully"
+echo "   Tag: ghcr.io/braincraftio/containers:devcontainer-latest"
+echo ""
+echo "💡 To run the container locally:"
+echo "   docker run -it --rm --entrypoint bash ghcr.io/braincraftio/containers:devcontainer-latest"
+'''
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 🔧 CONFIG, DOCS, & ACTIONS DOMAINS

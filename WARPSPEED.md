@@ -43,14 +43,14 @@ mise run doctor
 
 ### Daily Drivers
 
-| What | Command | Alias |
-|------|---------|-------|
-| Update all repos | `mise run git:pull` | `mise run gp` |
-| Check everything | `mise run doctor` | `mise run d` |
+| What             | Command               | Alias         |
+| ---------------- | --------------------- | ------------- |
+| Update all repos | `mise run git:pull`   | `mise run gp` |
+| Check everything | `mise run doctor`     | `mise run d`  |
 | Pre-commit check | `mise run pre-commit` | `mise run pc` |
-| Format code | `mise run format` | `mise run f` |
-| Lint code | `mise run lint` | `mise run l` |
-| Run tests | `mise run test` | `mise run t` |
+| Format code      | `mise run format`     | `mise run f`  |
+| Lint code        | `mise run lint`       | `mise run l`  |
+| Run tests        | `mise run test`       | `mise run t`  |
 
 ### Git Across All Repos
 
@@ -180,21 +180,25 @@ mise run task-list       # Pretty formatted list
 ## 🎯 Task Domains
 
 ### Code Quality
+
 - `lint` - Check code style
 - `format` - Fix code style
 - `validate` - Verify integrity
 
 ### Development
+
 - `build` - Build projects
 - `test` - Run tests
 - `dev` - Start dev servers
 
 ### Security
+
 - `security` - Security scans
 - `security:secrets` - Secret detection
 - `validate:security` - Full validation
 
 ### Git Operations
+
 - `git` - Any git command
 - `git:status` - Multi-repo status
 - `git:pull` - Update all
@@ -226,6 +230,5 @@ mise tasks | grep docker
 
 ---
 
-**Need details?** → [WORKSPACE.md](WORKSPACE.md)  
-**Got stuck?** → `./launch-workspace --doctor`  
+**Need details?** → [WORKSPACE.md](WORKSPACE.md) **Got stuck?** → `./launch-workspace --doctor`
 **Questions?** → [GitHub Discussions](https://github.com/braincraftio/workspace/discussions)

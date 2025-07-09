@@ -180,8 +180,8 @@ execute_task_parallel() {
 
     # Update global state for summary
     declare -gA MISE_EXEC_STATE=(
-                                                                                                            [total_repos]=${total}
-                                                                                                            [success_count]=$((total - failed))
+                                                                                                              [total_repos]=${total}
+                                                                                                              [success_count]=$((total - failed))
   )
     declare -ga MISE_EXEC_FAILED_REPOS=("${failed_repos[@]}")
 

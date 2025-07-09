@@ -32,10 +32,7 @@ tmp/
 # AI tool local configurations (ignore all by default)
 .claude/
 .gemini/
-
-# But explicitly allow safe configuration files
-!.claude/settings.json
-!.gemini/settings.json
+.mcp.json
 
 # Cache and build directories
 .cache/
