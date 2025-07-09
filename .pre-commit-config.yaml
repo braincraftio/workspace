@@ -21,7 +21,7 @@ repos:
         always_run: false
         verbose: true
         # Run when any source file is modified
-        files: '\.(py|js|jsx|ts|tsx|sh|bash|yml|yaml|toml|json)$'
+        files: '\.(py|js|jsx|ts|tsx|sh|bash|yml|yaml|toml|json|md|markdown)$'
 
 # Files to always exclude
 exclude: |

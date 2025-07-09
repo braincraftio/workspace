@@ -1,283 +1,231 @@
-# WARPSPEED.md - BrainCraft.io Daily Developer Guide
+# WARPSPEED
 
-Get productive in 5 minutes. Your daily command reference.
+Lightning-fast onboarding and daily workflow guide for the BrainCraft.io workspace.
 
-## 🚀 First Time Setup (5 minutes)
+## 🚀 Zero to Productive (5 minutes)
 
-### 1. Clone and Check (1 minute)
+### Prerequisites Check (30 seconds)
 
 ```bash
-git clone https://github.com/braincraftio/workspace.git
-cd workspace
+# Required: Docker, VS Code, GitHub CLI
+docker --version && code --version && gh --version || echo "❌ Missing tools"
+```
+
+### Launch Sequence (4 minutes)
+
+```bash
+# 1. Clone and enter
+git clone https://github.com/braincraftio/workspace.git && cd workspace
+
+# 2. Pre-flight check
 ./launch-workspace --doctor
-```
 
-Doctor will tell you exactly what to fix. Follow its instructions.
-
-### 2. Launch Workspace (30 seconds)
-
-```bash
-./launch-workspace
-```
-
-Click "Reopen in Container" when VS Code prompts.
-
-### 3. Wait for Setup (2-3 minutes)
-
-Watch the terminal for:
-
-
-- "✅ Development environment ready!"
-- "💡 Run 'mise tasks' to see available commands"
-
-### 4. Fix Authentication (if needed)
-
-
-**On your HOST machine** (not in container):
-
-```bash
-gh auth login        # Choose "Login with web browser"
-
-
-gh auth setup-git    # Configure git credential helper
-```
-
-
-**Fix gitconfig** if you see absolute paths:
-
-```ini
-# BAD:  helper = /opt/homebrew/bin/gh auth git-credential
-# GOOD: helper = !gh auth git-credential
-```
-
-### 5. Verify Success
-
-```bash
-mise doctor    # Should show all green checkmarks
-```
-
-You're ready! For architecture details, see [WORKSPACE.md](WORKSPACE.md).
-
-## 📅 Daily Workflow
-
-### Starting Your Day
-
-```bash
-# Launch workspace (remembers your container)
+# 3. Launch
 ./launch-workspace
 
-# Update everything
-mise run pull         # Pull all repos
-mise run doctor       # Check health
-
-# Start development
-mise run dev:all      # Start all services
-# OR specific services:
-mise run dev:actions  # Just GitHub Actions
-mise run dev:docs     # Just documentation
+# 4. When VS Code opens: "Reopen in Container"
 ```
 
-### Before Every Commit
+### First-Time Setup (Inside Container)
 
 ```bash
-mise run check:before-commit    # Runs all validations
-# This includes: lint:all, test:unit, security:secrets
+# Clone all repositories
+mise run git:clone
+
+# Install everything
+mise run install
+
+# Verify
+mise run doctor
 ```
 
-### Common Development Tasks
+## 🎯 Essential Commands
 
-| Task                | Command                | What it does              |
-| ------------------- | ---------------------- | ------------------------- |
-| See all commands    | `mise tasks`           | List everything available |
-| Run specific linter | `mise run lint:python` | Lint just Python code     |
-| Run specific tests  | `mise run test:unit`   | Unit tests only           |
-| Check git status    | `mise run git:status`  | Status across all repos   |
-| Update tools        | `mise install`         | Update all tool versions  |
+### Daily Drivers
 
-### Weekly Maintenance
+| What | Command | Alias |
+|------|---------|-------|
+| Update all repos | `mise run git:pull` | `mise run gp` |
+| Check everything | `mise run doctor` | `mise run d` |
+| Pre-commit check | `mise run pre-commit` | `mise run pc` |
+| Format code | `mise run format` | `mise run f` |
+| Lint code | `mise run lint` | `mise run l` |
+| Run tests | `mise run test` | `mise run t` |
+
+### Git Across All Repos
 
 ```bash
-# Update container to latest
-./launch-workspace --update
-
-# Update all tools
-mise run update
-
-# Clean build artifacts
-mise run clean
+mise run git status       # Status everywhere
+mise run git branch       # All branches
+mise run git "log -1"     # Latest commits
+mise run exec <command>   # Any command
 ```
 
 ## 🔧 Quick Fixes
 
-### Authentication Issues
+### Can't Push to GitHub?
 
 ```bash
-# Can't push to GitHub?
-gh auth status          # Check status
-gh auth login           # Re-authenticate
-
-# Can't pull container image?
-# Get token: https://github.com/settings/tokens/new (read:packages)
-export GITHUB_TOKEN='ghp_...'
-echo $GITHUB_TOKEN | docker login ghcr.io -u YOUR_USERNAME --password-stdin
+# On HOST machine (not container)
+gh auth login
+gh auth setup-git
 ```
 
-### Performance Issues
+### Container Problems?
 
 ```bash
-# Container slow?
-# Docker Desktop → Settings → Resources
-# Recommended: 8GB RAM, 4 CPUs
-
-# On macOS also enable:
-# - Use virtualization framework
-# - VirtioFS accelerated directory sharing
-```
-
-### Task/Tool Issues
-
-```bash
-# mise command not found?
-mise trust --yes
-mise install
-
-# Task not found?
-mise tasks              # List all available
-mise tasks --verbose    # Show descriptions
-
-# Wrong tool version?
-mise doctor            # Check versions
-mise install           # Reinstall
-```
-
-### Container Issues
-
-```bash
-# Container won't start?
-./launch-workspace --doctor    # Run diagnostics
-./launch-workspace --rebuild   # Fresh container
-
-# Really broken?
-./launch-workspace --update --rebuild   # Nuclear option
-```
-
-## 🎯 Project-Specific Commands
-
-### Working on Actions
-
-```bash
-cd /workspace/actions
-mise run dev           # Start development mode
-mise run test:actions  # Test GitHub Actions
-```
-
-### Working on Docs
-
-```bash
-cd /workspace/docs
-mise run serve         # Start docs server (port 1313)
-```
-
-### Multi-Repo Operations
-
-```bash
-mise run git:pull      # Update all repos
-mise run git:status    # Check all statuses
-mise run lint:all      # Lint everything
-mise run test:all      # Test everything
-```
-
-## 💡 AI Development Tips
-
-### For Claude/Copilot
-
-1. **Always work from workspace root**: `/workspace`
-2. **Use mise tasks**: AI understands `mise run test:all`
-3. **Check available tasks**: `mise tasks --verbose`
-
-### Common AI-Friendly Commands
-
-```bash
-# These patterns work well with AI assistants:
-mise run dev:all              # Start everything
-mise run check:before-commit  # Validate changes
-mise run fix:formatting       # Auto-fix issues
-mise run security:scan        # Security check
-```
-
-## 📋 Task Quick Reference
-
-### Essential Tasks
-
-| Need             | Command               | Alias         |
-| ---------------- | --------------------- | ------------- |
-| Setup everything | `mise run setup`      | `mise run s`  |
-| Health check     | `mise run doctor`     | `mise run d`  |
-| Run all lints    | `mise run lint:all`   | `mise run l`  |
-| Run all tests    | `mise run test:all`   | `mise run t`  |
-| Git status all   | `mise run git:status` | `mise run gs` |
-| Git pull all     | `mise run git:pull`   | `mise run gp` |
-| Clean artifacts  | `mise run clean`      | `mise run c`  |
-
-### Development Tasks
-
-```bash
-mise run dev:all        # Everything
-mise run dev:actions    # GitHub Actions
-mise run dev:docs       # Documentation
-mise run dev:obelisk    # Obelisk project
-```
-
-### Validation Tasks
-
-```bash
-mise run lint:go        # Go linting
-mise run lint:python    # Python linting
-mise run lint:shell     # Shell scripts
-mise run lint:yaml      # YAML files
-mise run test:unit      # Unit tests
-mise run test:integration  # Integration tests
-```
-
-## 🚨 Emergency Commands
-
-```bash
-# Check what's broken
-./launch-workspace --doctor --verbose
-
-# Reset everything
-docker system prune -af
-docker volume prune -f
+# Rebuild everything
 ./launch-workspace --update --rebuild
 
-# Backup before reset
-docker cp $(docker ps -q --filter "label=devcontainer.local_folder"):/workspace/important-file ./backup/
-
-# Manual container cleanup
-docker ps -a | grep braincraftio
-docker rm -f <container-id>
+# Nuclear reset
+docker system prune -af && docker volume prune -f
 ```
 
-<hello@braincraft.io>
+### Missing Tools?
 
-## 📚 Getting Help<hello@braincraft.io>
+```bash
+mise trust --yes && mise install
+```
 
-1. **Check doctor first**: `./launch-workspace --doctor`
-2. **Read task hel<hello@braincraft.io>verbose`
-3. **Architecture details**: [WORKSPACE.md](WORKSPACE.md)
-4. **GitHub Discussions**: [Ask questions](https://github.com/braincraftio/workspace/discussions)
-5. **Emergency**: <hello@braincraft.io>
+## 📦 Repository Map
 
-## 🎉 Pro Tips
+- **workspace/** - This meta-repository
+- **actions/** - GitHub Actions workflows
+- **containers/** - Container definitions
+- **dot-github/** - Organization templates (.github)
+- **style-system/** - Multi-brand styles
 
-1. **Use task aliases**: `mise run t` instead of `mise run test:all`
-2. **Tab completion**: Most shells auto-complete mise commands
-3. **Parallel execution**: Many tasks run in parallel automatically
-4. **Local CI**: `mise run ci:local` runs full CI pipeline
-5. **Custom tasks**: Add your own in `.mise.toml`
+## 🏃 Speed Run Commands
+
+### Morning Routine
+
+```bash
+./launch-workspace        # Resume work
+mise run gp              # Pull updates
+mise run doctor          # Health check
+```
+
+### Before Committing
+
+```bash
+mise run pc              # Pre-commit checks
+mise run validate        # Full validation
+```
+
+### End of Day
+
+```bash
+mise run clean           # Clean artifacts
+exit                     # Leave container
+```
+
+## 🎨 Working on Specific Projects
+
+### Style System
+
+```bash
+cd style-system
+mise run demo            # http://localhost:8080
+```
+
+### Actions
+
+```bash
+cd actions
+mise run test            # Test workflows
+```
+
+### Containers
+
+```bash
+cd containers
+mise run build           # Build images
+```
+
+## 🚨 Emergency Procedures
+
+### Authentication Reset
+
+```bash
+# GitHub CLI (on host)
+gh auth logout && gh auth login
+
+# Docker Registry
+docker logout ghcr.io
+echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+```
+
+### Performance Boost
+
+```bash
+# Docker Desktop → Settings → Resources
+# Set: 8GB RAM, 4 CPUs, VirtioFS enabled
+```
+
+### List Everything
+
+```bash
+mise tasks               # All available tasks
+mise tasks --verbose     # With descriptions
+mise run task-list       # Pretty formatted list
+```
+
+## 🤖 AI Assistant Tips
+
+1. Always work from `/workspace`
+2. Use `mise run` commands - AI understands them
+3. Check `mise tasks` for available operations
+4. Reference files with `path:line` format
+
+## 🎯 Task Domains
+
+### Code Quality
+- `lint` - Check code style
+- `format` - Fix code style
+- `validate` - Verify integrity
+
+### Development
+- `build` - Build projects
+- `test` - Run tests
+- `dev` - Start dev servers
+
+### Security
+- `security` - Security scans
+- `security:secrets` - Secret detection
+- `validate:security` - Full validation
+
+### Git Operations
+- `git` - Any git command
+- `git:status` - Multi-repo status
+- `git:pull` - Update all
+
+## 💡 Power User Tricks
+
+```bash
+# Run any command across all repos
+mise run exec "npm test"
+
+# Parallel execution
+MISE_EXPERIMENTAL=1 mise run build
+
+# Check specific domain
+mise run lint:python
+mise run test:unit
+mise run validate:links
+
+# Quick task search
+mise tasks | grep docker
+```
+
+## 📝 Remember
+
+- **One command philosophy**: If you do it twice, there's a mise task
+- **Check doctor first**: Most issues are caught by health checks
+- **Use aliases**: Save keystrokes with short aliases
+- **Stay in workspace**: All paths are relative to `/workspace`
 
 ---
 
-**Remember**: This guide is for daily use. For understanding how things work, see
-[WORKSPACE.md](WORKSPACE.md). **Philosophy**: If you need to do something more than once, there's
-probably a mise task for it. Check `mise tasks`!
+**Need details?** → [WORKSPACE.md](WORKSPACE.md)  
+**Got stuck?** → `./launch-workspace --doctor`  
+**Questions?** → [GitHub Discussions](https://github.com/braincraftio/workspace/discussions)

@@ -117,7 +117,7 @@ flowchart TD
 │  mise │ npm/pnpm │ go │ python │ rust │ task automation    │
 ├─────────────────────────────────────────────────────────────┤
 │                    Repository Layer                          │
-│  workspace │ .github │ actions │ containers │ docs │ apps   │
+│  workspace │ dot-github │ actions │ containers │ style-system │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -129,7 +129,7 @@ flowchart TD
 | --------------------------- | -------------- | -------------------------------------------- | ------- | --------------------------------- |
 | `launch-workspace`          | Bash Script    | `/workspace/launch-workspace`                | v1.0.0  | Container lifecycle orchestration |
 | `devcontainer.json`         | JSONC Config   | `/workspace/.devcontainer/devcontainer.json` | -       | Container specification           |
-| `Dockerfile`                | Container Def  | `/workspace/.devcontainer/Dockerfile`        | -       | Base image definition             |
+| `Dockerfile`                | Container Def  | `/workspace/containers/devcontainer/Dockerfile` | -       | Base image definition             |
 | `braincraft.code-workspace` | VS Code Config | `/workspace/braincraft.code-workspace`       | -       | Multi-root workspace              |
 | `.mise.toml`                | TOML Config    | `/workspace/.mise.toml`                      | -       | Tool versions & tasks             |
 | `settings.json`             | JSON Config    | `/workspace/.vscode/settings.json`           | -       | Editor configuration              |
@@ -138,18 +138,22 @@ flowchart TD
 
 ```text
 /workspace/                          # Meta-repository root (github.com/braincraftio/workspace)
-├── .devcontainer/                   # Container configuration
-│   ├── devcontainer.json           # Primary container spec
-│   ├── Dockerfile                  # Multi-stage build definition
-│   └── scripts/                    # Lifecycle scripts
-│       ├── post-create.sh          # Initial setup
-│       ├── post-attach.sh          # Session setup
-│       └── setup-runner.sh         # GitHub Actions runner
+├── .config/                        # Workspace configuration
+│   ├── mise/                      # mise configuration and libraries
+│   │   ├── conf.d/               # Tool and environment configs
+│   │   ├── lib/                  # Shared bash libraries
+│   │   └── tasks/                # Task scripts
+│   └── bin/                       # Custom tools
 │
-├── .github/                        # Organization defaults (cloned from braincraftio/.github)
-│   ├── workflows/                  # Org-wide reusable workflows
+├── .github/                        # Workspace GitHub configuration
+│   ├── workflows/                  # Workspace-specific workflows
+│   ├── schemas/                   # JSON schemas
+│   └── config/                    # Workspace configuration
+│
+├── dot-github/                     # Organization templates (cloned)
 │   ├── ISSUE_TEMPLATE/            # Issue templates
-│   └── PULL_REQUEST_TEMPLATE/     # PR templates
+│   ├── PULL_REQUEST_TEMPLATE/     # PR templates
+│   └── profile/                   # Organization profile
 │
 ├── .vscode/                        # VS Code configuration
 │   ├── settings.json              # Workspace settings
@@ -164,11 +168,13 @@ flowchart TD
 │   └── deploy/                    # Deployment workflows
 │
 ├── containers/                     # Container definitions (cloned)
-│   ├── devcontainer/              # Development container
-│   ├── production/                # Production images
-│   └── ci/                        # CI-specific containers
+│   └── devcontainer/              # Development container
+│       ├── Dockerfile             # Multi-stage build definition
+│       ├── bin/                   # Container utilities
+│       └── config/                # Container configurations
 │
-│
+├── style-system/                   # Multi-brand style system (cloned)
+│   └── site/                      # Style system demo
 ├── .mise.toml                     # Global tool/task configuration
 ├── .envrc                         # direnv configuration
 ├── launch-workspace               # Entry point script
@@ -188,9 +194,9 @@ flowchart TD
     "context": "..",
     "args": {
       "VARIANT": "latest",
-      "NODE_VERSION": "22",
-      "GO_VERSION": "1.23",
-      "PYTHON_VERSION": "3.12"
+      "NODE_VERSION": "24",
+      "GO_VERSION": "1.24",
+      "PYTHON_VERSION": "3.13"
     }
   },
   "workspaceFolder": "/workspace",
@@ -240,8 +246,8 @@ flowchart TD
     }
   },
 
-  "postCreateCommand": ".devcontainer/scripts/post-create.sh",
-  "postAttachCommand": ".devcontainer/scripts/post-attach.sh",
+  "postCreateCommand": "mise trust --yes && mise install",
+  "postAttachCommand": "git config --global --add safe.directory '*'",
   "postStartCommand": "git config --global --add safe.directory '*'",
 
   "customizations": {
@@ -313,8 +319,8 @@ WORKDIR /workspace
 # Final stage
 FROM base AS development
 
-# Copy any additional scripts
-COPY --chown=ubuntu:ubuntu .devcontainer/scripts /opt/scripts
+# Copy container utilities
+COPY --chown=ubuntu:ubuntu bin/ /usr/local/bin/
 
 # Set up GitHub Actions runner directory
 RUN sudo mkdir -p /opt/actions-runner && \
@@ -337,45 +343,24 @@ ENTRYPOINT ["/bin/bash", "-l"]
 | `mise-cache`     | `~/.local/share/mise`   | Tool installations  | Instant tool switching       |
 | `docker-cache`   | `/var/lib/docker`       | Docker layer cache  | 10x faster image builds      |
 
-### Post-Create Script Implementation
+### Post-Create Implementation
 
+The workspace uses a streamlined post-create process:
+
+```json
+"postCreateCommand": "mise trust --yes && mise install"
+```
+
+This single command:
+1. Trusts the mise configuration automatically
+2. Installs all tools defined in `.config/mise/conf.d/00-tools.toml`
+3. Sets up the environment based on `.config/mise/conf.d/00-env.toml`
+
+The initial repository clone and setup are handled by user-initiated tasks:
 ```bash
-#!/bin/bash
-set -euo pipefail
-
-echo "🚀 Setting up BrainCraft.io development environment..."
-
-# Configure git for container environment
-git config --global --add safe.directory '*'
-git config --global init.defaultBranch main
-git config --global pull.rebase false
-
-# Trust mise configuration
-mise trust --yes
-
-# Install all tools defined in .mise.toml
-echo "📦 Installing development tools..."
-mise install
-
-# Allow direnv
-direnv allow
-
-# Clone all repositories if not present
-mise run setup:clone-all
-
-# Install dependencies across all projects
-mise run setup:install-all
-
-# Setup GitHub Actions runner if requested
-if [[ "${SETUP_GITHUB_RUNNER:-false}" == "true" ]]; then
-    /opt/scripts/setup-runner.sh
-fi
-
-# Run initial health check
-mise run doctor
-
-echo "✅ Development environment ready!"
-echo "💡 Run 'mise tasks' to see available commands"
+mise run git:clone    # Clone all child repositories
+mise run install      # Install dependencies across all projects
+mise run doctor       # Verify environment health
 ```
 
 ## Launcher Implementation
@@ -613,9 +598,9 @@ check_mise_health() {
 # Tool versions - maintaining parity with CI
 [tools]
 # Core languages
-go = "1.23"
-node = "22"
-python = "3.12"
+go = "1.24"
+node = "24"
+python = "3.13"
 rust = "stable"
 
 # Build tools
@@ -631,13 +616,14 @@ helm = "latest"
 # Code quality
 golangci-lint = "latest"
 ruff = "latest"
-black = "latest"
 mypy = "latest"
 shellcheck = "latest"
 shfmt = "latest"
 yamllint = "latest"
 markdownlint-cli2 = "latest"
 hadolint = "latest"
+bandit = "latest"
+biome = "latest"
 
 # Testing tools
 gotestsum = "latest"
@@ -701,7 +687,7 @@ run = """
 set -euo pipefail
 
 repos=(
-    ".github"
+    "dot-github:.github"
     "actions"
     "containers"
     "style-system"
@@ -710,11 +696,18 @@ repos=(
 echo "📥 Cloning BrainCraft.io repositories..."
 
 for repo in "${repos[@]}"; do
-    if [[ ! -d "$repo/.git" ]]; then
-        echo "  Cloning $repo..."
-        git clone "https://github.com/braincraftio/$repo.git" "$repo"
+    # Handle repo:dir format
+    repo_name="${repo%%:*}"
+    dir_name="${repo##*:}"
+    if [[ "$repo_name" == "$dir_name" ]]; then
+        dir_name="$repo_name"
+    fi
+    
+    if [[ ! -d "$dir_name/.git" ]]; then
+        echo "  Cloning $repo_name into $dir_name..."
+        git clone "https://github.com/braincraftio/$repo_name.git" "$dir_name"
     else
-        echo "  ✓ $repo already exists"
+        echo "  ✓ $dir_name already exists"
     fi
 done
 """
@@ -1045,7 +1038,7 @@ mise install
 graph LR
     subgraph "Meta Layer"
         W[workspace]
-        W --> O[.github]
+        W --> O[dot-github]
     end
 
     subgraph "Infrastructure Layer"
@@ -1083,7 +1076,7 @@ echo "🚀 Releasing version $VERSION across all repositories..."
 release_order=(
     "containers"
     "actions"
-    ".github"
+    "dot-github"
     "style-system"
     "workspace"
 )
@@ -1120,8 +1113,8 @@ mise run lint:python       # Lints Python code
 mise run dev:docs          # Starts documentation server
 
 # Copilot benefits from consistent structure
-/workspace/actions/setup/  # Always find setup actions here
-/workspace/.github/        # Organization defaults location
+/workspace/actions/        # GitHub Actions workflows
+/workspace/dot-github/     # Organization defaults location
 
 # Pattern recognition for common operations
 mise run git:pull          # Updates all repos
@@ -1132,13 +1125,13 @@ mise run security:scan     # Runs security checks
 
 ```toml
 # Tasks use descriptive names that LLMs understand
-[tasks."fix:formatting"]
+[tasks.format]
 description = "Auto-fix code formatting issues"
-depends = ["fix:go-fmt", "fix:python-fmt", "fix:prettier"]
+depends = ["format:go", "format:python", "format:js", "format:web", "format:config"]
 
-[tasks."check:before-commit"]
+[tasks.pre-commit]
 description = "Run all checks before committing"
-depends = ["lint:all", "test:unit", "security:secrets"]
+depends = ["lint", "test", "validate"]
 ```
 
 ## Security Architecture
@@ -1162,10 +1155,10 @@ depends = ["lint:all", "test:unit", "security:secrets"]
 │   - Git-crypt for sensitive files                         │
 ├─────────────────────────────────────────────────────────────┤
 │ Supply Chain Security:                                       │
-│   - SBOM generation (SPDX)                                 │
-│   - Dependency scanning (Trivy)                            │
-│   - License compliance (REUSE)                             │
-│   - Signed commits enforcement                             │
+│   - Dependency scanning (npm audit, pip-audit)              │
+│   - Secret detection (detect-secrets)                       │
+│   - License compliance (SPDX headers)                       │
+│   - Security linting (bandit, semgrep)                     │
 ├─────────────────────────────────────────────────────────────┤
 │ Runtime Security:                                            │
 │   - Network policies                                        │
@@ -1196,11 +1189,11 @@ securityContext:
 ### Secret Handling
 
 ```bash
-# Development secrets via direnv
-# .envrc (git-crypted)
-export GITHUB_TOKEN="ghp_..."
-export NPM_TOKEN="npm_..."
-export DOCKER_REGISTRY_TOKEN="..."
+# Development secrets via environment
+# .env (gitignored)
+GITHUB_TOKEN="ghp_..."
+NPM_TOKEN="npm_..."
+PERPLEXITY_API_KEY="pplx_..."
 
 # CI/CD secrets via GitHub
 # - Repository secrets
@@ -1380,85 +1373,30 @@ Add to `/workspace/braincraft.code-workspace` in the `folders` array:
 }
 ```
 
-#### 3. Update mise.toml Git Operations
+#### 3. Update Workspace Configuration
 
-Add the repository to all git operations in `/workspace/mise.toml`:
+Add the repository to `.github/config/workspace.json`:
 
-**a) Add to git:clone task:**
-
-```toml
-
-[tasks."git:clone"]
-depends = [
-  # ... existing repos ...
-
-  "git:clone:REPO-NAME",
-]
-
-# Add individual clone task
-[tasks."git:clone:REPO-NAME"]
-
-hide = true
-run = '''
-    if [[ ! -d "REPO-NAME" ]]; then
-        git clone https://github.com/braincraftio/REPO-NAME.git
-        echo "✓ Cloned REPO-NAME"
-    else
-        echo "✓ REPO-NAME already exists"
-    fi
-'''
+```json
+{
+  "repositories": [
+    // ... existing repos ...
+    {
+      "name": "REPO-NAME",
+      "url": "https://github.com/braincraftio/REPO-NAME.git",
+      "path": "REPO-NAME",
+      "clone": true,
+      "tasks": ["build", "test", "lint"]
+    }
+  ]
+}
 ```
 
-
-**b) Add to git:pull task:**
-
-```toml
-[tasks."git:pull"]
-
-depends = [
-  # ... existing repos ...
-  "git:pull:REPO-NAME",
-]
-
-# Add individual pull task
-
-[tasks."git:pull:REPO-NAME"]
-hide = true
-run = '''
-    if [[ -d "REPO-NAME" ]]; then
-        cd REPO-NAME && git pull
-        echo "✓ Updated REPO-NAME"
-    else
-        echo "⚠ REPO-NAME not found"
-    fi
-'''
-
-```
-
-**c) Add to git:status task:**
-
-```toml
-
-[tasks."git:status"]
-depends = [
-  # ... existing repos ...
-  "git:status:REPO-NAME",
-]
-
-# Add individual status task
-
-[tasks."git:status:REPO-NAME"]
-hide = true
-run = '''
-    if [[ -d "REPO-NAME" ]]; then
-        echo "📂 [REPO-NAME]"
-        cd REPO-NAME && git status -sb
-        echo
-    else
-        echo "⚠ REPO-NAME not found"
-    fi
-'''
-```
+The git task script (`.config/mise/tasks/git`) automatically reads this configuration for all git operations:
+- `mise run git:clone` - Clones all repositories defined in workspace.json
+- `mise run git:pull` - Updates all repositories
+- `mise run git:status` - Shows status across all repositories
+- `mise run git <any-command>` - Runs any git command across all repos
 
 #### 4. Update mise.toml Build/Test/Lint Tasks
 
@@ -1709,6 +1647,14 @@ echo "2.0.0" > .workspace-version
 echo "✅ Migration complete!"
 """
 ```
+
+## Support
+
+- **Documentation**: Repository README files and inline documentation
+- **Issues**: [GitHub Issues](https://github.com/braincraftio/workspace/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/braincraftio/workspace/discussions)
+- **Security**: [Security Policy](https://github.com/braincraftio/.github/blob/main/SECURITY.md)
+- **Email**: hello@braincraft.io
 
 ## Technical Decision Log
 
