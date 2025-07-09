@@ -10,7 +10,7 @@
   },
   // Use 'forwardPorts' to make a list of ports inside the container available locally
   "forwardPorts": [],
-  "onCreateCommand": "mise trust --all && mise install && mise run setup",
+  "onCreateCommand": "/bin/bash -c 'mise trust --all && mise install && mise run setup'",
   "postCreateCommand": "",
   "postStartCommand": "mise run doctor --quick || true",
   "postAttachCommand": "mise tasks",

@@ -1,4 +1,5 @@
 {
+  "$schema": "file:///workspace/.github/schemas/mcp-config.json",
   "mcpServers": {
     "memory": {
       "type": "stdio",
