@@ -75,10 +75,13 @@ configure_git_user() {
   fi
 
     # If we get here, manual configuration is needed
-    echo "ℹ️  Git user configuration required. Run:"
-    echo "  git config --global user.name 'Your Name'"
-    echo "  git config --global user.email 'your-email@example.com'"
-    return 1
+    echo "⚠️  Git user configuration not set"
+    echo "ℹ️  To configure, run:"
+    echo "    git config --global user.name 'Your Name'"
+    echo "    git config --global user.email 'your-email@example.com'"
+    
+    # Always return success to not block setup
+    return 0
 }
 
 # Function to configure credential helper
@@ -103,8 +106,11 @@ configure_credential_helper() {
         return 0
   fi
 
-    echo "ℹ️  Git credential helper not configured. Run: gh auth setup-git"
-    return 1
+    echo "⚠️  Git credential helper not configured"
+    echo "ℹ️  To configure, run: gh auth setup-git"
+    
+    # Always return success to not block setup
+    return 0
 }
 
 # Main execution
@@ -126,5 +132,7 @@ if [[ ${failed} -eq 0 ]]; then
     echo "✅ Git configuration complete!"
 else
     echo "⚠️  Some Git configuration steps require manual intervention"
-    exit 1
+    echo "ℹ️  Continuing with setup - you can configure git later"
+    # Exit with success to allow setup to continue
+    exit 0
 fi

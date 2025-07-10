@@ -453,25 +453,37 @@ for i in "${!HEALTH_CHECK_NAMES[@]}"; do
 done
 
 # Display summary
-echo "Total checks: ${MISE_HEALTH_CHECK_STATE_TOTAL}"
-echo "Passed: ${MISE_HEALTH_CHECK_STATE_PASSED}"
-echo "Failed: $((MISE_HEALTH_CHECK_STATE_TOTAL - MISE_HEALTH_CHECK_STATE_PASSED))"
-echo ""
-
-if [[ ${#failed_critical[@]} -gt 0 ]]; then
-    echo "❌ Critical failures: ${#failed_critical[@]}"
-    for check in "${failed_critical[@]}"; do
-        echo "   - ${check}"
-  done
+# In quick/devcontainer mode, show minimal summary
+if [[ "${CONFIG_QUICK}" == "true" ]] || [[ -n "${REMOTE_CONTAINERS:-}" ]] || [[ -n "${DEVCONTAINER:-}" ]]; then
+    # Just show a simple status line
+    failed_count=$((MISE_HEALTH_CHECK_STATE_TOTAL - MISE_HEALTH_CHECK_STATE_PASSED))
+    if [[ ${failed_count} -gt 0 ]]; then
+        echo -e "${GRAY}Checks: ${MISE_HEALTH_CHECK_STATE_PASSED}/${MISE_HEALTH_CHECK_STATE_TOTAL} passed${NC}"
+    else
+        echo -e "${GREEN}✓ All ${MISE_HEALTH_CHECK_STATE_TOTAL} checks passed${NC}"
+    fi
+else
+    # Full summary for verbose mode
+    echo "Total checks: ${MISE_HEALTH_CHECK_STATE_TOTAL}"
+    echo "Passed: ${MISE_HEALTH_CHECK_STATE_PASSED}"
+    echo "Failed: $((MISE_HEALTH_CHECK_STATE_TOTAL - MISE_HEALTH_CHECK_STATE_PASSED))"
     echo ""
-fi
 
-if [[ ${#failed_important[@]} -gt 0 ]]; then
-    echo "⚠️  Important failures: ${#failed_important[@]}"
-    for check in "${failed_important[@]}"; do
-        echo "   - ${check}"
-  done
-    echo ""
+    if [[ ${#failed_critical[@]} -gt 0 ]]; then
+        echo "❌ Critical failures: ${#failed_critical[@]}"
+        for check in "${failed_critical[@]}"; do
+            echo "   - ${check}"
+      done
+        echo ""
+    fi
+
+    if [[ ${#failed_important[@]} -gt 0 ]]; then
+        echo "⚠️  Important failures: ${#failed_important[@]}"
+        for check in "${failed_important[@]}"; do
+            echo "   - ${check}"
+      done
+        echo ""
+    fi
 fi
 
 if [[ ${#failed_optional[@]} -gt 0 ]] && [[ "${CONFIG_VERBOSE}" == "true" ]]; then
@@ -485,7 +497,10 @@ fi
 # Actionable Fixes
 #######################################
 if [[ ${#failed_critical[@]} -gt 0 ]] || [[ ${#failed_important[@]} -gt 0 ]]; then
-    print_section_header "🔧 Actionable Fixes" "==================="
+    # Skip the header in quick mode - the fix commands will have their own header
+    if [[ "${CONFIG_QUICK}" != "true" ]] && [[ -z "${REMOTE_CONTAINERS:-}" ]] && [[ -z "${DEVCONTAINER:-}" ]]; then
+        print_section_header "🔧 Actionable Fixes" "==================="
+    fi
 
     # Generate fix commands for all failures
     all_failures=("${failed_critical[@]}" "${failed_important[@]}")
@@ -577,8 +592,16 @@ fi
 
 if [[ ${#failed_critical[@]} -gt 0 ]]; then
     echo ""
-    echo "❌ Critical issues detected! Fix these before proceeding."
-    exit 1
+    
+    # In quick mode or devcontainer, show friendly message
+    if [[ "${CONFIG_QUICK}" == "true" ]] || [[ -n "${REMOTE_CONTAINERS:-}" ]] || [[ -n "${DEVCONTAINER:-}" ]]; then
+        echo ""
+        echo "⚠️  Initial setup incomplete"
+        exit 0
+    else
+        echo "❌ Critical issues detected! Fix these before proceeding."
+        exit 1
+    fi
 else
     echo ""
     if [[ ${#failed_important[@]} -gt 0 ]]; then

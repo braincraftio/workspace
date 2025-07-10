@@ -304,11 +304,68 @@ generate_fix_commands() {
     done
 
     if [[ ${#fix_commands[@]} -gt 0 ]]; then
-        echo "Suggested Fix Commands:"
-        echo "======================"
-        for cmd in "${fix_commands[@]}"; do
-            echo "${cmd}"
-        done
+        # In devcontainer or quick mode, show simplified output
+        if [[ "${CONFIG_QUICK:-false}" == "true" ]] || [[ -n "${REMOTE_CONTAINERS:-}" ]] || [[ -n "${DEVCONTAINER:-}" ]]; then
+            # Source formatting to ensure colors are available
+            # shellcheck disable=SC1091
+            source "${MISE_PROJECT_ROOT}/.config/mise/lib/formatting.sh"
+            
+            echo ""
+            echo -e "${YELLOW}💡 Required Setup Commands${NC}"
+            echo -e "${GRAY}─────────────────────────${NC}"
+            echo ""
+            
+            # Group and deduplicate commands
+            local git_config_shown=false
+            local gh_auth_shown=false
+            local current_section=""
+            local last_was_header=false
+            
+            for cmd in "${fix_commands[@]}"; do
+                # Skip debug-related commands and duplicates in quick mode
+                if [[ "${cmd}" =~ "Debug with increased verbosity" ]] || 
+                   [[ "${cmd}" =~ "export MISE_" ]] || 
+                   [[ "${cmd}" =~ "grep -n" ]] ||
+                   [[ "${cmd}" =~ "Uncaught check failure" ]] ||
+                   [[ "${cmd}" =~ "verbose" ]] ||
+                   [[ "${cmd}" =~ "Check the health check implementation" ]]; then
+                    continue
+                fi
+                
+                # Skip Git credential helper header if gh auth setup-git already shown
+                if [[ "${cmd}" =~ "Configure Git credential helper" ]] && [[ "${gh_auth_shown}" == "true" ]]; then
+                    continue
+                fi
+                
+                # Deduplicate gh auth commands
+                if [[ "${cmd}" == "gh auth setup-git" ]] && [[ "${gh_auth_shown}" == "true" ]]; then
+                    continue
+                elif [[ "${cmd}" == "gh auth setup-git" ]]; then
+                    gh_auth_shown=true
+                fi
+                
+                # Add spacing between sections
+                if [[ "${cmd}" =~ ^#.*$ ]]; then
+                    if [[ -n "${current_section}" ]] && [[ "${last_was_header}" == "false" ]]; then
+                        echo ""  # Add space between sections
+                    fi
+                    current_section="${cmd}"
+                    echo -e "${GRAY}${cmd}${NC}"
+                    last_was_header=true
+                else
+                    echo -e "  ${RED}${cmd}${NC}"
+                    last_was_header=false
+                fi
+            done
+            echo ""
+        else
+            # Full output for verbose mode
+            echo "Suggested Fix Commands:"
+            echo "======================"
+            for cmd in "${fix_commands[@]}"; do
+                echo "${cmd}"
+            done
+        fi
     fi
 }
 
