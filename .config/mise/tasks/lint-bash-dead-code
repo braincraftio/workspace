@@ -36,11 +36,17 @@ readonly NC='\033[0m'
 if [[ $# -eq 0 ]]; then
     # Default to checking all mise config files
     TARGET="."
-    mapfile -t FILES < <(find "${TARGET}" -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2> /dev/null | grep -v "\.git")
+    FILES=()
+    while IFS= read -r file; do
+        FILES+=("${file}")
+    done < <(find "${TARGET}" -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2> /dev/null | grep -v "\.git")
 elif [[ $# -eq 1 ]] && [[ -d "$1" ]]; then
     # Single directory specified
     TARGET="$1"
-    mapfile -t FILES < <(find "${TARGET}" -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2> /dev/null | grep -v "\.git")
+    FILES=()
+    while IFS= read -r file; do
+        FILES+=("${file}")
+    done < <(find "${TARGET}" -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2> /dev/null | grep -v "\.git")
 else
     # One or more files specified
     FILES=("$@")
@@ -57,7 +63,10 @@ echo -e "Checking ${#FILES[@]} files for unused functions...\n"
 # When checking specific files, we need to search across ALL potential files that might use them
 if [[ ${#FILES[@]} -lt 5 ]]; then
     # For small file sets, search across all mise files for references
-    mapfile -t SEARCH_FILES < <(find .config/mise -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2> /dev/null | grep -v "\.git" || true)
+    SEARCH_FILES=()
+    while IFS= read -r file; do
+        SEARCH_FILES+=("${file}")
+    done < <(find .config/mise -type f \( -name "*.sh" -o -path "*/tasks/*" \) 2> /dev/null | grep -v "\.git" || true)
 else
     # For large file sets, only search within the provided files
     SEARCH_FILES=("${FILES[@]}")
@@ -75,10 +84,13 @@ for file in "${FILES[@]}"; do
   fi
 
     # Extract function names (excluding sourcing guards and variable assignments)
-    mapfile -t FUNCTIONS < <(grep -E "^[a-zA-Z_][a-zA-Z0-9_]*\(\)" "${file}" 2> /dev/null |
-                            grep -v "^declare\|^source" |
-                            sed 's/().*//' |
-                            sort -u)
+    FUNCTIONS=()
+    while IFS= read -r func; do
+        FUNCTIONS+=("${func}")
+    done < <(grep -E "^[a-zA-Z_][a-zA-Z0-9_]*\(\)" "${file}" 2> /dev/null |
+             grep -v "^declare\|^source" |
+             sed 's/().*//' |
+             sort -u)
 
     if [[ ${#FUNCTIONS[@]} -eq 0 ]]; then
         continue

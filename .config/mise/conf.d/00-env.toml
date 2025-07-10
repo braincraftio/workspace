@@ -2,6 +2,19 @@
 [env]
 _.file = ".env"
 
+# PATH configuration - ensure system directories are always available
+# Prepend system paths to ensure they're always found first
+_.path = [
+  "/usr/local/sbin",
+  "/usr/local/bin",
+  "/usr/sbin",
+  "/usr/bin",
+  "/sbin",
+  "/bin",
+  "./node_modules/.bin",
+  "./.config/bin"
+]
+
 # Core paths - using relative paths since config-time expansion not supported
 # Use MISE_PROJECT_ROOT directly in bash scripts for absolute paths
 WORKSPACE_CONFIG_PATH = ".github/config/workspace.json"

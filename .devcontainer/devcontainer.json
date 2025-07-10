@@ -74,8 +74,7 @@
   "remoteEnv": {
     "MISE_YES": "1",
     "DOCKER_BUILDKIT": "1",
-    "COMPOSE_DOCKER_CLI_BUILD": "1",
-    "PATH": "/home/ubuntu/.local/share/mise/shims:/home/ubuntu/.local/bin:${PATH}"
+    "COMPOSE_DOCKER_CLI_BUILD": "1"
   },
   // Run as non-root user
   "remoteUser": "ubuntu",

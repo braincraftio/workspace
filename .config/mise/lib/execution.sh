@@ -16,6 +16,11 @@ source "${MISE_PROJECT_ROOT}/.config/mise/lib/common.sh"
 # SC1091: MISE_PROJECT_ROOT is set at runtime by mise, path cannot be resolved statically
 source "${MISE_PROJECT_ROOT}/.config/mise/lib/workspace.sh"
 
+# Global state variables (bash 3.2 compatible)
+MISE_EXEC_STATE_TOTAL_REPOS=0
+MISE_EXEC_STATE_SUCCESS_COUNT=0
+MISE_EXEC_FAILED_REPOS=()
+
 #######################################
 # Execute function across all repositories
 # Arguments:
@@ -47,36 +52,55 @@ execute_across_repos() {
     if [[ "${include_workspace}" == "true" ]] && [[ -d "${MISE_PROJECT_ROOT}" ]]; then
         total_repos=$((total_repos + 1))
 
-        if "${execute_func}" "workspace" "." "${args[@]}"; then
+        local exec_result
+        if [[ ${#args[@]} -gt 0 ]]; then
+            "${execute_func}" "workspace" "." "${args[@]}"
+            exec_result=$?
+        else
+            "${execute_func}" "workspace" "."
+            exec_result=$?
+        fi
+        if [[ ${exec_result} -eq 0 ]]; then
             success_count=$((success_count + 1))
-    else
+        else
             failed_repos+=("workspace")
+        fi
     fi
-  fi
 
     # Execute for each repository from workspace.json
     while IFS=: read -r name path; do
         total_repos=$((total_repos + 1))
 
-        if "${execute_func}" "${name}" "${path}" "${args[@]}"; then
+        local exec_result
+        if [[ ${#args[@]} -gt 0 ]]; then
+            "${execute_func}" "${name}" "${path}" "${args[@]}"
+            exec_result=$?
+        else
+            "${execute_func}" "${name}" "${path}"
+            exec_result=$?
+        fi
+        if [[ ${exec_result} -eq 0 ]]; then
             success_count=$((success_count + 1))
-    else
+        else
             failed_repos+=("${name}")
-    fi
-  done   < <(list_repositories)
+        fi
+    done < <(list_repositories)
 
     # Return results via global variables (bash doesn't have good return mechanisms)
     # These variables are used by scripts that source this library (git and exec tasks)
-    # Using namespaced associative array for better organization
     # shellcheck disable=SC2034
-    # SC2034: MISE_EXEC_STATE is used by git and exec tasks that source this library
-    declare -gA MISE_EXEC_STATE=(
-                                                                                                              [total_repos]=${total_repos}
-                                                                                                              [success_count]=${success_count}
-  )
+    # SC2034: MISE_EXEC_STATE_TOTAL_REPOS is used by git and exec tasks that source this library
+    MISE_EXEC_STATE_TOTAL_REPOS=${total_repos}
+    # shellcheck disable=SC2034
+    # SC2034: MISE_EXEC_STATE_SUCCESS_COUNT is used by git and exec tasks that source this library
+    MISE_EXEC_STATE_SUCCESS_COUNT=${success_count}
     # shellcheck disable=SC2034
     # SC2034: MISE_EXEC_FAILED_REPOS is used by git and exec tasks that source this library
-    declare -ga MISE_EXEC_FAILED_REPOS=("${failed_repos[@]}")
+    if [[ ${#failed_repos[@]} -gt 0 ]]; then
+        MISE_EXEC_FAILED_REPOS=("${failed_repos[@]}")
+    else
+        MISE_EXEC_FAILED_REPOS=()
+    fi
 
     # Return exit code
     [[ ${#failed_repos[@]} -eq 0 ]] && return 0 || return 1
@@ -100,9 +124,9 @@ validate_repo_exists() {
         if [[ "${quiet}" != "true" ]]; then
             echo ""
             print_status warning "[${repo_name}] Directory not found: ${repo_path}"
-    fi
+        fi
         return 1
-  fi
+    fi
 
     return 0
 }
@@ -128,9 +152,9 @@ validate_git_repo() {
         if [[ "${quiet}" != "true" ]]; then
             echo ""
             print_status warning "[${repo_name}] Not a git repository"
-    fi
+        fi
         return 1
-  fi
+    fi
 
     return 0
 }
@@ -146,7 +170,7 @@ show_available_repos() {
     echo "Available repositories:"
     while IFS=: read -r name path; do
         printf "  %-20s %s\n" "${name}" "${path}"
-  done   < <(list_repositories)
+    done < <(list_repositories)
 }
 
 #######################################

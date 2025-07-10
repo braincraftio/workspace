@@ -91,8 +91,11 @@ if [[ ${#DIRS[@]} -gt 0 ]]; then
     echo "🔧 Formatting Go code in specified directories: ${GO_DIRS[*]}"
   fi
 else
-  # Auto-discover Go directories
-  mapfile -t GO_DIRS < <(find_go_dirs)
+  # Auto-discover Go directories (bash 3.2 compatible)
+  GO_DIRS=()
+  while IFS= read -r dir; do
+    GO_DIRS+=("${dir}")
+  done < <(find_go_dirs)
 
   if [[ ${#GO_DIRS[@]} -eq 0 ]]; then
     if [[ "${MODE}" == "lint" ]]; then

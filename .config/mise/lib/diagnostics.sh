@@ -22,11 +22,15 @@ source "${MISE_PROJECT_ROOT}/.config/mise/lib/common.sh"
 # Configuration values from mise config (00-env.toml)
 # Environment variables like DOCKER_HIGH_CONTAINER_COUNT, DISK_USAGE_WARNING_PERCENT, etc. available
 
-# Performance tracking
+# Performance tracking - bash 3.2 compatible
 # shellcheck disable=SC2034
 # SC2034: Used by doctor tasks for performance reporting
-declare -g DIAG_START_TIME
-declare -g -A DIAG_TIMINGS=()
+DIAG_START_TIME=""
+
+# Timer storage using parallel arrays instead of associative array
+DIAG_TIMER_NAMES=()
+DIAG_TIMER_START_TIMES=()
+DIAG_TIMER_DURATIONS=()
 
 #######################################
 # Start performance timer
@@ -35,7 +39,28 @@ declare -g -A DIAG_TIMINGS=()
 #######################################
 start_timer() {
     local timer_name="${1:-default}"
-    DIAG_TIMINGS["${timer_name}_start"]=$(date +%s.%N)
+    local start_time
+    start_time=$(date +%s.%N)
+    
+    # Find or add timer
+    local found=0
+    local i
+    for i in "${!DIAG_TIMER_NAMES[@]}"; do
+        if [[ "${DIAG_TIMER_NAMES[${i}]}" == "${timer_name}" ]]; then
+            # shellcheck disable=SC2004
+            # SC2004: False positive - i is array index not arithmetic variable
+            DIAG_TIMER_START_TIMES[${i}]="${start_time}"
+            found=1
+            break
+        fi
+    done
+    
+    # Add new timer if not found
+    if [[ ${found} -eq 0 ]]; then
+        DIAG_TIMER_NAMES+=("${timer_name}")
+        DIAG_TIMER_START_TIMES+=("${start_time}")
+        DIAG_TIMER_DURATIONS+=("")
+    fi
 }
 
 #######################################
@@ -47,91 +72,94 @@ start_timer() {
 #######################################
 stop_timer() {
     local timer_name="${1:-default}"
-    local start_time="${DIAG_TIMINGS[${timer_name}_start]:-0}"
     local end_time
     end_time=$(date +%s.%N)
-
-    local duration
-    duration=$(echo "${end_time} - ${start_time}" | bc)
-    DIAG_TIMINGS["${timer_name}_duration"]="${duration}"
-
-    echo "${duration}"
+    
+    # Find timer
+    local i
+    for i in "${!DIAG_TIMER_NAMES[@]}"; do
+        if [[ "${DIAG_TIMER_NAMES[${i}]}" == "${timer_name}" ]]; then
+            local start_time="${DIAG_TIMER_START_TIMES[${i}]:-0}"
+            local duration
+            duration=$(echo "${end_time} - ${start_time}" | bc)
+            # shellcheck disable=SC2004
+            # SC2004: False positive - i is array index not arithmetic variable
+            DIAG_TIMER_DURATIONS[${i}]="${duration}"
+            echo "${duration}"
+            return 0
+        fi
+    done
+    
+    echo "0"
 }
 
 #######################################
 # Get system diagnostics
 # Returns:
-#   Associative array with system info
+#   Key=value pairs with system info
 #######################################
 get_system_diagnostics() {
-    declare -A diag_info=()
-
     # OS Information
-    diag_info["os"]="${OSTYPE}"
-    diag_info["kernel"]=$(uname -r)
-    diag_info["arch"]=$(uname -m)
+    echo "os=${OSTYPE}"
+    echo "kernel=$(uname -r)"
+    echo "arch=$(uname -m)"
 
     # CPU Information
     if [[ -f /proc/cpuinfo ]]; then
-        diag_info["cpu_cores"]=$(grep -c "processor" /proc/cpuinfo)
-        diag_info["cpu_model"]=$(grep "model name" /proc/cpuinfo | head -1 | cut -d: -f2 | xargs)
-  elif   command -v sysctl > /dev/null 2>&1; then
-        diag_info["cpu_cores"]=$(sysctl -n hw.ncpu 2> /dev/null || echo "unknown")
-        diag_info["cpu_model"]=$(sysctl -n machdep.cpu.brand_string 2> /dev/null || echo "unknown")
-  fi
+        echo "cpu_cores=$(grep -c "processor" /proc/cpuinfo)"
+        echo "cpu_model=$(grep "model name" /proc/cpuinfo | head -1 | cut -d: -f2 | xargs)"
+    elif command -v sysctl > /dev/null 2>&1; then
+        echo "cpu_cores=$(sysctl -n hw.ncpu 2> /dev/null || echo "unknown")"
+        echo "cpu_model=$(sysctl -n machdep.cpu.brand_string 2> /dev/null || echo "unknown")"
+    fi
 
     # Memory Information
     if [[ -f /proc/meminfo ]]; then
-        diag_info["memory_total"]=$(awk '/MemTotal:/ {printf "%.1f GB", $2/1024/1024}' /proc/meminfo)
-        diag_info["memory_available"]=$(awk '/MemAvailable:/ {printf "%.1f GB", $2/1024/1024}' /proc/meminfo)
-  elif   command -v vm_stat > /dev/null 2>&1; then
+        echo "memory_total=$(awk '/MemTotal:/ {printf "%.1f GB", $2/1024/1024}' /proc/meminfo)"
+        echo "memory_available=$(awk '/MemAvailable:/ {printf "%.1f GB", $2/1024/1024}' /proc/meminfo)"
+    elif command -v vm_stat > /dev/null 2>&1; then
         local page_size
         page_size=$(vm_stat | grep "page size" | grep -o '[0-9]*')
         local total_pages
         total_pages=$(vm_stat | grep "Pages free:" | awk '{print $3}' | tr -d '.')
-        diag_info["memory_available"]=$(echo "scale=1; ${total_pages} * ${page_size} / 1073741824" | bc)" GB"
-  fi
+        echo "memory_available=$(echo "scale=1; ${total_pages} * ${page_size} / 1073741824" | bc) GB"
+    fi
 
     # Disk Information
     if command -v df > /dev/null 2>&1; then
         local disk_info
         disk_info=$(df -h "${MISE_PROJECT_ROOT}" | tail -1)
-        diag_info["disk_total"]=$(echo "${disk_info}" | awk '{print $2}')
-        diag_info["disk_used"]=$(echo "${disk_info}" | awk '{print $3}')
-        diag_info["disk_available"]=$(echo "${disk_info}" | awk '{print $4}')
-        diag_info["disk_usage"]=$(echo "${disk_info}" | awk '{print $5}')
-  fi
+        echo "disk_total=$(echo "${disk_info}" | awk '{print $2}')"
+        echo "disk_used=$(echo "${disk_info}" | awk '{print $3}')"
+        echo "disk_available=$(echo "${disk_info}" | awk '{print $4}')"
+        echo "disk_usage=$(echo "${disk_info}" | awk '{print $5}')"
+    fi
 
     # Docker Information
     if command -v docker > /dev/null 2>&1 && docker system info > /dev/null 2>&1; then
-        diag_info["docker_version"]=$(docker --version | awk '{print $3}' | tr -d ',')
-        diag_info["docker_containers"]=$(docker ps -a | tail -n +2 | wc -l)
-        diag_info["docker_images"]=$(docker images | tail -n +2 | wc -l)
+        echo "docker_version=$(docker --version | awk '{print $3}' | tr -d ',')"
+        echo "docker_containers=$(docker ps -a | tail -n +2 | wc -l)"
+        echo "docker_images=$(docker images | tail -n +2 | wc -l)"
 
         # Docker disk usage
         local docker_df
         docker_df=$(docker system df --format json 2> /dev/null || echo '{}')
         if [[ -n "${docker_df}" ]] && command -v jq > /dev/null 2>&1; then
-            diag_info["docker_disk_images"]=$(echo "${docker_df}" | jq -r '.Images[0].Size // "unknown"' 2> /dev/null)
-            diag_info["docker_disk_containers"]=$(echo "${docker_df}" | jq -r '.Containers[0].Size // "unknown"' 2> /dev/null)
-            diag_info["docker_disk_volumes"]=$(echo "${docker_df}" | jq -r '.Volumes[0].Size // "unknown"' 2> /dev/null)
+            echo "docker_disk_images=$(echo "${docker_df}" | jq -r '.Images[0].Size // "unknown"' 2> /dev/null)"
+            echo "docker_disk_containers=$(echo "${docker_df}" | jq -r '.Containers[0].Size // "unknown"' 2> /dev/null)"
+            echo "docker_disk_volumes=$(echo "${docker_df}" | jq -r '.Volumes[0].Size // "unknown"' 2> /dev/null)"
+        fi
     fi
-  fi
 
     # Network Information
-    diag_info["hostname"]=$(hostname -f 2> /dev/null || hostname)
+    echo "hostname=$(hostname -f 2> /dev/null || hostname)"
 
     # Git Information
     if command -v git > /dev/null 2>&1; then
-        diag_info["git_version"]=$(git --version | awk '{print $3}')
-        diag_info["git_user"]=$(git config --global user.name || echo "not configured")
-        diag_info["git_email"]=$(git config --global user.email || echo "not configured")
-  fi
-
-    # Return diagnostics
-    for key in "${!diag_info[@]}"; do
-        echo "${key}=${diag_info[${key}]}"
-  done
+        echo "git_version=$(git --version | awk '{print $3}')"
+        echo "git_user=$(git config --global user.name || echo "not configured")"
+        echo "git_email=$(git config --global user.email || echo "not configured")"
+    fi
 }
 
 #######################################
@@ -143,13 +171,14 @@ generate_performance_report() {
     report+="Performance Metrics:\n"
     report+="===================\n"
 
-    for timer in "${!DIAG_TIMINGS[@]}"; do
-        if [[ "${timer}" == *"_duration" ]]; then
-            local timer_name="${timer%_duration}"
-            local duration="${DIAG_TIMINGS[${timer}]}"
+    local i
+    for i in "${!DIAG_TIMER_NAMES[@]}"; do
+        local timer_name="${DIAG_TIMER_NAMES[${i}]}"
+        local duration="${DIAG_TIMER_DURATIONS[${i}]}"
+        if [[ -n "${duration}" ]]; then
             report+=$(printf "%-30s: %.2f seconds\n" "${timer_name}" "${duration}")
-    fi
-  done
+        fi
+    done
 
     echo -e "${report}"
 }
@@ -167,15 +196,15 @@ suggest_performance_optimizations() {
 
         if [[ ${container_count} -gt ${DOCKER_HIGH_CONTAINER_COUNT} ]]; then
             suggestions+=("High container count (${container_count}). Consider: docker container prune")
-    fi
+        fi
 
         local image_count
         image_count=$(docker images | tail -n +2 | wc -l)
 
         if [[ ${image_count} -gt ${DOCKER_HIGH_IMAGE_COUNT} ]]; then
             suggestions+=("High image count (${image_count}). Consider: docker image prune -a")
+        fi
     fi
-  fi
 
     # Check disk space
     local disk_usage
@@ -183,14 +212,14 @@ suggest_performance_optimizations() {
 
     if [[ ${disk_usage} -gt ${DISK_USAGE_WARNING_PERCENT} ]]; then
         suggestions+=("High disk usage (${disk_usage}%). Consider cleaning up build artifacts and caches")
-  fi
+    fi
 
     # Check for large git repos
     if [[ -d .git ]]; then
         local git_size
         git_size=$(du -sh .git 2> /dev/null | cut -f1)
         suggestions+=("Git repository size: ${git_size}. Consider: git gc --aggressive if over 1GB")
-  fi
+    fi
 
     # Return suggestions
     if [[ ${#suggestions[@]} -gt 0 ]]; then
@@ -198,11 +227,11 @@ suggest_performance_optimizations() {
         echo "===================================="
         for suggestion in "${suggestions[@]}"; do
             echo "• ${suggestion}"
-    done
+        done
         return 0
-  else
+    else
         return 1
-  fi
+    fi
 }
 
 #######################################
@@ -244,14 +273,14 @@ generate_fix_commands() {
                     fix_commands+=("# Auto-configure from Codespaces environment:")
                     fix_commands+=("git config --global user.name \"${GITHUB_USER}\"")
                     fix_commands+=("git config --global user.email \"${GITHUB_USER}@users.noreply.github.com\"")
-        elif         command -v gh > /dev/null 2>&1 && gh auth status > /dev/null 2>&1; then
+                elif command -v gh > /dev/null 2>&1 && gh auth status > /dev/null 2>&1; then
                     fix_commands+=("# Auto-configure from GitHub:")
                     fix_commands+=("gh api user --jq '.login as \$u | .name as \$n | \"git config --global user.name \\\"\(\$n // \$u)\\\"\"' | sh")
                     fix_commands+=("gh api user --jq '.login as \$u | \"git config --global user.email \\\"\(\$u)@users.noreply.github.com\\\"\"' | sh")
-        else
+                else
                     fix_commands+=("git config --global user.name 'Your Name'")
                     fix_commands+=("git config --global user.email 'your@email.com'")
-        fi
+                fi
                 ;;
             *"Git credential helper"*)
                 fix_commands+=("# Configure Git credential helper with GitHub CLI:")
@@ -271,16 +300,16 @@ generate_fix_commands() {
                 fix_commands+=("# Check the health check implementation:")
                 fix_commands+=("grep -n \"${check}\" ${MISE_PROJECT_ROOT}/.config/mise/lib/health-checks.sh")
                 ;;
-    esac
-  done
+        esac
+    done
 
     if [[ ${#fix_commands[@]} -gt 0 ]]; then
         echo "Suggested Fix Commands:"
         echo "======================"
         for cmd in "${fix_commands[@]}"; do
             echo "${cmd}"
-    done
-  fi
+        done
+    fi
 }
 
 #######################################
@@ -293,7 +322,7 @@ test_network_endpoints() {
         "registry.npmjs.org:443:NPM Registry"
         "pypi.org:443:Python Package Index"
         "registry-1.docker.io:443:Docker Hub"
-  )
+    )
 
     echo "Network Connectivity Tests:"
     echo "=========================="
@@ -304,10 +333,10 @@ test_network_endpoints() {
 
         if timeout "${NETWORK_TIMEOUT_SECONDS}" bash -c "echo >/dev/tcp/${host}/${port}" 2> /dev/null; then
             print_status success "OK"
-    else
+        else
             print_status error "FAILED"
-    fi
-  done
+        fi
+    done
 }
 
 #######################################
@@ -337,14 +366,14 @@ create_diagnostic_bundle() {
         command -v mise > /dev/null && echo "Mise: $(mise --version)"
         command -v node > /dev/null && echo "Node: $(node --version)"
         command -v npm > /dev/null && echo "NPM: $(npm --version)"
-  }   > "${bundle_dir}/tool-versions.txt"
+    } > "${bundle_dir}/tool-versions.txt"
 
     # Docker diagnostics (if available)
     if command -v docker > /dev/null 2>&1 && docker system info > /dev/null 2>&1; then
         docker system info > "${bundle_dir}/docker-info.txt" 2>&1
         docker system df > "${bundle_dir}/docker-disk.txt" 2>&1
         docker ps -a > "${bundle_dir}/docker-containers.txt" 2>&1
-  fi
+    fi
 
     # Network diagnostics
     test_network_endpoints > "${bundle_dir}/network-tests.txt" 2>&1
@@ -358,7 +387,7 @@ create_diagnostic_bundle() {
         echo ""
         echo "Contents:"
         ls -la "${bundle_dir}/"
-  }   > "${bundle_dir}/README.txt"
+    } > "${bundle_dir}/README.txt"
 
     echo "Diagnostic bundle created: ${bundle_dir}"
     echo "Share this bundle when reporting issues (sensitive data is redacted)"

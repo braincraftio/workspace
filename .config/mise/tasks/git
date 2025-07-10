@@ -65,9 +65,9 @@ execute_git_in_repo() {
             local branch
             branch=$(cd "${repo_path}" && git rev-parse --abbrev-ref HEAD)
 
-            # CONFIG might not be set if called directly, check if it exists
-            local quiet="${CONFIG[quiet]:-false}"
-            local format="${CONFIG[format]:-pretty}"
+            # CONFIG variables might not be set if called directly, check if they exist
+            local quiet="${CONFIG_QUIET:-false}"
+            local format="${CONFIG_FORMAT:-pretty}"
 
             if [[ "${quiet}" != "true" ]]; then
                 echo ""
@@ -134,10 +134,9 @@ main() {
 
     # Special handling for clone command
     if [[ "$1" == "clone" ]]; then
-        # Setup configuration for clone command
-        declare -gA CONFIG=()
-        CONFIG["format"]="${GIT_TASK_FORMAT:-${MISE_TASK_FORMAT_DEFAULT:-pretty}}"
-        CONFIG["quiet"]="${GIT_TASK_QUIET:-${MISE_TASK_QUIET_DEFAULT:-false}}"
+        # Setup configuration for clone command (bash 3.2 compatible)
+        CONFIG_FORMAT="${GIT_TASK_FORMAT:-${MISE_TASK_FORMAT_DEFAULT:-pretty}}"
+        CONFIG_QUIET="${GIT_TASK_QUIET:-${MISE_TASK_QUIET_DEFAULT:-false}}"
 
         # Source workspace functions
         # shellcheck disable=SC1091
@@ -145,7 +144,7 @@ main() {
         # shellcheck disable=SC1091
         source "${MISE_PROJECT_ROOT}/.config/mise/lib/formatting.sh"
 
-        if [[ "${CONFIG[quiet]}" != "true" ]]; then
+        if [[ "${CONFIG_QUIET}" != "true" ]]; then
             format_operation_header "Cloning all workspace repositories..."
     fi
 
@@ -166,7 +165,7 @@ main() {
             total=$((total + 1))
 
             echo ""
-            format_repo_header "${name}" "${path}" "${CONFIG[format]:-pretty}" "false"
+            format_repo_header "${name}" "${path}" "${CONFIG_FORMAT:-pretty}" "false"
 
             # Check if directory already exists
             if [[ -d "${path}" ]]; then
@@ -199,7 +198,7 @@ main() {
     done     < <(jq -r '.repositories[] | "\(.name)|\(.url)|\(.path)"' "${workspace_json}")
 
         # Show summary
-        if [[ "${CONFIG[quiet]}" != "true" ]]; then
+        if [[ "${CONFIG_QUIET}" != "true" ]]; then
             format_summary "${total}" "${success}" "${failed_repos[*]}"
     fi
 

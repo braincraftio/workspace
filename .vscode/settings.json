@@ -8,5 +8,14 @@
       "addWords": true,
       "scope": "workspace"
     }
+  },
+  "go.goroot": "/home/ubuntu/.local/share/mise/installs/go/1.24.5",
+  "debug.javascript.defaultRuntimeExecutable": {
+    "pwa-node": "/home/ubuntu/.local/share/mise/shims/node"
+  },
+  "shellcheck.executablePath": "/home/ubuntu/.local/share/mise/shims/shellcheck",
+  "python.defaultInterpreterPath": "/home/ubuntu/.local/share/mise/installs/python/3.13.5/bin/python",
+  "go.alternateTools": {
+    "go": "/home/ubuntu/.local/share/mise/shims/go"
   }
 }

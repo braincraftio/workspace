@@ -50,13 +50,13 @@ while IFS= read -r -d '' file; do
     continue
   fi
 
-  # Validate with AJV
-  if json-schema-ajv "${file}" > /dev/null 2>&1; then
+  # Validate with AJV using absolute path
+  if "${MISE_PROJECT_ROOT}/.config/bin/json-schema-ajv" "${file}" > /dev/null 2>&1; then
     echo -e "${GREEN}PASS${NC}"
     ((PASSED++))
   else
     echo -e "${RED}FAIL${NC}"
-    json-schema-ajv "${file}" 2>&1 | sed 's/^/    /'
+    "${MISE_PROJECT_ROOT}/.config/bin/json-schema-ajv" "${file}" 2>&1 | sed 's/^/    /'
     ((FAILED++))
   fi
 done < <(find . \( -name "*.json" -o -name "*.jsonc" \) -type f \

@@ -18,8 +18,6 @@ trusted_config_paths = [
 color = true
 jobs = 4
 
-[env]
-_.path = [ "./node_modules/.bin", "./.config/bin" ]
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 🚀 WORKSPACE ONBOARDING & DEPENDENCIES

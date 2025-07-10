@@ -88,7 +88,10 @@ fi
 
 # If no directories specified, auto-discover
 if [[ ${#DIRS[@]} -eq 0 ]]; then
-  mapfile -t DIRS < <(find_rust_dirs)
+  DIRS=()
+  while IFS= read -r dir; do
+    DIRS+=("${dir}")
+  done < <(find_rust_dirs)
 fi
 
 # Exit gracefully if no Rust projects found

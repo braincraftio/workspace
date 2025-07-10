@@ -9,31 +9,27 @@ fi
 readonly _MISE_ERRORS_SOURCED=1
 
 # Error codes - using standard Unix conventions
-declare -grA MISE_ERROR_CODES=(
-                                                                                                          [SUCCESS]=0
-                                                                                                          [GENERAL]=1
-                                                                                                          [MISUSE]=2 # Command line usage error
-                                                                                                          [EXEC_ERROR]=126 # Command invoked cannot execute
-                                                                                                          [NOT_FOUND]=127 # Command not found
-    # Custom application error codes (64-113 are available for custom use)
-                                                                                                          [CONFIG_ERROR]=64 # Configuration file error
-                                                                                                          [VALIDATION_ERROR]=65 # Input validation failed
-                                                                                                          [DEPENDENCY_ERROR]=66 # Missing dependency
-                                                                                                          [PERMISSION_ERROR]=67 # Permission denied
-                                                                                                          [NETWORK_ERROR]=68 # Network operation failed
-                                                                                                          [TIMEOUT_ERROR]=69 # Operation timed out
-                                                                                                          [STATE_ERROR]=70 # Invalid state
-)
+readonly MISE_ERROR_SUCCESS=0
+readonly MISE_ERROR_GENERAL=1
+readonly MISE_ERROR_MISUSE=2  # Command line usage error
+readonly MISE_ERROR_EXEC_ERROR=126  # Command invoked cannot execute
+readonly MISE_ERROR_NOT_FOUND=127  # Command not found
+# Custom application error codes (64-113 are available for custom use)
+readonly MISE_ERROR_CONFIG_ERROR=64  # Configuration file error
+readonly MISE_ERROR_VALIDATION_ERROR=65  # Input validation failed
+readonly MISE_ERROR_DEPENDENCY_ERROR=66  # Missing dependency
+readonly MISE_ERROR_PERMISSION_ERROR=67  # Permission denied
+readonly MISE_ERROR_NETWORK_ERROR=68  # Network operation failed
+readonly MISE_ERROR_TIMEOUT_ERROR=69  # Operation timed out
+readonly MISE_ERROR_STATE_ERROR=70  # Invalid state
 
-# Error context tracking - using associative array like CONFIG pattern
-declare -gA MISE_ERROR_CONTEXT=(
-                                                                                                          [task]="${MISE_TASK_NAME:-unknown}"
-                                                                                                          [file]=""
-                                                                                                          [function]=""
-                                                                                                          [line]=""
-                                                                                                          [command]=""
-                                                                                                          [message]=""
-)
+# Error context tracking - using regular variables
+MISE_ERROR_CONTEXT_TASK="${MISE_TASK_NAME:-unknown}"
+MISE_ERROR_CONTEXT_FILE=""
+MISE_ERROR_CONTEXT_FUNCTION=""
+MISE_ERROR_CONTEXT_LINE=""
+MISE_ERROR_CONTEXT_COMMAND=""
+MISE_ERROR_CONTEXT_MESSAGE=""
 
 # Enhanced handle_error that works with existing print_status
 handle_error_with_context() {
@@ -44,10 +40,10 @@ handle_error_with_context() {
     local line="${5:-${LINENO}}"
 
     # Store context for detailed reporting
-    MISE_ERROR_CONTEXT[file]="${file}"
-    MISE_ERROR_CONTEXT[function]="${function}"
-    MISE_ERROR_CONTEXT[line]="${line}"
-    MISE_ERROR_CONTEXT[message]="${context}"
+    MISE_ERROR_CONTEXT_FILE="${file}"
+    MISE_ERROR_CONTEXT_FUNCTION="${function}"
+    MISE_ERROR_CONTEXT_LINE="${line}"
+    MISE_ERROR_CONTEXT_MESSAGE="${context}"
 
     # Use existing print_status for consistency
     if [[ "${MISE_DEBUG:-}" == "1" ]]; then
@@ -79,14 +75,14 @@ die() {
     local exit_code="${2:-1}"
 
     # Set task name context if available
-    MISE_ERROR_CONTEXT[task]="${MISE_TASK_NAME:-${0##*/}}"
+    MISE_ERROR_CONTEXT_TASK="${MISE_TASK_NAME:-${0##*/}}"
 
     print_status error "${message}"
 
     # Show context in debug mode
-    if [[ "${MISE_DEBUG:-}" == "1" ]] && [[ -n "${MISE_ERROR_CONTEXT[file]}" ]]; then
-        echo "  Task: ${MISE_ERROR_CONTEXT[task]}" >&2
-        echo "  Location: ${MISE_ERROR_CONTEXT[file]}:${MISE_ERROR_CONTEXT[function]}:${MISE_ERROR_CONTEXT[line]}" >&2
+    if [[ "${MISE_DEBUG:-}" == "1" ]] && [[ -n "${MISE_ERROR_CONTEXT_FILE}" ]]; then
+        echo "  Task: ${MISE_ERROR_CONTEXT_TASK}" >&2
+        echo "  Location: ${MISE_ERROR_CONTEXT_FILE}:${MISE_ERROR_CONTEXT_FUNCTION}:${MISE_ERROR_CONTEXT_LINE}" >&2
   fi
 
     exit "${exit_code}"
@@ -97,7 +93,23 @@ die_with_code() {
     local error_type="$1"
     local message="${2:-Error occurred}"
 
-    local exit_code="${MISE_ERROR_CODES[${error_type}]:-1}"
+    # Map error type to exit code
+    local exit_code=1
+    case "${error_type}" in
+        SUCCESS) exit_code=$MISE_ERROR_SUCCESS ;;
+        GENERAL) exit_code=$MISE_ERROR_GENERAL ;;
+        MISUSE) exit_code=$MISE_ERROR_MISUSE ;;
+        EXEC_ERROR) exit_code=$MISE_ERROR_EXEC_ERROR ;;
+        NOT_FOUND) exit_code=$MISE_ERROR_NOT_FOUND ;;
+        CONFIG_ERROR) exit_code=$MISE_ERROR_CONFIG_ERROR ;;
+        VALIDATION_ERROR) exit_code=$MISE_ERROR_VALIDATION_ERROR ;;
+        DEPENDENCY_ERROR) exit_code=$MISE_ERROR_DEPENDENCY_ERROR ;;
+        PERMISSION_ERROR) exit_code=$MISE_ERROR_PERMISSION_ERROR ;;
+        NETWORK_ERROR) exit_code=$MISE_ERROR_NETWORK_ERROR ;;
+        TIMEOUT_ERROR) exit_code=$MISE_ERROR_TIMEOUT_ERROR ;;
+        STATE_ERROR) exit_code=$MISE_ERROR_STATE_ERROR ;;
+        *) exit_code=1 ;;
+    esac
     die "${message}" "${exit_code}"
 }
 
@@ -143,10 +155,9 @@ capture_or_die() {
         exit "${exit_code}"
   fi
 
-    # Use nameref to set the variable
-    declare -n var_ref="${var_name}"
-    # shellcheck disable=SC2034 # var_ref is a nameref that sets ${var_name}
-    var_ref="${output}"
+    # Use eval to set the variable (bash 3.2 compatible)
+    # This is safe because var_name comes from our code, not user input
+    eval "${var_name}=\${output}"
 }
 
 # Validate required tools/commands

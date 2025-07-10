@@ -53,13 +53,11 @@ source "${MISE_PROJECT_ROOT}/.config/mise/lib/workspace.sh"
 # Workspace configuration path (needed early for centralized config)
 declare -r workspace_json_path="${MISE_PROJECT_ROOT}/.github/config/workspace.json"
 
-# Configuration
-declare -A CONFIG=(
-                                                                                                          ["verbose"]="${WORKSPACE_DOCTOR_VERBOSE:-false}"
-                                                                                                          ["quick"]="${WORKSPACE_DOCTOR_QUICK:-false}"
-                                                                                                          ["fix"]="${WORKSPACE_DOCTOR_FIX:-false}"
-                                                                                                          ["bundle"]="${WORKSPACE_DOCTOR_BUNDLE:-false}"
-)
+# Configuration (bash 3.2 compatible)
+CONFIG_VERBOSE="${WORKSPACE_DOCTOR_VERBOSE:-false}"
+CONFIG_QUICK="${WORKSPACE_DOCTOR_QUICK:-false}"
+CONFIG_FIX="${WORKSPACE_DOCTOR_FIX:-false}"
+CONFIG_BUNDLE="${WORKSPACE_DOCTOR_BUNDLE:-false}"
 
 # Show help information
 show_help() {
@@ -106,17 +104,17 @@ parse_arguments() {
                 exit 0
                 ;;
             --verbose)
-                CONFIG["verbose"]="true"
+                CONFIG_VERBOSE="true"
                 export MISE_VERBOSE=1
                 ;;
             --quick)
-                CONFIG["quick"]="true"
+                CONFIG_QUICK="true"
                 ;;
             --fix)
-                CONFIG["fix"]="true"
+                CONFIG_FIX="true"
                 ;;
             --bundle)
-                CONFIG["bundle"]="true"
+                CONFIG_BUNDLE="true"
                 ;;
             --no-color)
                 # This is handled by common.sh but we accept it here
@@ -170,7 +168,7 @@ start_timer "total"
 echo -e "${BLUE}🏥 Running mise doctor (built-in checks)...${NC}"
 echo -e "${GRAY}=========================================${NC}"
 
-if [[ "${CONFIG[verbose]}" == "true" ]]; then
+if [[ "${CONFIG_VERBOSE}" == "true" ]]; then
     # Show full output in verbose mode
     mise doctor || true
 else
@@ -202,7 +200,7 @@ echo ""
 
 # Display system information in verbose mode
 show_system_info() {
-    if [[ "${CONFIG[verbose]}" == "true" ]]; then
+    if [[ "${CONFIG_VERBOSE}" == "true" ]]; then
         echo -e "${CYAN}📊 System Information${NC}"
         echo -e "${GRAY}--------------------${NC}"
         get_system_diagnostics | while IFS='=' read -r key value; do
@@ -242,7 +240,7 @@ run_health_check "mise installation" "command -v mise" "critical"
 run_health_check "mise version >= ${MIN_MISE_VERSION}" "check_tool_version mise ${MIN_MISE_VERSION}" "important"
 run_health_check "jq (JSON processor)" "command -v jq" "critical"
 run_health_check "git >= ${MIN_GIT_VERSION}" "check_tool_version git ${MIN_GIT_VERSION}" "important"
-run_health_check "bash >= 4.0" "bash --version | grep -E 'version [4-9]\\.'" "critical"
+run_health_check "bash >= 3.2" "bash --version | grep -E 'version [3-9]\\.'" "critical"
 run_health_check "shellcheck" "command -v shellcheck" "important"
 
 stop_timer "core_deps" > /dev/null
@@ -258,7 +256,7 @@ run_health_check "Docker compose v2" "check_docker_compose" "critical"
 run_health_check "Docker memory >= 2GB" "check_docker_memory" "important"
 run_health_check "Docker disk space" "check_docker_resources" "important"
 
-if [[ "${CONFIG[quick]}" != "true" ]]; then
+if [[ "${CONFIG_QUICK}" != "true" ]]; then
     run_health_check "Container cleanup needed" "! docker ps -a | tail -n +2 | grep -E 'Exited|Created' >/dev/null" "optional"
     run_health_check "Image cleanup needed" "! docker images | grep '<none>' >/dev/null" "optional"
 fi
@@ -273,7 +271,7 @@ start_timer "auth"
 
 run_health_check "GitHub CLI auth" "check_github_cli_auth" "critical" "true"
 # Show GitHub account details if verbose or if there are issues
-if [[ "${CONFIG[verbose]}" == "true" ]] || ! check_github_cli_auth 2> /dev/null; then
+if [[ "${CONFIG_VERBOSE}" == "true" ]] || ! check_github_cli_auth 2> /dev/null; then
     gh_details=$(get_github_auth_details 2> /dev/null || true)
     if [[ -n "${gh_details}" ]]; then
         echo "  └─ Accounts: ${gh_details}"
@@ -344,7 +342,7 @@ run_health_check "Network connectivity" "check_network_connectivity" "critical"
 
 # Run detailed network tests in verbose mode
 run_detailed_network_tests() {
-    if [[ "${CONFIG[quick]}" != "true" ]] && [[ "${CONFIG[verbose]}" == "true" ]]; then
+    if [[ "${CONFIG_QUICK}" != "true" ]] && [[ "${CONFIG_VERBOSE}" == "true" ]]; then
         echo ""
         echo -e "${CYAN}Detailed Network Tests:${NC}"
         echo -e "${GRAY}----------------------${NC}"
@@ -387,7 +385,7 @@ if [[ -f "${workspace_json_path}" ]]; then
                 repo_details+=("dirty")
       fi
 
-            if [[ "${CONFIG[quick]}" != "true" ]]; then
+            if [[ "${CONFIG_QUICK}" != "true" ]]; then
                 if ! check_repo_remote_connectivity "${path}" "${name}"; then
                     repo_details+=("no remote")
                     repo_status="WARNING"
@@ -412,7 +410,7 @@ print_section_header "📋 Task System" "--------------"
 start_timer "tasks"
 
 run_health_check "mise tasks listing" "mise tasks >/dev/null 2>&1" "critical"
-run_health_check "doctor:workspace task" "mise tasks | grep -q 'doctor:workspace'" "important"
+run_health_check "doctor task" "mise tasks | grep -q '^tools:doctor'" "important"
 run_health_check "git task" "mise tasks | grep -q '^git\\s'" "important"
 run_health_check "exec task" "mise tasks | grep -q '^exec\\s'" "important"
 
@@ -423,7 +421,7 @@ stop_timer "tasks" > /dev/null
 #######################################
 stop_timer "total" > /dev/null
 
-if [[ "${CONFIG[verbose]}" == "true" ]]; then
+if [[ "${CONFIG_VERBOSE}" == "true" ]]; then
     echo ""
     generate_performance_report
 fi
@@ -434,10 +432,11 @@ fi
 print_section_header "📊 Health Check Summary" "======================"
 
 # Collect failed checks by category
-for check_name in "${!HEALTH_CHECK_RESULTS[@]}"; do
-    if [[ "${HEALTH_CHECK_RESULTS[${check_name}]}" == "failed" ]]; then
-        # Get category from CHECK_CATEGORIES array
-        check_category="${CHECK_CATEGORIES[${check_name}]:-optional}"
+for i in "${!HEALTH_CHECK_NAMES[@]}"; do
+    check_name="${HEALTH_CHECK_NAMES[${i}]}"
+    if [[ "${HEALTH_CHECK_RESULTS[${i}]}" == "failed" ]]; then
+        # Get category from parallel array
+        check_category="${HEALTH_CHECK_CATEGORIES[${i}]:-optional}"
 
         case "${check_category}" in
             critical)
@@ -454,9 +453,9 @@ for check_name in "${!HEALTH_CHECK_RESULTS[@]}"; do
 done
 
 # Display summary
-echo "Total checks: ${MISE_HEALTH_CHECK_STATE[total]}"
-echo "Passed: ${MISE_HEALTH_CHECK_STATE[passed]}"
-echo "Failed: $((MISE_HEALTH_CHECK_STATE[total] - MISE_HEALTH_CHECK_STATE[passed]))"
+echo "Total checks: ${MISE_HEALTH_CHECK_STATE_TOTAL}"
+echo "Passed: ${MISE_HEALTH_CHECK_STATE_PASSED}"
+echo "Failed: $((MISE_HEALTH_CHECK_STATE_TOTAL - MISE_HEALTH_CHECK_STATE_PASSED))"
 echo ""
 
 if [[ ${#failed_critical[@]} -gt 0 ]]; then
@@ -475,7 +474,7 @@ if [[ ${#failed_important[@]} -gt 0 ]]; then
     echo ""
 fi
 
-if [[ ${#failed_optional[@]} -gt 0 ]] && [[ "${CONFIG[verbose]}" == "true" ]]; then
+if [[ ${#failed_optional[@]} -gt 0 ]] && [[ "${CONFIG_VERBOSE}" == "true" ]]; then
     echo "ℹ️  Optional improvements: ${#failed_optional[@]}"
     for check in "${failed_optional[@]}"; do
         echo "   - ${check}"
@@ -493,7 +492,7 @@ if [[ ${#failed_critical[@]} -gt 0 ]] || [[ ${#failed_important[@]} -gt 0 ]]; th
     generate_fix_commands "${all_failures[@]}"
 
     # Attempt automatic fixes if requested
-    if [[ "${CONFIG[fix]}" == "true" ]]; then
+    if [[ "${CONFIG_FIX}" == "true" ]]; then
         echo ""
         echo "🔧 Attempting automatic fixes..."
         echo "==============================="
@@ -554,7 +553,7 @@ fi
 #######################################
 # Performance Suggestions
 #######################################
-if [[ "${CONFIG[verbose]}" == "true" ]]; then
+if [[ "${CONFIG_VERBOSE}" == "true" ]]; then
     print_section_header "🚀 Performance Suggestions" "==========================="
     suggest_performance_optimizations || true
 fi
@@ -562,7 +561,7 @@ fi
 #######################################
 # Diagnostic Bundle
 #######################################
-if [[ "${CONFIG[bundle]}" == "true" ]]; then
+if [[ "${CONFIG_BUNDLE}" == "true" ]]; then
     print_section_header "📦 Diagnostic Bundle" "=================="
     create_diagnostic_bundle
 fi

@@ -22,19 +22,77 @@ source "${MISE_PROJECT_ROOT}/.config/mise/lib/common.sh"
 # Configuration values from mise config (00-env.toml)
 # Environment variables like MIN_DOCKER_MEMORY_GB, NETWORK_MIN_ENDPOINTS_SUCCESS, etc. are available
 
-# Health check result tracking
-declare -g -A HEALTH_CHECK_RESULTS=()
-# shellcheck disable=SC2034
-# SC2034: Used by doctor tasks for error reporting
-declare -g -A HEALTH_CHECK_ERRORS=()
-declare -g -A HEALTH_CHECK_CATEGORIES=()
-declare -g -A CHECK_CATEGORIES=()  # Track category per check name
+# Health check result tracking - bash 3.2 compatible using parallel arrays
+HEALTH_CHECK_NAMES=()
+HEALTH_CHECK_RESULTS=()
+HEALTH_CHECK_ERRORS=()
+HEALTH_CHECK_CATEGORIES=()
 
-# Global counters - using namespaced associative array
-declare -gA MISE_HEALTH_CHECK_STATE=(
-                                                                                                          [total]=0
-                                                                                                          [passed]=0
-)
+# Category counts
+HEALTH_CHECK_CATEGORY_CRITICAL=0
+HEALTH_CHECK_CATEGORY_IMPORTANT=0
+HEALTH_CHECK_CATEGORY_OPTIONAL=0
+
+# Global counters
+MISE_HEALTH_CHECK_STATE_TOTAL=0
+MISE_HEALTH_CHECK_STATE_PASSED=0
+
+#######################################
+# Get health check result by name
+# Arguments:
+#   $1 - check_name: Name of the check
+# Returns:
+#   Result value or empty string
+#######################################
+get_health_check_result() {
+    local check_name="$1"
+    local i
+    for i in "${!HEALTH_CHECK_NAMES[@]}"; do
+        if [[ "${HEALTH_CHECK_NAMES[$i]}" == "${check_name}" ]]; then
+            echo "${HEALTH_CHECK_RESULTS[$i]}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+#######################################
+# Get health check error by name
+# Arguments:
+#   $1 - check_name: Name of the check
+# Returns:
+#   Error message or empty string
+#######################################
+get_health_check_error() {
+    local check_name="$1"
+    local i
+    for i in "${!HEALTH_CHECK_NAMES[@]}"; do
+        if [[ "${HEALTH_CHECK_NAMES[$i]}" == "${check_name}" ]]; then
+            echo "${HEALTH_CHECK_ERRORS[$i]}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+#######################################
+# Get health check category by name
+# Arguments:
+#   $1 - check_name: Name of the check
+# Returns:
+#   Category or empty string
+#######################################
+get_health_check_category() {
+    local check_name="$1"
+    local i
+    for i in "${!HEALTH_CHECK_NAMES[@]}"; do
+        if [[ "${HEALTH_CHECK_NAMES[$i]}" == "${check_name}" ]]; then
+            echo "${HEALTH_CHECK_CATEGORIES[$i]}"
+            return 0
+        fi
+    done
+    return 1
+}
 
 #######################################
 # Enhanced health check runner with error capture
@@ -52,13 +110,12 @@ run_health_check() {
     local category="${3:-important}"
     local verbose_errors="${4:-false}"
 
-    # Store category for this check
-    # shellcheck disable=SC2034
-    # SC2034: Used by doctor-workspace to categorize failures
-    CHECK_CATEGORIES["${check_name}"]="${category}"
+    # Store check info
+    HEALTH_CHECK_NAMES+=("${check_name}")
+    HEALTH_CHECK_CATEGORIES+=("${category}")
 
     # Increment total checks
-    ((MISE_HEALTH_CHECK_STATE[total]++))
+    ((MISE_HEALTH_CHECK_STATE_TOTAL++))
 
     # Capture both stdout and stderr
     local output
@@ -72,12 +129,12 @@ run_health_check() {
         # Using eval is safe here because we've verified the function exists
         output=$(eval "${check_command}" 2>&1)
         exit_code=$?
-  else
+    else
         # It's a shell command - execute safely using bash -c
         # This avoids eval's security issues while still allowing complex commands
         output=$(bash -c "${check_command}" 2>&1)
         exit_code=$?
-  fi
+    fi
 
     # Build status parts separately to control alignment
     local check_display="${check_name}:"
@@ -87,21 +144,18 @@ run_health_check() {
     if [[ ${exit_code} -eq 0 ]]; then
         status_symbol="${CHECK}"
         status_text="OK"
-        HEALTH_CHECK_RESULTS["${check_name}"]="success"
-        ((MISE_HEALTH_CHECK_STATE[passed]++))
-  else
+        HEALTH_CHECK_RESULTS+=("success")
+        ((MISE_HEALTH_CHECK_STATE_PASSED++))
+    else
         status_symbol="${CROSS}"
         if [[ "${category}" == "optional" ]]; then
             status_text="SKIPPED"
-    else
+        else
             status_text="FAILED"
+        fi
+        HEALTH_CHECK_RESULTS+=("failed")
+        HEALTH_CHECK_ERRORS+=("${output}")
     fi
-        # shellcheck disable=SC2034 # HEALTH_CHECK_RESULTS is populated for future reporting features
-        HEALTH_CHECK_RESULTS["${check_name}"]="failed"
-        # shellcheck disable=SC2034
-        # SC2034: Used by doctor-workspace for detailed error reporting
-        HEALTH_CHECK_ERRORS["${check_name}"]="${output}"
-  fi
 
     # Print with consistent alignment
     # Format the output with proper spacing
@@ -114,16 +168,22 @@ run_health_check() {
         [[ "${verbose_errors}" == "true" ]] ||
         [[ "${MISE_VERBOSE:-0}" -ge 1 ]] ||
         [[ "${category}" == "critical" && -n "${output}" ]]
-  }; then
+    }; then
         echo "  └─ Error: ${output}" | head -3
-  fi
+    fi
 
     # Track by category count
-    if [[ -z "${HEALTH_CHECK_CATEGORIES[${category}]:-}" ]]; then
-        HEALTH_CHECK_CATEGORIES["${category}"]=1
-  else
-        ((HEALTH_CHECK_CATEGORIES["${category}"]++))
-  fi
+    case "${category}" in
+        critical)
+            ((HEALTH_CHECK_CATEGORY_CRITICAL++))
+            ;;
+        important)
+            ((HEALTH_CHECK_CATEGORY_IMPORTANT++))
+            ;;
+        optional)
+            ((HEALTH_CHECK_CATEGORY_OPTIONAL++))
+            ;;
+    esac
 
     return ${exit_code}
 }
@@ -150,12 +210,12 @@ check_docker_memory() {
         local available_gb
         available_gb=$(awk '/MemAvailable:/ {printf "%.1f", $2/1024/1024}' /proc/meminfo)
         (($( echo "${available_gb} >= ${MIN_DOCKER_MEMORY_GB}" | bc -l)))
-  else
+    else
         # macOS doesn't have /proc/meminfo, check Docker's allocated memory
         local docker_mem
         docker_mem=$(docker system info --format '{{.MemTotal}}' 2> /dev/null || echo "0")
         [[ -n "${docker_mem}" ]] && [[ "${docker_mem}" != "0" ]]
-  fi
+    fi
 }
 
 #######################################
@@ -175,9 +235,9 @@ check_github_cli_auth() {
         if echo "${auth_output}" | grep -q "X Failed to log in to"; then
             # Mixed success/failure - still return success but details will show in verbose
             return 0
-    fi
+        fi
         return 0
-  fi
+    fi
 
     # No successful logins found
     return 1
@@ -195,14 +255,14 @@ check_github_token_scopes() {
             # In Codespaces/Actions environment
             if gh api "repos/${GITHUB_REPOSITORY}" > /dev/null 2>&1; then
                 return 0  # Token has necessary permissions
-      fi
-    else
+            fi
+        else
             # Try to list user's repos as a permission check
             if gh api user/repos --paginate=false --jq '.[0].name' > /dev/null 2>&1; then
                 return 0  # Token can access repos
-      fi
+            fi
+        fi
     fi
-  fi
 
     # Fall back to checking token info if available
     local token_info
@@ -214,7 +274,7 @@ check_github_token_scopes() {
         # For GITHUB_TOKEN, we already checked functionality above
         # If we got here, the token exists but might have limited permissions
         return 0  # Consider it OK if using GITHUB_TOKEN
-  fi
+    fi
 
     # For tokens created via gh auth login, check for scopes
     if echo "${token_info}" | grep -q "Token scopes:"; then
@@ -222,14 +282,14 @@ check_github_token_scopes() {
         local required_scopes=("repo" "read:org")
         for scope in "${required_scopes[@]}"; do
             echo "${token_info}" | grep -q "${scope}" || return 1
-    done
+        done
         return 0
-  fi
+    fi
 
     # If we can't determine scopes but gh auth status shows logged in, assume OK
     if echo "${token_info}" | grep -q "✓ Logged in to"; then
         return 0
-  fi
+    fi
 
     return 1
 }
@@ -245,21 +305,21 @@ get_github_auth_details() {
     while IFS= read -r line; do
         if [[ "${line}" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]+$ ]]; then
             current_host="${line}"
-    elif     [[ "${line}" =~ "Logged in to" ]] && [[ -n "${current_host}" ]]; then
+        elif [[ "${line}" =~ "Logged in to" ]] && [[ -n "${current_host}" ]]; then
             local account
             account=$(echo "${line}" | sed -n 's/.*account \([^ ]*\).*/\1/p')
 
             if echo "${line}" | grep -q "✓"; then
                 if echo "${auth_output}" | grep -A2 "${line}" | grep -q "Active account: true"; then
                     details+="${account}@${current_host} [active] "
-        else
+                else
                     details+="${account}@${current_host} [inactive] "
-        fi
-      else
+                fi
+            else
                 details+="${account}@${current_host} [failed] "
-      fi
-    fi
-  done   <<< "${auth_output}"
+            fi
+        fi
+    done <<< "${auth_output}"
 
     echo "${details}"
 }
@@ -274,7 +334,7 @@ check_git_credential_helper() {
     # This handles both direct and https-specific configurations
     if git config --global --get-regexp 'credential.*helper' 2> /dev/null | grep -q "gh auth git-credential"; then
         return 0
-  fi
+    fi
 
     # Also accept if just credential.helper is set to gh
     local helper
@@ -297,12 +357,12 @@ check_repo_remote_connectivity() {
 
     if [[ ! -d "${repo_path}/.git" ]]; then
         return 1
-  fi
+    fi
 
     (
         cd "${repo_path}" || return 1
         git ls-remote --exit-code origin HEAD > /dev/null 2>&1
-  )
+    )
 }
 
 check_repo_clean_status() {
@@ -310,12 +370,12 @@ check_repo_clean_status() {
 
     if [[ ! -d "${repo_path}/.git" ]]; then
         return 1
-  fi
+    fi
 
     (
         cd "${repo_path}" || return 1
         git diff-index --quiet HEAD -- 2> /dev/null
-  )
+    )
 }
 
 #######################################
@@ -330,15 +390,15 @@ check_disk_space() {
         if df -BG "${MISE_PROJECT_ROOT}" 2> /dev/null | grep -q "${MISE_PROJECT_ROOT}"; then
             # GNU df (Linux)
             available_gb=$(df -BG "${MISE_PROJECT_ROOT}" | awk 'NR==2 {gsub(/G/,"",$4); print int($4)}')
-    else
+        else
             # BSD df (macOS) - use -g flag for GB
             available_gb=$(df -g "${MISE_PROJECT_ROOT}" 2> /dev/null | awk 'NR==2 {print int($4)}')
-    fi
+        fi
 
         [[ -n "${available_gb}" ]] && ((available_gb >= min_gb))
-  else
+    else
         return 0  # Skip check if df not available
-  fi
+    fi
 }
 
 check_network_connectivity() {
@@ -347,13 +407,13 @@ check_network_connectivity() {
         "github.com:443"
         "ghcr.io:443"
         "registry.npmjs.org:443"
-  )
+    )
     local success=0
 
     # Debug output when verbose
     if [[ "${MISE_VERBOSE:-0}" -ge 1 ]]; then
         echo "DEBUG: Testing network connectivity..." >&2
-  fi
+    fi
 
     for endpoint in "${test_endpoints[@]}"; do
         local host="${endpoint%:*}"
@@ -362,7 +422,7 @@ check_network_connectivity() {
         # Debug each endpoint test
         if [[ "${MISE_VERBOSE:-0}" -ge 1 ]]; then
             echo "DEBUG: Testing ${host}:${port}..." >&2
-    fi
+        fi
 
         # Use nc (netcat) for cross-platform compatibility
         # -z: scan mode (no data), -w: timeout in seconds
@@ -370,17 +430,17 @@ check_network_connectivity() {
             ((success++))
             if [[ "${MISE_VERBOSE:-0}" -ge 1 ]]; then
                 echo "DEBUG: ${host}:${port} - success" >&2
-      fi
-    else
+            fi
+        else
             if [[ "${MISE_VERBOSE:-0}" -ge 1 ]]; then
                 echo "DEBUG: ${host}:${port} - failed" >&2
-      fi
-    fi
-  done
+            fi
+        fi
+    done
 
     if [[ "${MISE_VERBOSE:-0}" -ge 1 ]]; then
         echo "DEBUG: Network connectivity: ${success}/3 endpoints successful" >&2
-  fi
+    fi
 
     # Success if at least NETWORK_MIN_ENDPOINTS_SUCCESS out of 3 work (allows for one service being down)
     [[ ${success} -ge ${NETWORK_MIN_ENDPOINTS_SUCCESS} ]]
@@ -420,7 +480,7 @@ check_ssh_key_permissions() {
         local key_perms
         key_perms=$(stat -c "%a" "${key}" 2> /dev/null || stat -f "%p" "${key}" 2> /dev/null | tail -c 4)
         [[ "${key_perms}" != "600" ]] && ((failed++))
-  done
+    done
 
     [[ ${failed} -eq 0 ]]
 }
@@ -452,7 +512,7 @@ check_tool_version() {
         *)
             return 1
             ;;
-  esac
+    esac
 
     [[ -n "${current_version}" ]] || return 1
 
@@ -480,7 +540,7 @@ check_workspace_mount() {
         echo "DEBUG: REMOTE_CONTAINERS='${REMOTE_CONTAINERS:-}'" >&2
         echo "DEBUG: CODESPACES='${CODESPACES:-}'" >&2
         echo "DEBUG: /.dockerenv exists: $([[ -f "/.dockerenv" ]] && echo "yes" || echo "no")" >&2
-  fi
+    fi
 
     # Check if we're in a container using multiple methods
     if [[ -n "${REMOTE_CONTAINERS:-}" ]] ||
@@ -488,7 +548,7 @@ check_workspace_mount() {
        [[ -f "/.dockerenv" ]]; then
         # In container - check /workspace mount
         [[ -d "/workspace" ]] && [[ -w "/workspace" ]]
-  else
+    else
         # On host, check that project root exists and is writable
         local project_root="${MISE_PROJECT_ROOT:-.}"
 
@@ -498,10 +558,10 @@ check_workspace_mount() {
             echo "DEBUG: project_root='${project_root}'" >&2
             echo "DEBUG: directory exists: $([[ -d "${project_root}" ]] && echo "yes" || echo "no")" >&2
             echo "DEBUG: directory writable: $([[ -w "${project_root}" ]] && echo "yes" || echo "no")" >&2
-    fi
+        fi
 
         [[ -d "${project_root}" ]] && [[ -w "${project_root}" ]]
-  fi
+    fi
 }
 
 #######################################

@@ -124,10 +124,16 @@ fi
 if [[ ${#FILES[@]} -eq 0 ]]; then
   case "${MODE}" in
     lint-css | format-css)
-      mapfile -t FILES < <(find_css_files)
+      FILES=()
+      while IFS= read -r file; do
+        FILES+=("${file}")
+      done < <(find_css_files)
       ;;
     lint-html | format-html)
-      mapfile -t FILES < <(find_html_files)
+      FILES=()
+      while IFS= read -r file; do
+        FILES+=("${file}")
+      done < <(find_html_files)
       ;;
     *)
       echo "❌ Invalid mode: ${MODE}"

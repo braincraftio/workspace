@@ -111,8 +111,11 @@ if [[ ${#FILES[@]} -gt 0 ]]; then
     echo "🔧 Formatting specified Dockerfiles: ${DOCKERFILES[*]}"
   fi
 else
-  # Auto-discover Dockerfiles
-  mapfile -t DOCKERFILES < <(find_dockerfiles)
+  # Auto-discover Dockerfiles (bash 3.2 compatible)
+  DOCKERFILES=()
+  while IFS= read -r file; do
+    DOCKERFILES+=("${file}")
+  done < <(find_dockerfiles)
 
   if [[ ${#DOCKERFILES[@]} -eq 0 ]]; then
     if [[ "${MODE}" == "lint" ]]; then

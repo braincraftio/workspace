@@ -8,17 +8,15 @@ set -euo pipefail
 # shellcheck disable=SC1091
 source "${MISE_PROJECT_ROOT}/.config/mise/lib/common.sh"
 
-# Configuration defaults
-declare -A CONFIG=(
-                                        [show_aliases]="false"
-                                        [show_source]="false"
-                                        [show_hidden]="false"
-                                        [json_output]="false"
-                                        [raw_output]="false"
-                                        [namespaces_only]="false"
-                                        [sort_by]="name"
-                                        [sort_order]="asc"
-)
+# Configuration defaults (bash 3.2 compatible)
+CONFIG_SHOW_ALIASES="false"
+CONFIG_SHOW_SOURCE="false"
+CONFIG_SHOW_HIDDEN="false"
+CONFIG_JSON_OUTPUT="false"
+CONFIG_RAW_OUTPUT="false"
+CONFIG_NAMESPACES_ONLY="false"
+CONFIG_SORT_BY="name"
+CONFIG_SORT_ORDER="asc"
 
 # Namespace filters
 NAMESPACES=()
@@ -83,44 +81,44 @@ parse_arguments() {
                 exit 0
                 ;;
             -a | --aliases)
-                CONFIG[show_aliases]="true"
+                CONFIG_SHOW_ALIASES="true"
                 shift
                 ;;
             -s | --source)
-                CONFIG[show_source]="true"
+                CONFIG_SHOW_SOURCE="true"
                 shift
                 ;;
             -w | --wide)
-                CONFIG[show_aliases]="true"
-                CONFIG[show_source]="true"
+                CONFIG_SHOW_ALIASES="true"
+                CONFIG_SHOW_SOURCE="true"
                 shift
                 ;;
             --namespace | --namespaces | --ns)
-                CONFIG[namespaces_only]="true"
+                CONFIG_NAMESPACES_ONLY="true"
                 shift
                 ;;
             -H | --hidden)
-                CONFIG[show_hidden]="true"
+                CONFIG_SHOW_HIDDEN="true"
                 shift
                 ;;
             -j | --json)
-                CONFIG[json_output]="true"
+                CONFIG_JSON_OUTPUT="true"
                 shift
                 ;;
             -r | --raw)
-                CONFIG[raw_output]="true"
+                CONFIG_RAW_OUTPUT="true"
                 shift
                 ;;
             --sort)
                 if [[ -z "${2:-}" ]]; then
                     echo "❌ --sort requires a column name" >&2
                     exit 1
-        fi
-                CONFIG[sort_by]="$2"
+                fi
+                CONFIG_SORT_BY="$2"
                 shift 2
                 ;;
             --desc)
-                CONFIG[sort_order]="desc"
+                CONFIG_SORT_ORDER="desc"
                 shift
                 ;;
             -*)
@@ -145,17 +143,17 @@ build_mise_command() {
   fi
 
     # Add flags based on configuration
-    [[ "${CONFIG[show_hidden]}" == "true" ]] && cmd+=(--hidden)
-    [[ "${CONFIG[json_output]}" == "true" ]] && cmd+=(--json)
+    [[ "${CONFIG_SHOW_HIDDEN}" == "true" ]] && cmd+=(--hidden)
+    [[ "${CONFIG_JSON_OUTPUT}" == "true" ]] && cmd+=(--json)
 
     # Wide mode requires extended output
-    if [[ "${CONFIG[show_aliases]}" == "true" && "${CONFIG[show_source]}" == "true" ]]; then
+    if [[ "${CONFIG_SHOW_ALIASES}" == "true" && "${CONFIG_SHOW_SOURCE}" == "true" ]]; then
         cmd+=(--extended)
-  fi
+    fi
 
     # Sort options
-    cmd+=(--sort "${CONFIG[sort_by]}")
-    cmd+=(--sort-order "${CONFIG[sort_order]}")
+    cmd+=(--sort "${CONFIG_SORT_BY}")
+    cmd+=(--sort-order "${CONFIG_SORT_ORDER}")
 
     echo "${cmd[@]}"
 }
@@ -164,16 +162,16 @@ filter_tasks() {
     local input="$1"
 
     # Filter for top-level namespaces only
-    if [[ "${CONFIG[namespaces_only]}" == "true" ]]; then
-        if [[ "${CONFIG[json_output]}" == "true" ]]; then
+    if [[ "${CONFIG_NAMESPACES_ONLY}" == "true" ]]; then
+        if [[ "${CONFIG_JSON_OUTPUT}" == "true" ]]; then
             # For JSON, filter tasks without colons
             echo "${input}" | jq '[.[] | select(.name | contains(":") | not)]' 2> /dev/null || echo "[]"
-    else
+        else
             # For text, filter lines where the first field (task name) doesn't contain a colon
             echo "${input}" | awk '$1 !~ /:/ || NF < 2'
-    fi
+        fi
         return
-  fi
+    fi
 
     # No filtering if no namespaces specified
     if [[ ${#NAMESPACES[@]} -eq 0 ]]; then
@@ -181,22 +179,22 @@ filter_tasks() {
         return
   fi
 
-    if [[ "${CONFIG[json_output]}" == "true" ]]; then
+    if [[ "${CONFIG_JSON_OUTPUT}" == "true" ]]; then
         # JSON filtering with jq
         local filter="["
         local first=true
         for ns in "${NAMESPACES[@]}"; do
             if [[ "${first}" == "true" ]]; then
                 first=false
-      else
+            else
                 filter+=","
-      fi
+            fi
             filter+=" .[] | select(.name | startswith(\"${ns}:\") or . == \"${ns}\")"
-    done
+        done
         filter+="]"
 
         echo "${input}" | jq "${filter}" 2> /dev/null || echo "[]"
-  else
+    else
         # Text filtering with grep
         local pattern=""
         for ns in "${NAMESPACES[@]}"; do
@@ -216,16 +214,16 @@ format_output() {
     local input="${1}"
 
     # Raw output bypasses formatting
-    if [[ "${CONFIG[raw_output]}" == "true" ]]; then
+    if [[ "${CONFIG_RAW_OUTPUT}" == "true" ]]; then
         echo "${input}"
         return
-  fi
+    fi
 
     # JSON output needs no formatting
-    if [[ "${CONFIG[json_output]}" == "true" ]]; then
+    if [[ "${CONFIG_JSON_OUTPUT}" == "true" ]]; then
         echo "${input}"
         return
-  fi
+    fi
 
     # Handle empty results
     if [[ -z "${input}" ]]; then
@@ -240,13 +238,13 @@ format_output() {
     # Add header for unfiltered output
     if [[ ${#NAMESPACES[@]} -eq 0 ]]; then
         local header="Task"
-        if [[ "${CONFIG[show_aliases]}" == "true" ]]; then
+        if [[ "${CONFIG_SHOW_ALIASES}" == "true" ]]; then
             header+="                         Aliases"
-    fi
+        fi
         header+="                          Description"
-        if [[ "${CONFIG[show_source]}" == "true" ]]; then
+        if [[ "${CONFIG_SHOW_SOURCE}" == "true" ]]; then
             header+="                             Source"
-    fi
+        fi
 
         echo -e "${BLUE}${header}${NC}"
         printf '━%.0s' {1..128}
@@ -259,11 +257,11 @@ format_output() {
 count_tasks() {
     local input="${1}"
 
-    if [[ "${CONFIG[json_output]}" == "true" ]]; then
+    if [[ "${CONFIG_JSON_OUTPUT}" == "true" ]]; then
         echo "${input}" | jq 'length' 2> /dev/null || echo "0"
-  else
+    else
         echo "${input}" | grep -c . || echo "0"
-  fi
+    fi
 }
 
 main() {
@@ -274,21 +272,21 @@ main() {
     cmd=$(build_mise_command)
 
     # Execute command
-    if [[ "${CONFIG[json_output]}" == "true" ]]; then
+    if [[ "${CONFIG_JSON_OUTPUT}" == "true" ]]; then
         # Use eval for clean JSON without prefixes
         if ! output=$(eval "${cmd}" 2>&1); then
             echo "❌ Failed to list tasks" >&2
             echo "${output}" >&2
             exit 1
-    fi
-  else
+        fi
+    else
         # Direct execution
         if ! output=$(${cmd} 2>&1); then
             echo "❌ Failed to list tasks" >&2
             echo "${output}" >&2
             exit 1
+        fi
     fi
-  fi
 
     # Apply filtering
     local filtered
@@ -298,12 +296,12 @@ main() {
     format_output "${filtered}"
 
     # Show summary for filtered results
-    if [[ ${#NAMESPACES[@]} -gt 0 && "${CONFIG[json_output]}" != "true" ]]; then
+    if [[ ${#NAMESPACES[@]} -gt 0 && "${CONFIG_JSON_OUTPUT}" != "true" ]]; then
         local count
         count=$(count_tasks "${filtered}")
         echo
         echo -e "${GRAY}Found ${count} task(s) matching: ${NAMESPACES[*]}${NC}"
-  fi
+    fi
 }
 
 main "$@"

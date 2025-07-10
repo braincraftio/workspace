@@ -81,7 +81,13 @@ main() {
     if [[ $# -eq 0 ]]; then
         show_usage
         return 0
-  fi
+    fi
+
+    # Check for help flag
+    if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+        show_usage
+        return 0
+    fi
 
     # Run the task across all repos (always include workspace root)
     run_task_across_repos "exec" execute_cmd_in_repo "validate_command_input" "true" "$@"

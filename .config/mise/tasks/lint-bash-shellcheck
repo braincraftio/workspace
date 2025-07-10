@@ -93,7 +93,10 @@ main() {
 
     # Find scripts if none specified
     if [[ ${#files_to_check[@]} -eq 0 ]]; then
-        mapfile -t files_to_check < <(find_bash_scripts)
+        files_to_check=()
+        while IFS= read -r script; do
+            files_to_check+=("${script}")
+        done < <(find_bash_scripts)
   fi
 
     # Check if shellcheck is available

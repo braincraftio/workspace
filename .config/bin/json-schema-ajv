@@ -35,7 +35,14 @@ const ajv = new Ajv({
     
     // Handle file:// protocol
     if (uri.startsWith('file://')) {
-      const filePath = uri.replace('file://', '');
+      let filePath = uri.replace('file://', '');
+      
+      // Handle /workspace/ prefix - convert to actual path
+      if (filePath.startsWith('/workspace/')) {
+        const workspaceRoot = process.env.MISE_PROJECT_ROOT || process.cwd();
+        filePath = filePath.replace('/workspace/', `${workspaceRoot}/`);
+      }
+      
       try {
         const content = await readFile(filePath, 'utf8');
         const schema = JSON.parse(content);
@@ -88,9 +95,16 @@ async function validateFile(filePath) {
     }
     
     // Get schema URL from file
-    const schemaUrl = data.$schema;
+    let schemaUrl = data.$schema;
     if (!schemaUrl) {
       return { valid: true, warning: 'No $schema property' };
+    }
+    
+    // Handle file:// URLs with /workspace/ prefix - convert to actual path
+    if (schemaUrl.startsWith('file:///workspace/')) {
+      // Get the workspace root - either from MISE_PROJECT_ROOT or resolve from current directory
+      const workspaceRoot = process.env.MISE_PROJECT_ROOT || process.cwd();
+      schemaUrl = schemaUrl.replace('file:///workspace/', `file://${workspaceRoot}/`);
     }
     
     // Compile and validate
